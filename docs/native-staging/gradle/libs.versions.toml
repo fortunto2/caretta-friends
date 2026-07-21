@@ -1,0 +1,11 @@
+[versions]
+# ...existing entries unchanged...
+maplibre = "13.3.1"            # was 11.5.2 — current stable android-sdk (Maven Central, 2026-06-24)
+maplibreAnnotation = "3.0.2"   # android-plugin-annotation-v9 latest stable (SymbolManager)
+lifecycleRuntimeCompose = "2.8.7"  # LocalLifecycleOwner (usually already transitive via activity-compose)
+
+[libraries]
+# ...existing entries unchanged...
+maplibre-android    = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
+maplibre-annotation = { module = "org.maplibre.gl:android-plugin-annotation-v9", version.ref = "maplibreAnnotation" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleRuntimeCompose" }

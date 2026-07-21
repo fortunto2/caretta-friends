@@ -1,0 +1,23 @@
+# --- top level ---
+packages:
+  MapLibre:
+    url: https://github.com/maplibre/maplibre-gl-native-distribution
+    from: "6.27.0"          # SPM 'from' = >=6.27.0, <7.0.0. Use exactVersion: "6.27.0" to pin.
+
+# --- under your existing iOS app target (key name may differ, e.g. iosApp) ---
+targets:
+  iosApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    # ...your existing settings/sources (incl. the ComposeApp framework link)...
+    dependencies:
+      # existing ComposeApp framework dependency stays here, e.g.:
+      # - framework: ComposeApp.framework
+      #   embed: true
+      - package: MapLibre        # references the key under top-level `packages:`
+        product: MapLibre        # SPM product name (from the package's Package.swift)
+
+# After editing project.yml regenerate the project:
+#   xcodegen generate
+# (run `xcodegen` from the dir containing project.yml)

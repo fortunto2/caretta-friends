@@ -1,0 +1,18 @@
+<!-- Add inside the top-level <dict> of iosApp/Info.plist -->
+
+<!-- Camera: live preview + still capture (AVCaptureSession) -->
+<key>NSCameraUsageDescription</key>
+<string>Caretta Friends uses the camera to photograph sea-turtle nests.</string>
+
+<!-- Photo library READ: recent-photos strip + full gallery picker -->
+<key>NSPhotoLibraryUsageDescription</key>
+<string>Caretta Friends lets you pick an existing photo of a nest from your library.</string>
+
+<!-- Location: burned into the photo overlay AND written to EXIF GPS -->
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>Caretta Friends tags each nest photo with its GPS location.</string>
+
+<!-- OPTIONAL — only if you later save the burned photo back into Photos:
+<key>NSPhotoLibraryAddUsageDescription</key>
+<string>Caretta Friends can save your tagged nest photos to your library.</string>
+-->
