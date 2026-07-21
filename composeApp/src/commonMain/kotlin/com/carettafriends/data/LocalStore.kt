@@ -1,0 +1,28 @@
+package com.carettafriends.data
+
+import okio.FileSystem
+import okio.Path.Companion.toPath
+
+/** Platform app-writable directory (Android filesDir / iOS Documents). */
+expect fun appDirPath(): String
+
+/** Simple offline-first key→text store on disk (used to persist the app state as JSON). */
+object LocalStore {
+    private val fs: FileSystem = FileSystem.SYSTEM
+
+    fun readText(name: String): String? = try {
+        val p = appDirPath().toPath() / name
+        if (fs.exists(p)) fs.read(p) { readUtf8() } else null
+    } catch (e: Throwable) {
+        null
+    }
+
+    fun writeText(name: String, text: String) {
+        try {
+            val p = appDirPath().toPath() / name
+            fs.write(p) { writeUtf8(text) }
+        } catch (e: Throwable) {
+            // best-effort; ignore write failures
+        }
+    }
+}

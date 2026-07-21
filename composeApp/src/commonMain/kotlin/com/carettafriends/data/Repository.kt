@@ -24,9 +24,17 @@ import com.carettafriends.domain.SunExposure
 import com.carettafriends.domain.TemperatureReading
 import com.carettafriends.domain.UpdateKind
 import com.carettafriends.domain.Visibility
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
@@ -56,9 +64,25 @@ fun nestDay(nest: Nest, today: LocalDate = today()): Int =
  * In-memory, offline-first repository. Single source of truth via StateFlow.
  * V1 storage is in memory + seed; SQLDelight / Supabase sync slot in behind this API (V2).
  */
+private const val STATE_FILE = "caretta_state.json"
+
+private fun loadOrSeed(json: Json): AppState =
+    LocalStore.readText(STATE_FILE)?.let { runCatching { json.decodeFromString<AppState>(it) }.getOrNull() } ?: seedState()
+
+private fun persist(json: Json, s: AppState) {
+    runCatching { LocalStore.writeText(STATE_FILE, json.encodeToString(s)) }
+}
+
 class CarettaRepository {
-    private val _state = MutableStateFlow(seedState())
+    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val _state = MutableStateFlow(loadOrSeed(json))
     val state: StateFlow<AppState> = _state.asStateFlow()
+
+    init {
+        // Offline-first: persist every change locally so data survives restarts and works offline.
+        scope.launch { _state.drop(1).collect { persist(json, it) } }
+    }
 
     private var counter = 1000
     private fun nextId(prefix: String) = "$prefix-${counter++}"

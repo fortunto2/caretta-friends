@@ -12,6 +12,7 @@ maplibre = "11.5.2"
 playServicesLocation = "21.3.0"
 coil = "3.0.4"
 markdownRenderer = "0.39.2"
+okio = "3.9.1"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
@@ -27,6 +28,7 @@ maplibre-android = { module = "org.maplibre.gl:android-sdk", version.ref = "mapl
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

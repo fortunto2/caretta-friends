@@ -38,6 +38,7 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(compose.components.resources)
             implementation(libs.markdown.renderer.m3)
+            implementation(libs.okio)
         }
     }
 }
