@@ -25,3 +25,6 @@ iosApp/iosApp.xcodeproj/
 
 # Outputs
 outputs/
+
+# SPM cloned packages
+iosApp/spm/

@@ -27,6 +27,15 @@ object SharedRepo {
     val repo = CarettaRepository()
 }
 
+/** A nest point for the native iOS MapLibre map. */
+data class IosMapPoint(val id: String, val lat: Double, val lng: Double, val title: String, val status: String)
+
+/** Nest points for the native SwiftUI MapLibre map (read from the shared repo). */
+fun mapPoints(): List<IosMapPoint> {
+    val s = SharedRepo.repo.state.value
+    return s.nests.map { IosMapPoint(it.id, it.point.lat, it.point.lng, it.code, it.status.name) }
+}
+
 /** Called from Swift after the native camera captures/picks a photo (with optional GPS). */
 fun setPendingPhoto(path: String, lat: Double, lng: Double, hasLocation: Boolean) {
     SharedRepo.repo.pendingPhoto = PendingPhoto(

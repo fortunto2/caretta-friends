@@ -1,5 +1,6 @@
 import SwiftUI
 import ComposeApp
+import CoreLocation
 
 /// Hosts a Kotlin-provided Compose UIViewController inside SwiftUI.
 struct ComposeHost: UIViewControllerRepresentable {
@@ -98,19 +99,83 @@ struct TabStack<Root: View>: View {
     }
 }
 
-/// Map tab: the "+" opens the native camera (full-screen). After capture, the photo + GPS are
-/// handed to the shared layer and the add-nest form is pushed.
+extension Color {
+    static let cfCoral = Color(red: 1.0, green: 0.478, blue: 0.349)
+    static let cfSea = Color(red: 0.059, green: 0.478, blue: 0.510)
+    static let cfGood = Color(red: 0.31, green: 0.66, blue: 0.42)
+    static let cfDeep = Color(red: 0.043, green: 0.231, blue: 0.247)
+}
+
+/// Map tab: a NATIVE MapLibre + OSM map with SwiftUI overlays. The "+" opens the native camera;
+/// after capture the photo + GPS go to the shared layer and the add-nest form is pushed; tapping a
+/// nest pin opens its detail.
 struct MapTab: View {
     @State private var path = NavigationPath()
     @State private var showCamera = false
+    @State private var points: [MapPoint] = []
+    @State private var filter = "all"
+
+    private func reload() {
+        points = IosEntryKt.mapPoints().map { p in
+            MapPoint(
+                id: p.id,
+                coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng),
+                title: p.title
+            )
+        }
+    }
 
     var body: some View {
         NavigationStack(path: $path) {
-            ComposeHost {
-                IosEntryKt.MapVC(
-                    onOpenNest: { path.append(Route.nest($0)) },
-                    onAdd: { showCamera = true }
+            ZStack(alignment: .top) {
+                MapLibreView(
+                    points: points,
+                    center: MapLibreView.gazipasa,
+                    zoomLevel: 12,
+                    showsCallout: false,
+                    onSelect: { id in path.append(Route.nest(id)) }
                 )
+                .ignoresSafeArea()
+
+                // top overlays: filter chips + coverage pill
+                VStack(alignment: .leading, spacing: 10) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            chip("All", "all")
+                            chip("🥚 Nests", "nests")
+                            chip("● Hatching", "hatching")
+                            chip("🧺 Trash", "trash")
+                        }
+                        .padding(.horizontal, 14)
+                    }
+                    Text("✓ Patrolled 6:10 today · Mert · 2.3 km")
+                        .font(.caption.weight(.bold)).foregroundColor(.white)
+                        .padding(.horizontal, 12).padding(.vertical, 7)
+                        .background(Color.cfGood).clipShape(Capsule())
+                        .padding(.leading, 14)
+                }
+                .padding(.top, 8)
+
+                // bottom overlays: start patrol + FAB
+                VStack {
+                    Spacer()
+                    HStack(alignment: .bottom) {
+                        Text("● Start patrol")
+                            .font(.subheadline.weight(.bold)).foregroundColor(.white)
+                            .padding(.horizontal, 14).padding(.vertical, 10)
+                            .background(Color.cfGood).clipShape(Capsule())
+                        Spacer()
+                        Button { showCamera = true } label: {
+                            Image(systemName: "plus")
+                                .font(.title.weight(.bold)).foregroundColor(.white)
+                                .frame(width: 58, height: 58)
+                                .background(Color.cfCoral)
+                                .clipShape(RoundedRectangle(cornerRadius: 19, style: .continuous))
+                                .shadow(color: Color.cfCoral.opacity(0.5), radius: 10, y: 6)
+                        }
+                    }
+                    .padding(.horizontal, 16).padding(.bottom, 10)
+                }
             }
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: Route.self) { route in
@@ -128,6 +193,8 @@ struct MapTab: View {
                 }
             }
         }
+        .onAppear { reload() }
+        .onChange(of: path.count) { _ in reload() }
         .fullScreenCover(isPresented: $showCamera) {
             CameraCaptureView(
                 author: "You",
@@ -144,6 +211,19 @@ struct MapTab: View {
                 onCancel: { showCamera = false }
             )
         }
+    }
+
+    @ViewBuilder
+    private func chip(_ label: String, _ key: String) -> some View {
+        let on = filter == key
+        Text(label)
+            .font(.caption.weight(.bold))
+            .foregroundColor(on ? .white : .cfDeep)
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(on ? Color.cfSea : Color.white.opacity(0.92))
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
+            .onTapGesture { filter = key }
     }
 }
 

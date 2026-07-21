@@ -4,6 +4,10 @@ options:
   createIntermediateGroups: true
   deploymentTarget:
     iOS: "16.0"
+packages:
+  MapLibre:
+    url: https://github.com/maplibre/maplibre-gl-native-distribution
+    from: "6.27.0"
 settings:
   base:
     DEVELOPMENT_TEAM: 8N495BBBLM
@@ -28,6 +32,9 @@ targets:
           - $(inherited)
           - -framework
           - ComposeApp
+    dependencies:
+      - package: MapLibre
+        product: MapLibre
     preBuildScripts:
       - name: "Compile & embed Kotlin framework"
         basedOnDependencyAnalysis: false
