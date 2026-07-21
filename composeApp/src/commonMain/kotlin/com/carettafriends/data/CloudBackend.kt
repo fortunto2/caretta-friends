@@ -33,9 +33,9 @@ import kotlinx.serialization.json.JsonElement
 interface CloudBackend {
     suspend fun pushCommunity(community: Community)
     suspend fun pushBeach(beach: Beach)
-    suspend fun pushNest(nest: Nest, communityId: String)
-    suspend fun pushMarker(marker: SimpleMarker)
-    suspend fun pushPatrol(patrol: Patrol)
+    suspend fun pushNest(nest: Nest, communityId: String, ownerId: String?)
+    suspend fun pushMarker(marker: SimpleMarker, ownerId: String?)
+    suspend fun pushPatrol(patrol: Patrol, ownerId: String?)
     suspend fun pullBeaches(): List<Beach>
     suspend fun pullNests(): List<Nest>
     suspend fun pullMarkers(): List<SimpleMarker>
@@ -74,6 +74,7 @@ private data class NestRow(
     val code: String,
     @SerialName("beach_id") val beachId: String,
     @SerialName("community_id") val communityId: String? = null,
+    @SerialName("owner_id") val ownerId: String? = null,
     val lat: Double,
     val lng: Double,
     val species: String,
@@ -90,6 +91,7 @@ private data class MarkerRow(
     val id: String,
     val type: String,
     @SerialName("beach_id") val beachId: String? = null,
+    @SerialName("owner_id") val ownerId: String? = null,
     val lat: Double,
     val lng: Double,
     val note: String,
@@ -100,6 +102,7 @@ private data class MarkerRow(
 private data class PatrolRow(
     val id: String,
     @SerialName("beach_id") val beachId: String,
+    @SerialName("owner_id") val ownerId: String? = null,
     @SerialName("distance_m") val distanceM: Int,
     @SerialName("by_name") val byName: String,
     val payload: JsonElement,
@@ -110,19 +113,20 @@ private data class PatrolRow(
  * backend-agnostic (swap [base] + headers for Cloudflare later) and avoids the supabase-kt/Kotlin
  * ABI coupling that blocks the iOS Native target. Auth (V2) stays Supabase, layered separately.
  */
-class SupabaseCloud : CloudBackend {
+class SupabaseCloud(private val auth: AuthBackend) : CloudBackend {
     private val base = SupabaseConfig.URL.trimEnd('/') + "/rest/v1"
     private val http = HttpClient {
         install(ContentNegotiation) { json(cloudJson) }
-        install(DefaultRequest) {
-            header("apikey", SupabaseConfig.ANON_KEY)
-            header("Authorization", "Bearer ${SupabaseConfig.ANON_KEY}")
-        }
+        install(DefaultRequest) { header("apikey", SupabaseConfig.ANON_KEY) }
     }
+
+    /** Authenticated as the volunteer (JWT) when signed in, else anon key (RLS decides what that can do). */
+    private suspend fun bearer(): String = "Bearer ${auth.accessToken() ?: SupabaseConfig.ANON_KEY}"
 
     /** PostgREST upsert: POST a row array; merge-duplicates resolves conflicts on the primary key. */
     private suspend inline fun <reified T> upsert(table: String, row: T) {
         http.post("$base/$table") {
+            header("Authorization", bearer())
             header("Prefer", "resolution=merge-duplicates,return=minimal")
             contentType(ContentType.Application.Json)
             setBody(listOf(row))
@@ -131,7 +135,7 @@ class SupabaseCloud : CloudBackend {
 
     /** PostgREST select of live rows only (soft-deleted tombstones filtered server-side). */
     private suspend inline fun <reified T> selectLive(table: String): List<T> =
-        http.get("$base/$table?select=*&deleted_at=is.null").body()
+        http.get("$base/$table?select=*&deleted_at=is.null") { header("Authorization", bearer()) }.body()
 
     override suspend fun pushCommunity(community: Community) {
         upsert(
@@ -166,7 +170,7 @@ class SupabaseCloud : CloudBackend {
         )
     }
 
-    override suspend fun pushNest(nest: Nest, communityId: String) {
+    override suspend fun pushNest(nest: Nest, communityId: String, ownerId: String?) {
         upsert(
             "nests",
             NestRow(
@@ -174,6 +178,7 @@ class SupabaseCloud : CloudBackend {
                 code = nest.code,
                 beachId = nest.beachId,
                 communityId = communityId,
+                ownerId = ownerId,
                 lat = nest.point.lat,
                 lng = nest.point.lng,
                 species = nest.species.name,
@@ -187,13 +192,14 @@ class SupabaseCloud : CloudBackend {
         )
     }
 
-    override suspend fun pushMarker(marker: SimpleMarker) {
+    override suspend fun pushMarker(marker: SimpleMarker, ownerId: String?) {
         upsert(
             "markers",
             MarkerRow(
                 id = marker.id,
                 type = marker.type.name,
                 beachId = marker.beachId,
+                ownerId = ownerId,
                 lat = marker.point.lat,
                 lng = marker.point.lng,
                 note = marker.note,
@@ -202,12 +208,13 @@ class SupabaseCloud : CloudBackend {
         )
     }
 
-    override suspend fun pushPatrol(patrol: Patrol) {
+    override suspend fun pushPatrol(patrol: Patrol, ownerId: String?) {
         upsert(
             "patrols",
             PatrolRow(
                 id = patrol.id,
                 beachId = patrol.beachId,
+                ownerId = ownerId,
                 distanceM = patrol.distanceMeters,
                 byName = patrol.by,
                 payload = cloudJson.encodeToJsonElement(Patrol.serializer(), patrol),

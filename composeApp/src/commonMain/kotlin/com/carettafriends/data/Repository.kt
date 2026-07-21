@@ -76,7 +76,8 @@ private fun persist(json: Json, s: AppState) {
 class CarettaRepository {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val cloud: CloudBackend = SupabaseCloud()
+    private val auth: AuthBackend = SupabaseAuth()
+    private val cloud: CloudBackend = SupabaseCloud(auth)
     private val _state = MutableStateFlow(loadOrSeed(json))
     val state: StateFlow<AppState> = _state.asStateFlow()
 
@@ -88,16 +89,19 @@ class CarettaRepository {
     }
 
     private suspend fun syncOnStart() {
+        // Anonymous sign-in on first run → stable owner_id + RLS-scoped, attributable writes.
+        auth.ensureSession()
         // Push local changes first (nothing made offline is lost), then pull & merge the truth.
         val local = _state.value
         val cid = local.community.id
+        val owner = auth.currentUserId()
         // Parents FIRST so child FKs are always satisfiable server-side (FK-safe offline sync).
         runCatching { cloud.pushCommunity(local.community) }
         local.beaches.forEach { runCatching { cloud.pushBeach(it) } }
-        // Then the aggregate roots.
-        local.nests.forEach { runCatching { cloud.pushNest(it, cid) } }
-        local.markers.forEach { runCatching { cloud.pushMarker(it) } }
-        local.patrols.forEach { runCatching { cloud.pushPatrol(it) } }
+        // Then the aggregate roots (owned by this volunteer).
+        local.nests.forEach { runCatching { cloud.pushNest(it, cid, owner) } }
+        local.markers.forEach { runCatching { cloud.pushMarker(it, owner) } }
+        local.patrols.forEach { runCatching { cloud.pushPatrol(it, owner) } }
         // Pull merged truth. New beaches propagate; nests merge by LWW (scalars) + timeline union.
         runCatching {
             val remoteBeaches = cloud.pullBeaches()
@@ -133,7 +137,7 @@ class CarettaRepository {
 
     private fun syncNest(nest: Nest) {
         val cid = _state.value.community.id
-        scope.launch { runCatching { cloud.pushNest(nest, cid) } }
+        scope.launch { auth.ensureSession(); runCatching { cloud.pushNest(nest, cid, auth.currentUserId()) } }
     }
 
     private fun nowMillis(): Long = Clock.System.now().toEpochMilliseconds()
@@ -202,7 +206,7 @@ class CarettaRepository {
         val s = _state.value
         val marker = SimpleMarker(nextId("m"), type, point, note)
         _state.value = s.copy(markers = s.markers + marker)
-        scope.launch { runCatching { cloud.pushMarker(marker) } }
+        scope.launch { auth.ensureSession(); runCatching { cloud.pushMarker(marker, auth.currentUserId()) } }
     }
 
     fun addUpdate(nestId: String, kind: UpdateKind, body: String, condition: ObsCondition? = null) {
