@@ -3,7 +3,7 @@ options:
   bundleIdPrefix: com.carettafriends
   createIntermediateGroups: true
   deploymentTarget:
-    iOS: "15.0"
+    iOS: "16.0"
 settings:
   base:
     DEVELOPMENT_TEAM: 8N495BBBLM
