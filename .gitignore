@@ -16,6 +16,7 @@ local.properties
 
 # Xcode / iOS
 iosApp/build/
+iosApp/iosApp.xcodeproj/
 **/xcuserdata/
 **/*.xcworkspace/xcuserdata/
 
