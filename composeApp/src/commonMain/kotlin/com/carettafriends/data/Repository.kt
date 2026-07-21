@@ -164,13 +164,14 @@ class CarettaRepository {
         hasPhoto: Boolean,
         locationSource: LocationSource,
         visibility: Visibility,
+        photoPath: String? = null,
     ): String {
         val s = _state.value
         val (fLow, fHigh, inc) = predictTsd(exposure)
         val confirmed = hasPhoto && (locationSource == LocationSource.PHOTO_EXIF || locationSource == LocationSource.DEVICE_GPS)
         val id = nextId("nest")
         val code = "GZP-${s.nests.size + 25}"
-        val photos = if (hasPhoto) listOf(PhotoRef(nextId("ph"), PhotoSource.CAMERA)) else emptyList()
+        val photos = if (hasPhoto) listOf(PhotoRef(nextId("ph"), PhotoSource.CAMERA, localUri = photoPath)) else emptyList()
         val nest = Nest(
             id = id,
             code = code,

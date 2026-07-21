@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -30,13 +31,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.carettafriends.data.CarettaRepository
 import com.carettafriends.domain.AppState
+import com.carettafriends.domain.Beach
 import com.carettafriends.domain.GeoPoint
 import com.carettafriends.domain.LocationSource
 import com.carettafriends.domain.MarkerType
 import com.carettafriends.domain.SunExposure
 import com.carettafriends.domain.Visibility
+import com.carettafriends.domain.distanceLabel
+import com.carettafriends.domain.distanceMeters
+import com.carettafriends.domain.nearestBeach
 import com.carettafriends.ui.components.CarettaCard
 import com.carettafriends.ui.components.GhostButton
+import com.carettafriends.ui.components.LocalPhoto
 import com.carettafriends.ui.components.Pill
 import com.carettafriends.ui.components.PrimaryButton
 import com.carettafriends.ui.components.SectionLabel
@@ -49,12 +55,22 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
 
     // Photo captured by the native camera (iOS) lands here, prefilling the form.
     val pending = remember { repo.takePendingPhoto() }
+    // Real GPS/EXIF location if the photo carried one — drives nearest-beach + the map pin.
+    val exifPoint = remember(pending) {
+        pending?.let { if (it.lat != null && it.lng != null) GeoPoint(it.lat, it.lng) else null }
+    }
     var markerType by remember { mutableStateOf(MarkerType.NEST) }
     var isNest by remember { mutableStateOf(true) }
     var hasPhoto by remember { mutableStateOf(pending != null) }
     var exposure by remember { mutableStateOf(SunExposure.PARTIAL) }
     var cage by remember { mutableStateOf(false) }
     var visibility by remember { mutableStateOf(Visibility.PUBLIC) }
+    // Turtles nest on beaches → bind every nest to a beach (→ community). Default = nearest to the
+    // photo location; the volunteer can override. Falls back to the first beach when there's no fix.
+    var selectedBeach by remember {
+        mutableStateOf(exifPoint?.let { nearestBeach(it, state.beaches)?.first } ?: state.beaches.first())
+    }
+    val nearestDist = exifPoint?.let { distanceMeters(it, selectedBeach.center) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         TopBar("New marker", onBack = onDone)
@@ -85,26 +101,29 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
 
             // ── Photo ──────────────────────────────────────────────────
             SectionLabel("Photo")
+            if (pending?.path != null) {
+                // Show the just-captured photo right here in the form.
+                LocalPhoto(
+                    pending.path,
+                    Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(14.dp)),
+                )
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                GhostButton("📷 Camera", Modifier.weight(1f)) { onCamera() }
+                GhostButton(if (pending?.path != null) "📷 Retake" else "📷 Camera", Modifier.weight(1f)) { onCamera() }
                 GhostButton("🖼️ Gallery", Modifier.weight(1f)) { hasPhoto = true }
             }
-            if (hasPhoto) {
+            if (hasPhoto && pending?.path == null) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text("✅", fontSize = 13.sp)
-                    Text(
-                        "Photo added — reading location from EXIF",
-                        color = c.good,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Text("Photo added", color = c.good, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
             // ── Location ───────────────────────────────────────────────
+            val shownPoint = exifPoint ?: selectedBeach.center
             SectionLabel("Location")
             CarettaCard {
                 Row(
@@ -113,16 +132,28 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                 ) {
                     Text("📍", fontSize = 22.sp)
                     Column(Modifier.weight(1f)) {
-                        Text("36.2694, 32.3108", color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
+                        Text("${coord(shownPoint.lat)}, ${coord(shownPoint.lng)}", color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
                         Text(
-                            if (hasPhoto) "From photo · EXIF" else "GPS ±5 m",
+                            if (exifPoint != null) "From photo · EXIF" else "Pick the beach — or drop a pin on the map",
                             color = c.muted,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                         )
                     }
-                    if (hasPhoto) Pill("Confirmed ✓", c.good) else Pill("Unconfirmed", c.muted)
+                    if (exifPoint != null) Pill("Confirmed ✓", c.good) else Pill("Unconfirmed", c.muted)
                 }
+            }
+
+            // ── Beach (turtles nest on beaches → bind to a beach → community) ──
+            SectionLabel("Beach")
+            BeachPicker(state.beaches, selectedBeach, exifPoint) { selectedBeach = it }
+            if (nearestDist != null && nearestDist > 2000) {
+                Text(
+                    "🌊 Looks far from a known nesting beach — loggerheads nest on the shore. Pick the right beach.",
+                    color = c.muted,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                )
             }
 
             // ── Nest-only fields ───────────────────────────────────────
@@ -158,22 +189,59 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
             // ── Save ───────────────────────────────────────────────────
             Box(Modifier.size(4.dp))
             PrimaryButton(if (isNest) "Save nest 🐢" else "Save false crawl 🌀") {
-                val beach = state.beaches.first()
-                val point = pending?.let { p ->
-                    if (p.lat != null && p.lng != null) GeoPoint(p.lat, p.lng) else beach.center
-                } ?: beach.center
                 repo.addNest(
-                    point = point,
-                    beachId = beach.id,
+                    point = shownPoint,
+                    beachId = selectedBeach.id,
                     isNest = isNest,
                     exposure = exposure,
                     cageInstalled = cage,
                     clutchSizeEst = null,
                     hasPhoto = hasPhoto,
-                    locationSource = if (hasPhoto) LocationSource.PHOTO_EXIF else LocationSource.DEVICE_GPS,
+                    photoPath = pending?.path,
+                    locationSource = if (exifPoint != null) LocationSource.PHOTO_EXIF else LocationSource.MANUAL_MAP,
                     visibility = visibility,
                 )
                 onDone()
+            }
+        }
+    }
+}
+
+/** Coordinate trimmed to ~4 decimals (≈11 m) for display. */
+private fun coord(v: Double): String = ((v * 10000).toLong() / 10000.0).toString()
+
+/** Selectable list of the community's beaches; shows distance from the photo location if known. */
+@Composable
+private fun BeachPicker(beaches: List<Beach>, selected: Beach, from: GeoPoint?, onSelect: (Beach) -> Unit) {
+    val c = caretta
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        beaches.forEach { b ->
+            val isSel = b.id == selected.id
+            val dist = from?.let { distanceMeters(it, b.center) }
+            Row(
+                Modifier.fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(if (isSel) c.surface else c.sand)
+                    .border(if (isSel) 1.5.dp else 1.dp, if (isSel) c.sea else c.line, RoundedCornerShape(14.dp))
+                    .clickable { onSelect(b) }
+                    .padding(horizontal = 14.dp, vertical = 11.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(b.leaderAvatar, fontSize = 20.sp)
+                Column(Modifier.weight(1f)) {
+                    Text(b.name, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(
+                        b.city + (b.leaderName?.let { " · $it" } ?: ""),
+                        color = c.muted,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                if (dist != null) {
+                    Text(distanceLabel(dist), color = if (isSel) c.sea else c.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+                if (isSel) Text("✓", color = c.sea, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
             }
         }
     }

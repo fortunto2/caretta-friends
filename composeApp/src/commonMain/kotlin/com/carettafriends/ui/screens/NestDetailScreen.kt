@@ -44,6 +44,7 @@ import com.carettafriends.domain.UpdateKind
 import com.carettafriends.ui.components.CarettaCard
 import com.carettafriends.ui.components.CountdownRing
 import com.carettafriends.ui.components.GhostButton
+import com.carettafriends.ui.components.LocalPhoto
 import com.carettafriends.ui.components.Pill
 import com.carettafriends.ui.components.PrimaryButton
 import com.carettafriends.ui.components.SectionLabel
@@ -76,11 +77,16 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                 .clip(RoundedCornerShape(22.dp))
                 .background(Brush.linearGradient(listOf(c.sea, c.deep))),
         ) {
-            Text(
-                n.photos.firstOrNull()?.placeholder ?: "🥚",
-                fontSize = 56.sp,
-                modifier = Modifier.align(Alignment.Center),
-            )
+            val photoPath = n.photos.firstOrNull()?.localUri
+            if (photoPath != null) {
+                LocalPhoto(photoPath, Modifier.fillMaxSize())
+            } else {
+                Text(
+                    n.photos.firstOrNull()?.placeholder ?: "🥚",
+                    fontSize = 56.sp,
+                    modifier = Modifier.align(Alignment.Center),
+                )
+            }
             Pill(
                 if (watching) "🔔 Watching" else "🔔 Watch",
                 fg = if (watching) c.deep else Color.White,
