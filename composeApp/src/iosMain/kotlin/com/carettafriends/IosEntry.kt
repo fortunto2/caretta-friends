@@ -5,6 +5,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.window.ComposeUIViewController
 import com.carettafriends.data.CarettaRepository
+import com.carettafriends.data.PendingPhoto
 import com.carettafriends.ui.components.EmptyHint
 import com.carettafriends.ui.screens.AddNestScreen
 import com.carettafriends.ui.screens.BeachesScreen
@@ -24,6 +25,15 @@ import platform.UIKit.UIViewController
  */
 object SharedRepo {
     val repo = CarettaRepository()
+}
+
+/** Called from Swift after the native camera captures/picks a photo (with optional GPS). */
+fun setPendingPhoto(path: String, lat: Double, lng: Double, hasLocation: Boolean) {
+    SharedRepo.repo.pendingPhoto = PendingPhoto(
+        path = path,
+        lat = if (hasLocation) lat else null,
+        lng = if (hasLocation) lng else null,
+    )
 }
 
 private fun host(content: @Composable () -> Unit): UIViewController =

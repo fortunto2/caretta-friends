@@ -98,18 +98,60 @@ struct TabStack<Root: View>: View {
     }
 }
 
+/// Map tab: the "+" opens the native camera (full-screen). After capture, the photo + GPS are
+/// handed to the shared layer and the add-nest form is pushed.
+struct MapTab: View {
+    @State private var path = NavigationPath()
+    @State private var showCamera = false
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            ComposeHost {
+                IosEntryKt.MapVC(
+                    onOpenNest: { path.append(Route.nest($0)) },
+                    onAdd: { showCamera = true }
+                )
+            }
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(for: Route.self) { route in
+                if case .addNest = route {
+                    DetailScreen(fullBleed: false) {
+                        ComposeHost {
+                            IosEntryKt.AddNestVC(
+                                onDone: { if !path.isEmpty { path.removeLast() } },
+                                onCamera: { showCamera = true }
+                            )
+                        }
+                    }
+                } else {
+                    destinationView(route, path: $path)
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showCamera) {
+            CameraCaptureView(
+                author: "You",
+                onDone: { imagePath, lat, lng in
+                    showCamera = false
+                    IosEntryKt.setPendingPhoto(
+                        path: imagePath,
+                        lat: lat ?? 0,
+                        lng: lng ?? 0,
+                        hasLocation: lat != nil && lng != nil
+                    )
+                    if path.isEmpty { path.append(Route.addNest) }
+                },
+                onCancel: { showCamera = false }
+            )
+        }
+    }
+}
+
 struct ContentView: View {
     var body: some View {
         TabView {
-            TabStack { path in
-                ComposeHost {
-                    IosEntryKt.MapVC(
-                        onOpenNest: { path.wrappedValue.append(Route.nest($0)) },
-                        onAdd: { path.wrappedValue.append(Route.camera) }
-                    )
-                }
-            }
-            .tabItem { Label("Map", systemImage: "map.fill") }
+            MapTab()
+                .tabItem { Label("Map", systemImage: "map.fill") }
 
             TabStack { path in
                 ComposeHost {

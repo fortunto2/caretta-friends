@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.carettafriends.data.CarettaRepository
 import com.carettafriends.domain.AppState
+import com.carettafriends.domain.GeoPoint
 import com.carettafriends.domain.LocationSource
 import com.carettafriends.domain.MarkerType
 import com.carettafriends.domain.SunExposure
@@ -46,9 +47,11 @@ import com.carettafriends.ui.theme.caretta
 fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, onCamera: () -> Unit) {
     val c = caretta
 
+    // Photo captured by the native camera (iOS) lands here, prefilling the form.
+    val pending = remember { repo.takePendingPhoto() }
     var markerType by remember { mutableStateOf(MarkerType.NEST) }
     var isNest by remember { mutableStateOf(true) }
-    var hasPhoto by remember { mutableStateOf(false) }
+    var hasPhoto by remember { mutableStateOf(pending != null) }
     var exposure by remember { mutableStateOf(SunExposure.PARTIAL) }
     var cage by remember { mutableStateOf(false) }
     var visibility by remember { mutableStateOf(Visibility.PUBLIC) }
@@ -156,8 +159,11 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
             Box(Modifier.size(4.dp))
             PrimaryButton(if (isNest) "Save nest 🐢" else "Save false crawl 🌀") {
                 val beach = state.beaches.first()
+                val point = pending?.let { p ->
+                    if (p.lat != null && p.lng != null) GeoPoint(p.lat, p.lng) else beach.center
+                } ?: beach.center
                 repo.addNest(
-                    point = beach.center,
+                    point = point,
                     beachId = beach.id,
                     isNest = isNest,
                     exposure = exposure,

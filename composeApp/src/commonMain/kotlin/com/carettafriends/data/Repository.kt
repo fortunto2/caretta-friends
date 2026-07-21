@@ -35,6 +35,9 @@ import kotlinx.datetime.daysUntil
 import kotlinx.datetime.minus
 import kotlinx.datetime.todayIn
 
+/** A photo captured/picked by the native camera, waiting to be attached to a new nest. */
+data class PendingPhoto(val path: String, val lat: Double?, val lng: Double?)
+
 /** TSD prediction (qualitative V1 model, regional caveat — see design-spec / research). */
 fun predictTsd(exposure: SunExposure?): Triple<Int, Int, Int> = when (exposure) {
     SunExposure.FULL_SUN -> Triple(80, 95, 50)
@@ -59,6 +62,10 @@ class CarettaRepository {
 
     private var counter = 1000
     private fun nextId(prefix: String) = "$prefix-${counter++}"
+
+    /** Set by the native camera (iOS); consumed by the add-nest form to prefill photo + location. */
+    var pendingPhoto: PendingPhoto? = null
+    fun takePendingPhoto(): PendingPhoto? = pendingPhoto.also { pendingPhoto = null }
 
     fun addNest(
         point: GeoPoint,
