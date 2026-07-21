@@ -38,6 +38,8 @@ struct MapLibreView: UIViewRepresentable {
     var showsCallout: Bool = true
     /// Fires with the tapped point's id.
     var onSelect: (String) -> Void = { _ in }
+    /// Fires (latitude, longitude) when the user long-presses an empty part of the map (drop a nest pin).
+    var onLongPress: (Double, Double) -> Void = { _, _ in }
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -48,6 +50,12 @@ struct MapLibreView: UIViewRepresentable {
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         // Keep OSM attribution reachable (required by the tile usage policy).
         mapView.attributionButton.isHidden = false
+        // Long-press to drop a nest pin at that coordinate (intentional — won't fire on pan/tap).
+        let longPress = UILongPressGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handleLongPress(_:)),
+        )
+        mapView.addGestureRecognizer(longPress)
         context.coordinator.sync(points, on: mapView)
         return mapView
     }
@@ -100,6 +108,14 @@ struct MapLibreView: UIViewRepresentable {
             if !parent.showsCallout {
                 mapView.deselectAnnotation(annotation, animated: false)
             }
+        }
+
+        // Long-press on empty map → convert the screen point to a map coordinate → drop a nest pin.
+        @objc func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+            guard gesture.state == .began, let mapView = gesture.view as? MLNMapView else { return }
+            let screenPoint = gesture.location(in: mapView)
+            let coord = mapView.convert(screenPoint, toCoordinateFrom: mapView)
+            parent.onLongPress(coord.latitude, coord.longitude)
         }
     }
 }

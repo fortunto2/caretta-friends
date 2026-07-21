@@ -55,10 +55,14 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
 
     // Photo captured by the native camera (iOS) lands here, prefilling the form.
     val pending = remember { repo.takePendingPhoto() }
+    // A point dropped by long-pressing the native map (iOS) lands here.
+    val manualPoint = remember { repo.takePendingLocation() }
     // Real GPS/EXIF location if the photo carried one — drives nearest-beach + the map pin.
     val exifPoint = remember(pending) {
         pending?.let { if (it.lat != null && it.lng != null) GeoPoint(it.lat, it.lng) else null }
     }
+    // Best known coordinate for this nest: photo EXIF first, then a map-dropped pin.
+    val fixPoint = exifPoint ?: manualPoint
     var markerType by remember { mutableStateOf(MarkerType.NEST) }
     var isNest by remember { mutableStateOf(true) }
     var hasPhoto by remember { mutableStateOf(pending != null) }
@@ -68,9 +72,13 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
     // Turtles nest on beaches → bind every nest to a beach (→ community). Default = nearest to the
     // photo location; the volunteer can override. Falls back to the first beach when there's no fix.
     var selectedBeach by remember {
-        mutableStateOf(exifPoint?.let { nearestBeach(it, state.beaches)?.first } ?: state.beaches.first())
+        mutableStateOf(
+            fixPoint?.let { nearestBeach(it, state.beaches)?.first }
+                ?: state.beaches.firstOrNull { it.id == state.profile.homeBeachId }
+                ?: state.beaches.first(),
+        )
     }
-    val nearestDist = exifPoint?.let { distanceMeters(it, selectedBeach.center) }
+    val nearestDist = fixPoint?.let { distanceMeters(it, selectedBeach.center) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         TopBar("New marker", onBack = onDone)
@@ -123,7 +131,7 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
             }
 
             // ── Location ───────────────────────────────────────────────
-            val shownPoint = exifPoint ?: selectedBeach.center
+            val shownPoint = fixPoint ?: selectedBeach.center
             SectionLabel("Location")
             CarettaCard {
                 Row(
@@ -134,13 +142,17 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                     Column(Modifier.weight(1f)) {
                         Text("${coord(shownPoint.lat)}, ${coord(shownPoint.lng)}", color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
                         Text(
-                            if (exifPoint != null) "From photo · EXIF" else "Pick the beach — or drop a pin on the map",
+                            when {
+                                exifPoint != null -> "From photo · EXIF"
+                                manualPoint != null -> "From map pin 📍"
+                                else -> "Long-press the map to drop a pin"
+                            },
                             color = c.muted,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                         )
                     }
-                    if (exifPoint != null) Pill("Confirmed ✓", c.good) else Pill("Unconfirmed", c.muted)
+                    if (fixPoint != null) Pill("Confirmed ✓", c.good) else Pill("Unconfirmed", c.muted)
                 }
             }
 

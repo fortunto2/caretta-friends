@@ -151,6 +151,8 @@ data class Profile(
     val streakDays: Int = 0,
     val kmWalked: Double = 0.0,
     val patrols: Int = 0,
+    /** Optional "home" beach. null = free volunteer (the majority) — patrol wherever's closest. */
+    val homeBeachId: String? = null,
 )
 
 /** Whole app state (single source of truth for the in-memory repository). */

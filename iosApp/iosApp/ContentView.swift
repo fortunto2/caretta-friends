@@ -133,7 +133,12 @@ struct MapTab: View {
                     center: MapLibreView.gazipasa,
                     zoomLevel: 12,
                     showsCallout: false,
-                    onSelect: { id in path.append(Route.nest(id)) }
+                    onSelect: { id in path.append(Route.nest(id)) },
+                    onLongPress: { lat, lng in
+                        // Long-press the map → drop a nest pin there → open the add-nest form.
+                        IosEntryKt.setPendingLocation(lat: lat, lng: lng)
+                        if path.isEmpty { path.append(Route.addNest) }
+                    }
                 )
                 .ignoresSafeArea()
 

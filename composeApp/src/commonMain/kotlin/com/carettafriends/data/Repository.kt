@@ -150,8 +150,17 @@ class CarettaRepository {
     var pendingPhoto: PendingPhoto? = null
     fun takePendingPhoto(): PendingPhoto? = pendingPhoto.also { pendingPhoto = null }
 
+    /** Set by a long-press on the native map (iOS); consumed by the add-nest form as the pin location. */
+    var pendingLocation: GeoPoint? = null
+    fun takePendingLocation(): GeoPoint? = pendingLocation.also { pendingLocation = null }
+
     fun setLanguage(lang: String) {
         _state.value = _state.value.copy(profile = _state.value.profile.copy(language = lang))
+    }
+
+    /** Set (or clear with null) the volunteer's optional home beach. */
+    fun setHomeBeach(beachId: String?) {
+        _state.value = _state.value.copy(profile = _state.value.profile.copy(homeBeachId = beachId))
     }
 
     fun addNest(

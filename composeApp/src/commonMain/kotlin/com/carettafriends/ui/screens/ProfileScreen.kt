@@ -3,6 +3,7 @@ package com.carettafriends.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,12 +30,13 @@ import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Badge
 import com.carettafriends.ui.components.CarettaCard
 import com.carettafriends.ui.components.Pill
+import com.carettafriends.data.CarettaRepository
 import com.carettafriends.ui.components.SectionLabel
 import com.carettafriends.ui.components.TopBar
 import com.carettafriends.ui.theme.caretta
 
 @Composable
-fun ProfileScreen(state: AppState, onOpenCommunity: () -> Unit) {
+fun ProfileScreen(repo: CarettaRepository, state: AppState, onOpenCommunity: () -> Unit) {
     val c = caretta
     val p = state.profile
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -74,6 +76,21 @@ fun ProfileScreen(state: AppState, onOpenCommunity: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                 state.badges.forEach { b -> BadgeCell(b, Modifier.weight(1f)) }
             }
+
+            // my beach — optional home beach (most volunteers are free)
+            SectionLabel("My beach")
+            Text(
+                "Free volunteers patrol wherever's closest. Pick a home beach only if you have one.",
+                color = c.muted,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+            )
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                HomeBeachChip("🌊 Free", p.homeBeachId == null) { repo.setHomeBeach(null) }
+                state.beaches.forEach { b ->
+                    HomeBeachChip("${b.leaderAvatar} ${b.name}", p.homeBeachId == b.id) { repo.setHomeBeach(b.id) }
+                }
+            }
             // leaderboard (de-emphasised)
             SectionLabel("Beach board · optional")
             CarettaCard(padding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp)) {
@@ -94,6 +111,26 @@ fun ProfileScreen(state: AppState, onOpenCommunity: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun HomeBeachChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    val c = caretta
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (selected) c.sea else c.surface)
+            .border(1.dp, if (selected) c.sea else c.line, RoundedCornerShape(20.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 9.dp),
+    ) {
+        Text(
+            label,
+            color = if (selected) Color.White else c.deep,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.ExtraBold,
+        )
     }
 }
 

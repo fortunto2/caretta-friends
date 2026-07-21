@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.window.ComposeUIViewController
 import com.carettafriends.data.CarettaRepository
 import com.carettafriends.data.PendingPhoto
+import com.carettafriends.domain.GeoPoint
 import com.carettafriends.ui.components.EmptyHint
 import com.carettafriends.ui.screens.AddNestScreen
 import com.carettafriends.ui.screens.BeachesScreen
@@ -45,6 +46,11 @@ fun setPendingPhoto(path: String, lat: Double, lng: Double, hasLocation: Boolean
     )
 }
 
+/** Called from Swift on a long-press on the native map — drops a nest pin at that coordinate. */
+fun setPendingLocation(lat: Double, lng: Double) {
+    SharedRepo.repo.pendingLocation = GeoPoint(lat, lng)
+}
+
 private fun host(content: @Composable () -> Unit): UIViewController =
     ComposeUIViewController { CarettaTheme { content() } }
 
@@ -65,7 +71,7 @@ fun LearnVC(): UIViewController = host {
 
 fun ProfileVC(onOpenCommunity: () -> Unit): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
-    ProfileScreen(state, onOpenCommunity)
+    ProfileScreen(SharedRepo.repo, state, onOpenCommunity)
 }
 
 fun AddNestVC(onDone: () -> Unit, onCamera: () -> Unit): UIViewController = host {
