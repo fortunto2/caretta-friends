@@ -6,6 +6,13 @@ import okio.Path.Companion.toPath
 /** Platform app-writable directory (Android filesDir / iOS Documents). */
 expect fun appDirPath(): String
 
+/**
+ * Client-generated stable UUID for every user-created row.
+ * A stable PK created offline never needs a server round-trip — the #1 prerequisite for
+ * FK-safe offline sync and collision-free upserts (replaces the old resets-to-1000 counter).
+ */
+expect fun newUuid(): String
+
 /** Simple offline-first key→text store on disk (used to persist the app state as JSON). */
 object LocalStore {
     private val fs: FileSystem = FileSystem.SYSTEM

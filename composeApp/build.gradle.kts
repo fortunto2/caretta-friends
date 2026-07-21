@@ -43,7 +43,10 @@ kotlin {
             implementation(compose.components.resources)
             implementation(libs.markdown.renderer.m3)
             implementation(libs.okio)
-            implementation(libs.supabase.postgrest)
+            // Cloud sync via raw PostgREST over ktor (backend-agnostic: swap base URL for Cloudflare later).
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
         }
     }
 }
@@ -83,12 +86,9 @@ compose.resources {
     packageOfResClass = "com.carettafriends.resources"
 }
 
-// supabase-kt pulls androidx.browser:1.9.0 (Custom Tabs for OAuth) which needs AGP 8.9.1+.
-// We don't use the browser flow yet — pin to 1.8.0 to stay on AGP 8.7.3.
+// A transitive dep may pull kotlinx-datetime 0.7 (Clock moved to kotlin.time, breaks our 0.6 code).
 configurations.all {
     resolutionStrategy {
-        force("androidx.browser:browser:1.8.0")
-        // A transitive dep pulls kotlinx-datetime 0.7 (Clock moved to kotlin.time, breaks our 0.6 code).
         force("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
     }
 }

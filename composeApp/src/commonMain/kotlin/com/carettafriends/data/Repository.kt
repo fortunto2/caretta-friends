@@ -88,27 +88,59 @@ class CarettaRepository {
     }
 
     private suspend fun syncOnStart() {
-        // Upload local changes first (so nothing made offline is lost), then pull the merged truth.
+        // Push local changes first (nothing made offline is lost), then pull & merge the truth.
         val local = _state.value
-        local.nests.forEach { runCatching { cloud.pushNest(it) } }
+        val cid = local.community.id
+        // Parents FIRST so child FKs are always satisfiable server-side (FK-safe offline sync).
+        runCatching { cloud.pushCommunity(local.community) }
+        local.beaches.forEach { runCatching { cloud.pushBeach(it) } }
+        // Then the aggregate roots.
+        local.nests.forEach { runCatching { cloud.pushNest(it, cid) } }
         local.markers.forEach { runCatching { cloud.pushMarker(it) } }
         local.patrols.forEach { runCatching { cloud.pushPatrol(it) } }
+        // Pull merged truth. New beaches propagate; nests merge by LWW (scalars) + timeline union.
         runCatching {
-            val remoteNests = cloud.pullNests().associateBy { it.id }
-            val remoteMarkers = cloud.pullMarkers().associateBy { it.id }
-            if (remoteNests.isNotEmpty() || remoteMarkers.isNotEmpty()) {
-                val s = _state.value
-                val nests = (s.nests.associateBy { it.id } + remoteNests).values.toList()
-                val markers = (s.markers.associateBy { it.id } + remoteMarkers).values.toList()
-                _state.value = s.copy(nests = nests, markers = markers)
-            }
+            val remoteBeaches = cloud.pullBeaches()
+            val remoteNests = cloud.pullNests()
+            val remoteMarkers = cloud.pullMarkers()
+            val s = _state.value
+            _state.value = s.copy(
+                beaches = mergeById(s.beaches, remoteBeaches) { it.id },
+                nests = mergeNests(s.nests, remoteNests),
+                markers = mergeById(s.markers, remoteMarkers) { it.id },
+            )
         }
     }
 
-    private fun syncNest(nest: Nest) { scope.launch { runCatching { cloud.pushNest(nest) } } }
+    /** Union by id; remote wins on conflict — safe for append-only entities (beaches, markers). */
+    private fun <T> mergeById(local: List<T>, remote: List<T>, id: (T) -> String): List<T> =
+        (local.associateBy(id) + remote.associateBy(id)).values.toList()
 
-    private var counter = 1000
-    private fun nextId(prefix: String) = "$prefix-${counter++}"
+    /** Nest merge: scalars last-write-wins by updatedAtMillis, timeline UNIONed by update id.
+     *  This is the fix for the old "remote clobbers local" bug — two volunteers adding observations
+     *  offline to the same nest no longer lose each other's entries. */
+    private fun mergeNests(local: List<Nest>, remote: List<Nest>): List<Nest> {
+        val byId = local.associateBy { it.id }.toMutableMap()
+        for (r in remote) byId[r.id] = byId[r.id]?.let { mergeNest(it, r) } ?: r
+        return byId.values.toList()
+    }
+
+    private fun mergeNest(local: Nest, remote: Nest): Nest {
+        val updates = (local.updates + remote.updates).distinctBy { it.id }.sortedBy { it.createdEpochMillis }
+        val base = if (remote.updatedAtMillis >= local.updatedAtMillis) remote else local
+        return base.copy(updates = updates)
+    }
+
+    private fun syncNest(nest: Nest) {
+        val cid = _state.value.community.id
+        scope.launch { runCatching { cloud.pushNest(nest, cid) } }
+    }
+
+    private fun nowMillis(): Long = Clock.System.now().toEpochMilliseconds()
+
+    // Client-generated UUIDs: stable offline PKs, collision-free upserts, FK-safe sync.
+    // (Replaces the old in-memory counter that reset to 1000 every launch → PK collisions → data loss.)
+    private fun nextId(prefix: String) = newUuid()
 
     /** Set by the native camera (iOS); consumed by the add-nest form to prefill photo + location. */
     var pendingPhoto: PendingPhoto? = null
@@ -159,6 +191,7 @@ class CarettaRepository {
                 NestUpdate(nextId("u"), UpdateKind.FOUND, body = if (isNest) "Nest found" else "False crawl logged", dateLabel = "Today"),
             ),
             temps = listOf(TemperatureReading("Today", "weather_api", 31.0)),
+            updatedAtMillis = nowMillis(),
         )
         _state.value = s.copy(nests = s.nests + nest)
         syncNest(nest)
@@ -216,7 +249,8 @@ class CarettaRepository {
 
     private fun update(nestId: String, transform: (Nest) -> Nest) {
         val s = _state.value
-        _state.value = s.copy(nests = s.nests.map { if (it.id == nestId) transform(it) else it })
+        // Stamp the client change-clock on every mutation so LWW merge keeps the newest edit.
+        _state.value = s.copy(nests = s.nests.map { if (it.id == nestId) transform(it).copy(updatedAtMillis = nowMillis()) else it })
         _state.value.nest(nestId)?.let { syncNest(it) }
     }
 }

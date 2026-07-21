@@ -8,3 +8,5 @@ object AndroidApp {
 }
 
 actual fun appDirPath(): String = AndroidApp.context.filesDir.absolutePath
+
+actual fun newUuid(): String = java.util.UUID.randomUUID().toString()

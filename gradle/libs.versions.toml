@@ -11,9 +11,10 @@ sqldelight = "2.0.2"
 maplibre = "11.5.2"
 playServicesLocation = "21.3.0"
 coil = "3.0.4"
-markdownRenderer = "0.39.2"
+# 0.38.1 is the newest build on Kotlin 2.2.x (2.2.21). 0.39.0+ jump to Kotlin 2.3 → iOS klib
+# ABI 2.3.0, unusable under our Kotlin 2.2.20 (consumes ABI ≤ 2.2.0).
+markdownRenderer = "0.38.1"
 okio = "3.9.1"
-supabase = "3.3.0"
 ktor = "3.0.0"
 
 [libraries]
@@ -31,7 +32,9 @@ play-services-location = { module = "com.google.android.gms:play-services-locati
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
-supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt", version.ref = "supabase" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 

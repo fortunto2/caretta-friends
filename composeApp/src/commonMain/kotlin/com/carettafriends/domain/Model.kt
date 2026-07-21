@@ -125,6 +125,8 @@ data class Nest(
     val excavation: Excavation? = null,
     val temps: List<TemperatureReading> = emptyList(),
     val foundBy: String = "you",
+    /** Client-side change clock for last-write-wins merge (scalars LWW, timeline union). Server has its own updated_at. */
+    val updatedAtMillis: Long = 0L,
 )
 
 @Serializable
