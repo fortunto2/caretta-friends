@@ -188,8 +188,25 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                 ) { repo.addUpdate(n.id, UpdateKind.COMMENT, "Looks good today") }
             }
 
-            // Excavation payoff.
-            PrimaryButton("⛏️ Excavation", onClick = onExcavate)
+            // Excavation payoff — delicate work, gated to experienced volunteers & beach leaders.
+            if (state.profile.canExcavate) {
+                PrimaryButton("⛏️ Excavation", onClick = onExcavate)
+            } else {
+                CarettaCard {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("🔒", fontSize = 20.sp)
+                        Column(Modifier.weight(1f)) {
+                            Text("Excavation", color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                            Text(
+                                "Done by experienced volunteers & beach leaders — ask your beach leader.",
+                                color = c.muted,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

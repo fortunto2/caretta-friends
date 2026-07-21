@@ -10,6 +10,7 @@ import com.carettafriends.domain.GeoPoint
 import com.carettafriends.domain.GuideArticle
 import com.carettafriends.domain.LocationSource
 import com.carettafriends.domain.MarkerType
+import com.carettafriends.domain.MemberRole
 import com.carettafriends.domain.Nest
 import com.carettafriends.domain.NestConfidence
 import com.carettafriends.domain.NestStatus
@@ -149,10 +150,6 @@ class CarettaRepository {
     /** Set by the native camera (iOS); consumed by the add-nest form to prefill photo + location. */
     var pendingPhoto: PendingPhoto? = null
     fun takePendingPhoto(): PendingPhoto? = pendingPhoto.also { pendingPhoto = null }
-
-    /** Set by a long-press on the native map (iOS); consumed by the add-nest form as the pin location. */
-    var pendingLocation: GeoPoint? = null
-    fun takePendingLocation(): GeoPoint? = pendingLocation.also { pendingLocation = null }
 
     fun setLanguage(lang: String) {
         _state.value = _state.value.copy(profile = _state.value.profile.copy(language = lang))
@@ -354,6 +351,7 @@ private fun seedState(): AppState {
         profile = Profile(
             displayName = "Ayşe K.", avatar = "🐢", role = "Guardian · Bıdı Bıdı & Selinus",
             hatchlingsReached = 312, streakDays = 12, kmWalked = 48.0, patrols = 24,
+            memberRole = MemberRole.BEACH_LEADER, // demo identity is a leader → can excavate
         ),
     )
 }

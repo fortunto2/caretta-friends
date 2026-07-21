@@ -91,14 +91,6 @@ fun ProfileScreen(repo: CarettaRepository, state: AppState, onOpenCommunity: () 
                     HomeBeachChip("${b.leaderAvatar} ${b.name}", p.homeBeachId == b.id) { repo.setHomeBeach(b.id) }
                 }
             }
-            // leaderboard (de-emphasised)
-            SectionLabel("Beach board · optional")
-            CarettaCard(padding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp)) {
-                Column {
-                    LeaderRow("1", "🦊", "Mert", "28", top = true)
-                    LeaderRow("2", "🐢", "${p.displayName} (you)", "24", top = false)
-                }
-            }
             // community
             Box(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(c.surface)
@@ -163,17 +155,3 @@ private fun BadgeCell(b: Badge, modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
-private fun LeaderRow(rank: String, avatar: String, name: String, score: String, top: Boolean) {
-    val c = caretta
-    Row(
-        Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(9.dp),
-    ) {
-        Text(rank, color = if (top) c.sunlit else c.muted, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
-        Text(avatar, fontSize = 16.sp)
-        Text(name, color = c.ink, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-        Text(score, color = c.sea, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
-    }
-}

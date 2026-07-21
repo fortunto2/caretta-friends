@@ -153,7 +153,14 @@ data class Profile(
     val patrols: Int = 0,
     /** Optional "home" beach. null = free volunteer (the majority) — patrol wherever's closest. */
     val homeBeachId: String? = null,
-)
+    val memberRole: MemberRole = MemberRole.VOLUNTEER,
+    /** An experienced volunteer trusted to excavate (set by a beach leader / admin). */
+    val experienced: Boolean = false,
+) {
+    /** Excavating a nest is delicate → only experienced volunteers, beach leaders and admins. */
+    val canExcavate: Boolean
+        get() = experienced || memberRole == MemberRole.BEACH_LEADER || memberRole == MemberRole.ADMIN
+}
 
 /** Whole app state (single source of truth for the in-memory repository). */
 @Serializable

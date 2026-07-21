@@ -55,14 +55,11 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
 
     // Photo captured by the native camera (iOS) lands here, prefilling the form.
     val pending = remember { repo.takePendingPhoto() }
-    // A point dropped by long-pressing the native map (iOS) lands here.
-    val manualPoint = remember { repo.takePendingLocation() }
-    // Real GPS/EXIF location if the photo carried one — drives nearest-beach + the map pin.
-    val exifPoint = remember(pending) {
+    // Nest location comes ONLY from the photo's GPS (EXIF) — nests are created by photographing
+    // them on-site, never dropped by hand (avoids spam / bogus pins).
+    val fixPoint = remember(pending) {
         pending?.let { if (it.lat != null && it.lng != null) GeoPoint(it.lat, it.lng) else null }
     }
-    // Best known coordinate for this nest: photo EXIF first, then a map-dropped pin.
-    val fixPoint = exifPoint ?: manualPoint
     var markerType by remember { mutableStateOf(MarkerType.NEST) }
     var isNest by remember { mutableStateOf(true) }
     var hasPhoto by remember { mutableStateOf(pending != null) }
@@ -142,11 +139,7 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                     Column(Modifier.weight(1f)) {
                         Text("${coord(shownPoint.lat)}, ${coord(shownPoint.lng)}", color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
                         Text(
-                            when {
-                                exifPoint != null -> "From photo · EXIF"
-                                manualPoint != null -> "From map pin 📍"
-                                else -> "Long-press the map to drop a pin"
-                            },
+                            if (fixPoint != null) "From photo · EXIF" else "No GPS in photo — set to the beach",
                             color = c.muted,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -158,7 +151,7 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
 
             // ── Beach (turtles nest on beaches → bind to a beach → community) ──
             SectionLabel("Beach")
-            BeachPicker(state.beaches, selectedBeach, exifPoint) { selectedBeach = it }
+            BeachPicker(state.beaches, selectedBeach, fixPoint) { selectedBeach = it }
             if (nearestDist != null && nearestDist > 2000) {
                 Text(
                     "🌊 Looks far from a known nesting beach — loggerheads nest on the shore. Pick the right beach.",
@@ -178,13 +171,6 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                         SegOption("🌴 Shade", exposure == SunExposure.SHADE) { exposure = SunExposure.SHADE },
                     ),
                 )
-                Text(
-                    "🌤️ 31°C · no rain — auto",
-                    color = c.muted,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-
                 SectionLabel("Protection")
                 ToggleRow("🛡️", "Cage installed", cage) { cage = !cage }
             }
@@ -210,7 +196,7 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                     clutchSizeEst = null,
                     hasPhoto = hasPhoto,
                     photoPath = pending?.path,
-                    locationSource = if (exifPoint != null) LocationSource.PHOTO_EXIF else LocationSource.MANUAL_MAP,
+                    locationSource = if (fixPoint != null) LocationSource.PHOTO_EXIF else LocationSource.NONE,
                     visibility = visibility,
                 )
                 onDone()
