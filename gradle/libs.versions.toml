@@ -13,6 +13,8 @@ playServicesLocation = "21.3.0"
 coil = "3.0.4"
 markdownRenderer = "0.39.2"
 okio = "3.9.1"
+supabase = "3.3.0"
+ktor = "3.0.0"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
@@ -29,6 +31,9 @@ play-services-location = { module = "com.google.android.gms:play-services-locati
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt", version.ref = "supabase" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

@@ -28,3 +28,7 @@ outputs/
 
 # SPM cloned packages
 iosApp/spm/
+
+# Secrets
+.env
+supabase/.temp/

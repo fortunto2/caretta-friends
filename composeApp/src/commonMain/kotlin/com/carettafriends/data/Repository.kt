@@ -76,13 +76,36 @@ private fun persist(json: Json, s: AppState) {
 class CarettaRepository {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val cloud: CloudBackend = SupabaseCloud()
     private val _state = MutableStateFlow(loadOrSeed(json))
     val state: StateFlow<AppState> = _state.asStateFlow()
 
     init {
         // Offline-first: persist every change locally so data survives restarts and works offline.
         scope.launch { _state.drop(1).collect { persist(json, it) } }
+        // Best-effort cloud sync (no-op when offline).
+        scope.launch { syncOnStart() }
     }
+
+    private suspend fun syncOnStart() {
+        // Upload local changes first (so nothing made offline is lost), then pull the merged truth.
+        val local = _state.value
+        local.nests.forEach { runCatching { cloud.pushNest(it) } }
+        local.markers.forEach { runCatching { cloud.pushMarker(it) } }
+        local.patrols.forEach { runCatching { cloud.pushPatrol(it) } }
+        runCatching {
+            val remoteNests = cloud.pullNests().associateBy { it.id }
+            val remoteMarkers = cloud.pullMarkers().associateBy { it.id }
+            if (remoteNests.isNotEmpty() || remoteMarkers.isNotEmpty()) {
+                val s = _state.value
+                val nests = (s.nests.associateBy { it.id } + remoteNests).values.toList()
+                val markers = (s.markers.associateBy { it.id } + remoteMarkers).values.toList()
+                _state.value = s.copy(nests = nests, markers = markers)
+            }
+        }
+    }
+
+    private fun syncNest(nest: Nest) { scope.launch { runCatching { cloud.pushNest(nest) } } }
 
     private var counter = 1000
     private fun nextId(prefix: String) = "$prefix-${counter++}"
@@ -138,12 +161,15 @@ class CarettaRepository {
             temps = listOf(TemperatureReading("Today", "weather_api", 31.0)),
         )
         _state.value = s.copy(nests = s.nests + nest)
+        syncNest(nest)
         return id
     }
 
     fun addSimpleMarker(type: MarkerType, point: GeoPoint, note: String) {
         val s = _state.value
-        _state.value = s.copy(markers = s.markers + SimpleMarker(nextId("m"), type, point, note))
+        val marker = SimpleMarker(nextId("m"), type, point, note)
+        _state.value = s.copy(markers = s.markers + marker)
+        scope.launch { runCatching { cloud.pushMarker(marker) } }
     }
 
     fun addUpdate(nestId: String, kind: UpdateKind, body: String, condition: ObsCondition? = null) {
@@ -188,9 +214,10 @@ class CarettaRepository {
         )
     }
 
-    private inline fun update(nestId: String, transform: (Nest) -> Nest) {
+    private fun update(nestId: String, transform: (Nest) -> Nest) {
         val s = _state.value
         _state.value = s.copy(nests = s.nests.map { if (it.id == nestId) transform(it) else it })
+        _state.value.nest(nestId)?.let { syncNest(it) }
     }
 }
 
