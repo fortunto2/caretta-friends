@@ -1,10 +1,15 @@
 # Yuvaları nasıl koruruz
 
-Yuvayı bulmak işin yalnızca yarısı. Yumurtaları korumak için gönüllüler:
+Yuvayı bulmak işin yalnızca yarısı — yumurtaların da korunması gerekir. Bir yuvayı korumanın **iki yolu** vardır ve **ikisi de "korundu" sayılır**:
 
-- çevreye **kazık ve kamış** diker,
-- **şerit** çeker,
-- turistler için **uyarı levhası** koyar,
-- ve üstüne avcılara ve insanlara karşı koruyucu **ızgara ya da kafes** yerleştirir.
+## 🌾 Kamış çit — günlük yöntem
+- Yuvanın etrafına kare şeklinde **ahşap kazıklar** çakın,
+- aralarına **kamış çit** ve **uyarı şeridi** gerin,
+- insanların ve araçların girmemesi için bir **uyarı levhası** ekleyin.
 
-Yuva **ancak kafes takıldıktan sonra korunmuş sayılır**. Öncesinde bu yalnızca yumurta bırakıldığının işaretidir. Neyin kurulduğunu uygulamada işaretle.
+Hafif, ucuz, eldeki malzemeden ve hızlı kurulur — yuva çok, kafes az olduğu için çoğu yuvada bunu kullanırız.
+
+## 🛡️ Metal kafes — güçlü yöntem
+Yuvanın üzerine konan metal kafes aynı işi yapar, **ayrıca** tilki ve köpeklerin yumurtaları kazmasını önler. Kafesler **taşıması ağır ve sayıca az**, bu yüzden yırtıcı riski olan yerlere saklanır. (Daha çok kafes almak gelecekteki bir hedeftir.)
+
+Uygulamada tam olarak ne kurduğunuzu işaretleyin — **Kamış** ya da **Kafes**. İkisi de yuvayı güvende tutar.

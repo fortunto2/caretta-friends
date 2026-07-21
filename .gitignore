@@ -32,3 +32,6 @@ iosApp/spm/
 # Secrets
 .env
 supabase/.temp/
+
+# iOS device-build derivedData
+iosApp/build-dev/

@@ -10,6 +10,7 @@ import com.carettafriends.domain.GeoPoint
 import com.carettafriends.domain.GuideArticle
 import com.carettafriends.domain.LocationSource
 import com.carettafriends.domain.MarkerType
+import com.carettafriends.domain.Member
 import com.carettafriends.domain.MemberRole
 import com.carettafriends.domain.Nest
 import com.carettafriends.domain.NestConfidence
@@ -20,6 +21,7 @@ import com.carettafriends.domain.Patrol
 import com.carettafriends.domain.PhotoRef
 import com.carettafriends.domain.PhotoSource
 import com.carettafriends.domain.Profile
+import com.carettafriends.domain.ProtectionLevel
 import com.carettafriends.domain.SimpleMarker
 import com.carettafriends.domain.SunExposure
 import com.carettafriends.domain.TemperatureReading
@@ -78,6 +80,7 @@ class CarettaRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val auth: AuthBackend = SupabaseAuth()
     private val cloud: CloudBackend = SupabaseCloud(auth)
+    private val beachDiscovery = BeachDiscovery()
     private val _state = MutableStateFlow(loadOrSeed(json))
     val state: StateFlow<AppState> = _state.asStateFlow()
 
@@ -91,10 +94,17 @@ class CarettaRepository {
     private suspend fun syncOnStart() {
         // Anonymous sign-in on first run → stable owner_id + RLS-scoped, attributable writes.
         auth.ensureSession()
+        val cid = _state.value.community.id
+        val owner = auth.currentUserId()
+        // Auto-discover nearby beaches from OpenStreetMap (best-effort) so they appear automatically
+        // for any coastal city — no hand-entered lists. Merge into local state; cached offline.
+        val center = _state.value.beaches.firstOrNull()?.center ?: GeoPoint(36.27, 32.30)
+        val discovered = runCatching { beachDiscovery.nearby(center.lat, center.lng, 15_000, cid) }.getOrDefault(emptyList())
+        if (discovered.isNotEmpty()) {
+            _state.value = _state.value.copy(beaches = mergeById(_state.value.beaches, discovered) { it.id })
+        }
         // Push local changes first (nothing made offline is lost), then pull & merge the truth.
         val local = _state.value
-        val cid = local.community.id
-        val owner = auth.currentUserId()
         // Parents FIRST so child FKs are always satisfiable server-side (FK-safe offline sync).
         runCatching { cloud.pushCommunity(local.community) }
         local.beaches.forEach { runCatching { cloud.pushBeach(it) } }
@@ -165,7 +175,7 @@ class CarettaRepository {
         beachId: String,
         isNest: Boolean,
         exposure: SunExposure?,
-        cageInstalled: Boolean,
+        protection: ProtectionLevel,
         clutchSizeEst: Int?,
         hasPhoto: Boolean,
         locationSource: LocationSource,
@@ -188,7 +198,7 @@ class CarettaRepository {
             visibility = visibility,
             foundDate = today(),
             clutchSizeEst = clutchSizeEst,
-            cageInstalled = cageInstalled,
+            protection = protection,
             exposure = exposure,
             locationSource = locationSource,
             incubationDaysEst = if (isNest) inc else 0,
@@ -290,15 +300,16 @@ private fun seedState(): AppState {
         name = "Gazipaşa Caretta",
         tagline = "Protecting loggerheads & sand lilies",
         websiteUrl = "https://carettafriends.com",
-        whatsappUrl = "https://chat.whatsapp.com/gazipasa-caretta",
-        instagramUrl = "https://instagram.com/gazipasa_caretta_ve_kumzambagi",
+        whatsappUrl = "https://wa.me/905013794326",
+        instagramUrl = "https://www.instagram.com/gazipasa_caretta_ve_kumzambagi",
     )
-    val bidibidi = Beach("bidibidi", community.id, "Bıdı Bıdı", "Gazipaşa", GeoPoint(36.2691, 32.3108))
-    val selinus = Beach("selinus", community.id, "Selinus", "Gazipaşa", GeoPoint(36.2760, 32.2980))
+    // Only Bıdı Bıdı is seeded (real OSM coordinate) — every other beach is auto-discovered from
+    // OpenStreetMap at runtime (see BeachDiscovery), so no per-city hand-entered lists.
+    val bidibidi = Beach("bidibidi", community.id, "Bıdı Bıdı", "Gazipaşa", GeoPoint(36.2529, 32.2869))
 
     return AppState(
         community = community,
-        beaches = listOf(bidibidi, selinus),
+        beaches = listOf(bidibidi),
         nests = emptyList(),
         markers = emptyList(),
         patrols = emptyList(),
@@ -308,10 +319,10 @@ private fun seedState(): AppState {
             Fact("f3", "🔦", "Artificial light disorients hatchlings — keep beaches dark in nesting season."),
         ),
         guide = listOf(
-            GuideArticle("g1", "🥚", "Found a nest? Do this", "https://carettafriends.com/found-a-nest"),
-            GuideArticle("g2", "🔦", "No flash, no lights at night", "https://carettafriends.com/lights"),
-            GuideArticle("g3", "🚸", "Someone disturbing a nest?", "https://carettafriends.com/disturbance"),
-            GuideArticle("g4", "🐣", "Helping stuck hatchlings out", "https://carettafriends.com/hatchlings"),
+            GuideArticle("g1", "🥚", "Found a nest? Do this", "https://carettafriends.com/en/what-you-can-do/found-nest"),
+            GuideArticle("g2", "🔦", "No flash, no lights at night", "https://carettafriends.com/en/what-you-can-do/found-nest"),
+            GuideArticle("g3", "🚸", "Found a turtle / disturbance?", "https://carettafriends.com/en/what-you-can-do/found-turtle"),
+            GuideArticle("g4", "🐣", "Helping stuck hatchlings out", "https://carettafriends.com/en/what-you-can-do/found-nest"),
         ),
         badges = listOf(
             Badge("first_nest", "🥚", "First nest", false),
@@ -322,6 +333,10 @@ private fun seedState(): AppState {
         profile = Profile(
             displayName = "Volunteer", avatar = "🐢", role = "Guardian",
             memberRole = MemberRole.BEACH_LEADER, // current user is the organiser → can excavate
+        ),
+        members = listOf(
+            Member("saban", "Şaban", MemberRole.ADMIN, "🧔", note = "Gazipaşa lead"),
+            Member("alina", "Alina", MemberRole.VOLUNTEER, "🌸", note = "Helps Şaban · often at Bıdı Bıdı"),
         ),
     )
 }

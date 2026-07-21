@@ -16,6 +16,10 @@ enum class SunExposure { FULL_SUN, PARTIAL, SHADE }
 enum class PhotoSource { CAMERA, GALLERY }
 enum class MemberRole { ADMIN, BEACH_LEADER, VOLUNTEER }
 
+/** How a nest is physically protected. Reed-fence OR cage is a CHOICE — both count as "protected".
+ *  NONE = just found · MARKED = stakes + reed/cane fence + warning tape + sign · CAGED = metal cage. */
+enum class ProtectionLevel { NONE, MARKED, CAGED }
+
 @Serializable
 data class GeoPoint(val lat: Double, val lng: Double)
 
@@ -111,7 +115,7 @@ data class Nest(
     val visibility: Visibility = Visibility.PUBLIC,
     val foundDate: LocalDate,
     val clutchSizeEst: Int? = null,
-    val cageInstalled: Boolean = false,
+    val protection: ProtectionLevel = ProtectionLevel.NONE,
     val exposure: SunExposure? = null,
     val locationSource: LocationSource = LocationSource.DEVICE_GPS,
     val incubationDaysEst: Int = 55,
@@ -152,6 +156,17 @@ data class Patrol(
     val published: Boolean = false,
 )
 
+/** A community member (volunteer / beach leader / admin) shown on the Community screen. */
+@Serializable
+data class Member(
+    val id: String,
+    val name: String,
+    val role: MemberRole,
+    val avatar: String = "🐢",
+    val homeBeach: String? = null,
+    val note: String = "",
+)
+
 @Serializable
 data class Profile(
     val displayName: String = "You",
@@ -185,6 +200,7 @@ data class AppState(
     val guide: List<GuideArticle>,
     val badges: List<Badge>,
     val profile: Profile,
+    val members: List<Member> = emptyList(),
 ) {
     fun beach(id: String): Beach? = beaches.firstOrNull { it.id == id }
     fun nest(id: String): Nest? = nests.firstOrNull { it.id == id }

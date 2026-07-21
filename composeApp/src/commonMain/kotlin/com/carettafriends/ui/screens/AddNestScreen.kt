@@ -35,6 +35,7 @@ import com.carettafriends.domain.Beach
 import com.carettafriends.domain.GeoPoint
 import com.carettafriends.domain.LocationSource
 import com.carettafriends.domain.MarkerType
+import com.carettafriends.domain.ProtectionLevel
 import com.carettafriends.domain.SunExposure
 import com.carettafriends.domain.Visibility
 import com.carettafriends.domain.distanceLabel
@@ -64,7 +65,7 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
     var isNest by remember { mutableStateOf(true) }
     var hasPhoto by remember { mutableStateOf(pending != null) }
     var exposure by remember { mutableStateOf(SunExposure.PARTIAL) }
-    var cage by remember { mutableStateOf(false) }
+    var protection by remember { mutableStateOf(ProtectionLevel.NONE) }
     var visibility by remember { mutableStateOf(Visibility.PUBLIC) }
     // Turtles nest on beaches → bind every nest to a beach (→ community). Default = nearest to the
     // photo location; the volunteer can override. Falls back to the first beach when there's no fix.
@@ -172,7 +173,19 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                     ),
                 )
                 SectionLabel("Protection")
-                ToggleRow("🛡️", "Cage installed", cage) { cage = !cage }
+                Segmented(
+                    listOf(
+                        SegOption("None", protection == ProtectionLevel.NONE) { protection = ProtectionLevel.NONE },
+                        SegOption("🌾 Reed", protection == ProtectionLevel.MARKED) { protection = ProtectionLevel.MARKED },
+                        SegOption("🛡️ Cage", protection == ProtectionLevel.CAGED) { protection = ProtectionLevel.CAGED },
+                    ),
+                )
+                Text(
+                    "Reed = stakes + reed fence + tape + sign. Cage = metal cage (stronger, but scarce & heavy).",
+                    color = c.muted,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                )
             }
 
             // ── Visibility ─────────────────────────────────────────────
@@ -192,7 +205,7 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                     beachId = selectedBeach.id,
                     isNest = isNest,
                     exposure = exposure,
-                    cageInstalled = cage,
+                    protection = protection,
                     clutchSizeEst = null,
                     hasPhoto = hasPhoto,
                     photoPath = pending?.path,
