@@ -36,13 +36,15 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
+            implementation(compose.components.resources)
+            implementation(libs.markdown.renderer.m3)
         }
     }
 }
 
 android {
     namespace = "com.carettafriends"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.carettafriends"
@@ -68,4 +70,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+}
+
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "com.carettafriends.resources"
 }

@@ -1,5 +1,6 @@
 package com.carettafriends.ui.screens
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,10 +14,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,19 +33,31 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.carettafriends.content.GuideContent
+import com.carettafriends.content.GuideMeta
+import com.carettafriends.content.L10n
+import com.carettafriends.data.CarettaRepository
+import com.mikepenz.markdown.m3.Markdown
 import com.carettafriends.domain.AppState
-import com.carettafriends.domain.GuideArticle
 import com.carettafriends.ui.components.CarettaCard
 import com.carettafriends.ui.components.SectionLabel
 import com.carettafriends.ui.components.TopBar
 import com.carettafriends.ui.theme.caretta
 
+private val lblDidYouKnow = L10n("А ТЫ ЗНАЛ?", "BİLİYOR MUYDUN?", "DID YOU KNOW?")
+private val lblTapAnother = L10n("нажми для следующего →", "başkası için dokun →", "tap for another →")
+private val lblGuide = L10n("Гайд · что делать", "Rehber · ne yapmalı", "Guide · what to do")
+private val lblVisit = L10n("Открыть carettafriends.com", "carettafriends.com'u aç", "Visit carettafriends.com")
+private val lblVisitSub = L10n("Новости, гайды и как помочь", "Haberler, rehberler ve nasıl yardım edilir", "News, guides & how to help")
+
 @Composable
-fun LearnScreen(state: AppState) {
+fun LearnScreen(state: AppState, repo: CarettaRepository) {
     val c = caretta
+    val lang = state.profile.language
     val uriHandler = LocalUriHandler.current
     var factIndex by remember { mutableStateOf(0) }
-    val facts = state.facts
+    var expanded by remember { mutableStateOf<String?>(null) }
+    val facts = GuideContent.facts
     val fact = if (facts.isNotEmpty()) facts[factIndex % facts.size] else null
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -51,69 +66,87 @@ fun LearnScreen(state: AppState) {
             Modifier.padding(horizontal = 15.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            // hero "Did you know?" — tap to cycle
-            if (fact != null) {
-                Box(
-                    Modifier.fillMaxWidth().heightIn(min = 150.dp).clip(RoundedCornerShape(22.dp))
-                        .background(Brush.linearGradient(listOf(c.sunlit, c.coral)))
-                        .clickable { if (facts.size > 1) factIndex = (factIndex + 1) % facts.size },
-                ) {
-                    Text(
-                        fact.emoji, fontSize = 96.sp, color = Color.White.copy(alpha = 0.22f),
-                        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 6.dp, bottom = 2.dp),
-                    )
-                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("DID YOU KNOW?", color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.2.sp)
-                        Text(fact.title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 26.sp)
-                        if (facts.size > 1) Text("tap for another →", color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            // language switcher
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                GuideContent.languages.forEach { (code, label) ->
+                    val on = code == lang
+                    Box(
+                        Modifier.clip(CircleShape).background(if (on) c.sea else c.surface)
+                            .border(1.dp, c.line, CircleShape)
+                            .clickable { repo.setLanguage(code) }
+                            .padding(horizontal = 15.dp, vertical = 7.dp),
+                    ) {
+                        Text(label, color = if (on) Color.White else c.muted, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                     }
                 }
             }
 
-            // guide — tappable rows opening the source URL (no per-row site chip)
-            SectionLabel("Guide · what to do")
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                state.guide.forEach { article ->
-                    GuideRow(article) { uriHandler.openUri(article.sourceUrl) }
+            // fact hero — tap to cycle
+            if (fact != null) {
+                Box(
+                    Modifier.fillMaxWidth().heightIn(min = 140.dp).clip(RoundedCornerShape(22.dp))
+                        .background(Brush.linearGradient(listOf(c.sunlit, c.coral)))
+                        .clickable { if (facts.size > 1) factIndex = (factIndex + 1) % facts.size },
+                ) {
+                    Text("🌡️", fontSize = 96.sp, color = Color.White.copy(alpha = 0.22f), modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp))
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(lblDidYouKnow.get(lang), color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.2.sp)
+                        Text(fact.get(lang), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 24.sp)
+                        if (facts.size > 1) Text(lblTapAnother.get(lang), color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
-            // ONE link to the site (not repeated per row)
+            // guide — expandable baked-in articles
+            SectionLabel(lblGuide.get(lang))
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                GuideContent.articles.forEach { doc ->
+                    ArticleCard(doc, lang, expanded == doc.id) { expanded = if (expanded == doc.id) null else doc.id }
+                }
+            }
+
+            // one link to the site
             Box(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp))
                     .background(Brush.linearGradient(listOf(c.sea, c.deep)))
-                    .clickable { uriHandler.openUri(state.community.websiteUrl) }
+                    .clickable { uriHandler.openUri(GuideContent.siteUrl) }
                     .padding(14.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("🌐", fontSize = 20.sp)
                     Column(Modifier.weight(1f)) {
-                        Text("Visit carettafriends.com", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
-                        Text("News, guides & how to help", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
+                        Text(lblVisit.get(lang), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
+                        Text(lblVisitSub.get(lang), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
                     }
                     Text("→", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                 }
             }
-
-            // AI-TODO: multilingual (RU/TR/EN) content + auto-fetch latest posts from carettafriends.com (Ktor)
         }
     }
 }
 
 @Composable
-private fun GuideRow(article: GuideArticle, onClick: () -> Unit) {
+private fun ArticleCard(meta: GuideMeta, lang: String, expanded: Boolean, onToggle: () -> Unit) {
     val c = caretta
-    CarettaCard(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).clickable { onClick() }) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(
-                Modifier.size(42.dp).clip(RoundedCornerShape(13.dp)).background(c.sand),
-                contentAlignment = Alignment.Center,
-            ) { Text(article.emoji, fontSize = 22.sp) }
-            Text(
-                article.title, color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold,
-                lineHeight = 19.sp, modifier = Modifier.weight(1f),
-            )
-            Text("›", color = c.muted, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+    CarettaCard(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).clickable { onToggle() }.animateContentSize()) {
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.size(42.dp).clip(RoundedCornerShape(13.dp)).background(c.sand), contentAlignment = Alignment.Center) {
+                    Text(meta.emoji, fontSize = 22.sp)
+                }
+                Text(meta.title.get(lang), color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 19.sp, modifier = Modifier.weight(1f))
+                Text(if (expanded) "▾" else "›", color = c.muted, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+            }
+            if (expanded) {
+                var body by remember(meta.id, lang) { mutableStateOf<String?>(null) }
+                LaunchedEffect(meta.id, lang) { body = GuideContent.loadArticle(meta.id, lang) }
+                val text = body
+                if (text == null) {
+                    Text("…", color = c.muted, fontSize = 13.sp, modifier = Modifier.padding(top = 10.dp))
+                } else {
+                    Markdown(content = text, modifier = Modifier.padding(top = 8.dp))
+                }
+            }
         }
     }
 }

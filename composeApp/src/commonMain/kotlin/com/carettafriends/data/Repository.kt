@@ -67,6 +67,10 @@ class CarettaRepository {
     var pendingPhoto: PendingPhoto? = null
     fun takePendingPhoto(): PendingPhoto? = pendingPhoto.also { pendingPhoto = null }
 
+    fun setLanguage(lang: String) {
+        _state.value = _state.value.copy(profile = _state.value.profile.copy(language = lang))
+    }
+
     fun addNest(
         point: GeoPoint,
         beachId: String,

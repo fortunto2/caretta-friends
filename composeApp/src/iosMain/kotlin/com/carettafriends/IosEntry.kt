@@ -60,7 +60,7 @@ fun BeachesVC(onOpenNest: (String) -> Unit): UIViewController = host {
 
 fun LearnVC(): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
-    LearnScreen(state)
+    LearnScreen(state, SharedRepo.repo)
 }
 
 fun ProfileVC(onOpenCommunity: () -> Unit): UIViewController = host {

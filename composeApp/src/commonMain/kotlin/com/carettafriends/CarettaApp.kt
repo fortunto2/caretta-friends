@@ -68,7 +68,7 @@ fun CarettaApp() {
                     when (current) {
                         is Screen.Map -> MapScreen(state, { nav.go(Screen.AddNest) }, { nav.go(Screen.NestDetail(it)) })
                         is Screen.Beaches -> BeachesScreen(state) { nav.go(Screen.NestDetail(it)) }
-                        is Screen.Learn -> LearnScreen(state)
+                        is Screen.Learn -> LearnScreen(state, repo)
                         is Screen.Profile -> ProfileScreen(state) { nav.go(Screen.Community) }
                         is Screen.AddNest -> AddNestScreen(repo, state, { nav.back() }, { nav.go(Screen.Camera) })
                         is Screen.Camera -> CameraScreen({ nav.back() }, { nav.back() })

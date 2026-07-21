@@ -144,7 +144,7 @@ data class Profile(
     val displayName: String = "You",
     val avatar: String = "🐢",
     val role: String = "Volunteer",
-    val language: String = "ru",
+    val language: String = "en",
     val hatchlingsReached: Int = 0,
     val streakDays: Int = 0,
     val kmWalked: Double = 0.0,
