@@ -67,7 +67,10 @@ private func destinationView(_ route: Route, path: Binding<NavigationPath>) -> s
             ComposeHost {
                 IosEntryKt.CameraVC(
                     onBack: { path.wrappedValue.removeLast() },
-                    onCaptured: { path.wrappedValue.removeLast() }
+                    onCaptured: {
+                        path.wrappedValue.removeLast()
+                        path.wrappedValue.append(Route.addNest)
+                    }
                 )
             }
         }
@@ -102,7 +105,7 @@ struct ContentView: View {
                 ComposeHost {
                     IosEntryKt.MapVC(
                         onOpenNest: { path.wrappedValue.append(Route.nest($0)) },
-                        onAdd: { path.wrappedValue.append(Route.addNest) }
+                        onAdd: { path.wrappedValue.append(Route.camera) }
                     )
                 }
             }
