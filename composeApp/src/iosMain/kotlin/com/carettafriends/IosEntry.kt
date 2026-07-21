@@ -6,6 +6,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.window.ComposeUIViewController
 import com.carettafriends.data.CarettaRepository
 import com.carettafriends.data.PendingPhoto
+import com.carettafriends.domain.GeoPoint
+import com.carettafriends.domain.nearestBeach
 import com.carettafriends.ui.components.EmptyHint
 import com.carettafriends.ui.screens.AddNestScreen
 import com.carettafriends.ui.screens.BeachesScreen
@@ -35,6 +37,24 @@ fun mapPoints(): List<IosMapPoint> {
     val s = SharedRepo.repo.state.value
     return s.nests.map { IosMapPoint(it.id, it.point.lat, it.point.lng, it.code, it.status.name) }
 }
+
+/** Save a recorded patrol from the Swift GPS recorder. trackCsv = "lat,lng;lat,lng;…". Returns the id.
+ *  On-device only until [publishPatrol] — the walk is never shared live. */
+fun savePatrol(meters: Int, seconds: Int, trackCsv: String): String {
+    val track = trackCsv.split(";").mapNotNull { seg ->
+        val parts = seg.split(",")
+        val lat = parts.getOrNull(0)?.toDoubleOrNull()
+        val lng = parts.getOrNull(1)?.toDoubleOrNull()
+        if (lat != null && lng != null) GeoPoint(lat, lng) else null
+    }
+    val beaches = SharedRepo.repo.state.value.beaches
+    val beachId = track.firstOrNull()?.let { nearestBeach(it, beaches)?.first?.id }
+        ?: beaches.firstOrNull()?.id ?: ""
+    return SharedRepo.repo.addPatrol(beachId, meters, track, seconds)
+}
+
+/** Publish a recorded patrol (Swift). Only then does it sync to the cloud. */
+fun publishPatrol(id: String) = SharedRepo.repo.publishPatrol(id)
 
 /** Called from Swift after the native camera captures/picks a photo (with optional GPS). */
 fun setPendingPhoto(path: String, lat: Double, lng: Double, hasLocation: Boolean) {

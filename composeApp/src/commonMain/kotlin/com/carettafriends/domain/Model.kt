@@ -139,7 +139,18 @@ data class GuideArticle(val id: String, val emoji: String, val title: String, va
 data class Badge(val code: String, val emoji: String, val name: String, val earned: Boolean)
 
 @Serializable
-data class Patrol(val id: String, val beachId: String, val distanceMeters: Int, val startedLabel: String, val by: String)
+data class Patrol(
+    val id: String,
+    val beachId: String,
+    val distanceMeters: Int,
+    val startedLabel: String,
+    val by: String,
+    /** Recorded GPS breadcrumb track (Strava-style). Empty until we record real walks. */
+    val track: List<GeoPoint> = emptyList(),
+    val durationSec: Int = 0,
+    /** Local until the volunteer chooses to publish. NEVER live-shared (safety: no live position). */
+    val published: Boolean = false,
+)
 
 @Serializable
 data class Profile(

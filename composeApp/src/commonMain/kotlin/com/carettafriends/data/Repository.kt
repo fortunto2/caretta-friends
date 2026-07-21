@@ -37,11 +37,9 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.datetime.Clock
-import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
-import kotlinx.datetime.minus
 import kotlinx.datetime.todayIn
 
 /** A photo captured/picked by the native camera, waiting to be attached to a new nest. */
@@ -65,7 +63,8 @@ fun nestDay(nest: Nest, today: LocalDate = today()): Int =
  * In-memory, offline-first repository. Single source of truth via StateFlow.
  * V1 storage is in memory + seed; SQLDelight / Supabase sync slot in behind this API (V2).
  */
-private const val STATE_FILE = "caretta_state.json"
+// Bumped to v2 to drop the old demo-seeded local state (pre-launch, no real data yet) → clean start.
+private const val STATE_FILE = "caretta_state_v2.json"
 
 private fun loadOrSeed(json: Json): AppState =
     LocalStore.readText(STATE_FILE)?.let { runCatching { json.decodeFromString<AppState>(it) }.getOrNull() } ?: seedState()
@@ -102,7 +101,8 @@ class CarettaRepository {
         // Then the aggregate roots (owned by this volunteer).
         local.nests.forEach { runCatching { cloud.pushNest(it, cid, owner) } }
         local.markers.forEach { runCatching { cloud.pushMarker(it, owner) } }
-        local.patrols.forEach { runCatching { cloud.pushPatrol(it, owner) } }
+        // Only PUBLISHED patrols sync — unpublished walks stay on-device (no live-location sharing).
+        local.patrols.filter { it.published }.forEach { runCatching { cloud.pushPatrol(it, owner) } }
         // Pull merged truth. New beaches propagate; nests merge by LWW (scalars) + timeline union.
         runCatching {
             val remoteBeaches = cloud.pullBeaches()
@@ -246,9 +246,11 @@ class CarettaRepository {
         }
     }
 
-    fun addPatrol(beachId: String, meters: Int) {
+    /** Save a recorded patrol (GPS track). Stays ON-DEVICE ONLY until [publishPatrol] — no live sharing. */
+    fun addPatrol(beachId: String, meters: Int, track: List<GeoPoint>, durationSec: Int): String {
         val s = _state.value
-        val p = Patrol(nextId("p"), beachId, meters, "Today", s.profile.displayName)
+        val id = nextId("p")
+        val p = Patrol(id, beachId, meters, "Today", s.profile.displayName, track = track, durationSec = durationSec)
         _state.value = s.copy(
             patrols = s.patrols + p,
             profile = s.profile.copy(
@@ -256,7 +258,20 @@ class CarettaRepository {
                 kmWalked = s.profile.kmWalked + meters / 1000.0,
             ),
         )
+        return id
     }
+
+    /** Publish a recorded patrol → only now may it sync to the cloud (safety: routes aren't shared live). */
+    fun publishPatrol(id: String) {
+        val s = _state.value
+        val p = s.patrols.firstOrNull { it.id == id }?.copy(published = true) ?: return
+        _state.value = s.copy(patrols = s.patrols.map { if (it.id == id) p else it })
+        val owner = auth.currentUserId()
+        scope.launch { auth.ensureSession(); runCatching { cloud.pushPatrol(p, owner) } }
+    }
+
+    /** Most-recent patrol (for the map status pill), or null if none recorded yet. */
+    fun lastPatrol(): Patrol? = _state.value.patrols.lastOrNull()
 
     private fun update(nestId: String, transform: (Nest) -> Nest) {
         val s = _state.value
@@ -266,10 +281,10 @@ class CarettaRepository {
     }
 }
 
+// Clean first-run state: real reference data (community + beaches + facts + guide) but NO demo
+// activity — nests/markers/patrols start empty and are filled by real volunteers. Profile is a
+// fresh organiser. (Beach coordinates are approximate placeholders — refine with on-site GPS.)
 private fun seedState(): AppState {
-    val t = today()
-    fun ago(days: Int) = t.minus(DatePeriod(days = days))
-
     val community = Community(
         id = "gazipasa-caretta",
         name = "Gazipaşa Caretta",
@@ -278,59 +293,15 @@ private fun seedState(): AppState {
         whatsappUrl = "https://chat.whatsapp.com/gazipasa-caretta",
         instagramUrl = "https://instagram.com/gazipasa_caretta_ve_kumzambagi",
     )
-    val bidibidi = Beach("bidibidi", community.id, "Bıdı Bıdı", "Gazipaşa", GeoPoint(36.2691, 32.3108), "Mert", "🦊")
-    val selinus = Beach("selinus", community.id, "Selinus", "Gazipaşa", GeoPoint(36.2760, 32.2980), "Lena", "🐬")
-
-    val nest24 = Nest(
-        id = "nest-24", code = "GZP-24", beachId = bidibidi.id, point = GeoPoint(36.2694, 32.3111),
-        confidence = NestConfidence.CONFIRMED, foundDate = ago(38), clutchSizeEst = 92, cageInstalled = true,
-        exposure = SunExposure.PARTIAL, locationSource = LocationSource.DEVICE_GPS, incubationDaysEst = 55,
-        status = NestStatus.INCUBATING, predictedFemaleLow = 70, predictedFemaleHigh = 85, airTempC = 31.0, rainMm7d = 0.0,
-        photos = listOf(PhotoRef("ph1", PhotoSource.CAMERA)),
-        updates = listOf(
-            NestUpdate("u1", UpdateKind.FOUND, body = "Found & caged · clutch ~92", author = "Ayşe", dateLabel = "May 30"),
-            NestUpdate("u2", UpdateKind.OBSERVATION, condition = ObsCondition.OK, body = "Patrol — all OK", dateLabel = "Jun 14"),
-            NestUpdate("u3", UpdateKind.OBSERVATION, condition = ObsCondition.PREDATED, body = "Fox tracks nearby · cage reinforced", author = "Mert", dateLabel = "Jul 02"),
-            NestUpdate("u4", UpdateKind.COMMENT, body = "Storm tonight — check the cage tomorrow AM", author = "Mert", dateLabel = "Jul 15"),
-        ),
-        temps = listOf(TemperatureReading("today", "weather_api", 31.0)),
-    )
-    val nest25 = Nest(
-        id = "nest-25", code = "GZP-25", beachId = bidibidi.id, point = GeoPoint(36.2688, 32.3101),
-        confidence = NestConfidence.CONFIRMED, foundDate = ago(51), clutchSizeEst = 78, cageInstalled = true,
-        exposure = SunExposure.FULL_SUN, incubationDaysEst = 55, status = NestStatus.HATCHING,
-        predictedFemaleLow = 80, predictedFemaleHigh = 95, airTempC = 32.0,
-        photos = listOf(PhotoRef("ph2", PhotoSource.CAMERA)),
-        updates = listOf(NestUpdate("u5", UpdateKind.FOUND, body = "Found & caged", author = "Lena", dateLabel = "May 17")),
-    )
-    val nest26 = Nest(
-        id = "nest-26", code = "GZP-26", beachId = selinus.id, point = GeoPoint(36.2762, 32.2984),
-        confidence = NestConfidence.UNCONFIRMED, foundDate = ago(3), locationSource = LocationSource.MANUAL_MAP,
-        exposure = SunExposure.SHADE, incubationDaysEst = 60, status = NestStatus.INCUBATING,
-        predictedFemaleLow = 45, predictedFemaleHigh = 70,
-        updates = listOf(NestUpdate("u6", UpdateKind.FOUND, body = "Reported — needs photo/pin", dateLabel = "Today")),
-    )
-    val nest20 = Nest(
-        id = "nest-20", code = "GZP-20", beachId = selinus.id, point = GeoPoint(36.2758, 32.2975),
-        confidence = NestConfidence.CONFIRMED, foundDate = ago(64), incubationDaysEst = 55, status = NestStatus.EXCAVATED,
-        predictedFemaleLow = 75, predictedFemaleHigh = 90,
-        excavation = Excavation(shells = 71, unhatched = 6, pipped = 2, inNest = 1, helpedOut = 3),
-        photos = listOf(PhotoRef("ph3", PhotoSource.CAMERA)),
-        updates = listOf(
-            NestUpdate("u7", UpdateKind.FOUND, body = "Found & caged", dateLabel = "May 4"),
-            NestUpdate("u8", UpdateKind.HATCHED, newStatus = NestStatus.HATCHED, body = "Hatched! 🐢", dateLabel = "Jun 30"),
-        ),
-    )
+    val bidibidi = Beach("bidibidi", community.id, "Bıdı Bıdı", "Gazipaşa", GeoPoint(36.2691, 32.3108))
+    val selinus = Beach("selinus", community.id, "Selinus", "Gazipaşa", GeoPoint(36.2760, 32.2980))
 
     return AppState(
         community = community,
         beaches = listOf(bidibidi, selinus),
-        nests = listOf(nest24, nest25, nest26, nest20),
-        markers = listOf(
-            SimpleMarker("m1", MarkerType.LANDMARK, GeoPoint(36.2680, 32.3120), "Big rock reference"),
-            SimpleMarker("m2", MarkerType.TRASH, GeoPoint(36.2700, 32.3095), "Net washed ashore"),
-        ),
-        patrols = listOf(Patrol("p1", bidibidi.id, 2300, "6:10 today", "Mert")),
+        nests = emptyList(),
+        markers = emptyList(),
+        patrols = emptyList(),
         facts = listOf(
             Fact("f1", "🌡️", "Warmer sand makes more females — above ~29°C a nest skews female."),
             Fact("f2", "🌙", "Hatchlings emerge mostly at night and find the sea by the bright horizon."),
@@ -343,15 +314,14 @@ private fun seedState(): AppState {
             GuideArticle("g4", "🐣", "Helping stuck hatchlings out", "https://carettafriends.com/hatchlings"),
         ),
         badges = listOf(
-            Badge("first_nest", "🥚", "First nest", true),
-            Badge("first_dig", "⛏️", "First excavation", true),
-            Badge("rescuer", "🐢", "Rescuer", true),
+            Badge("first_nest", "🥚", "First nest", false),
+            Badge("first_dig", "⛏️", "First excavation", false),
+            Badge("rescuer", "🐢", "Rescuer", false),
             Badge("season50", "👑", "Season 50", false),
         ),
         profile = Profile(
-            displayName = "Ayşe K.", avatar = "🐢", role = "Guardian · Bıdı Bıdı & Selinus",
-            hatchlingsReached = 312, streakDays = 12, kmWalked = 48.0, patrols = 24,
-            memberRole = MemberRole.BEACH_LEADER, // demo identity is a leader → can excavate
+            displayName = "Volunteer", avatar = "🐢", role = "Guardian",
+            memberRole = MemberRole.BEACH_LEADER, // current user is the organiser → can excavate
         ),
     )
 }

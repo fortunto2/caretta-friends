@@ -114,6 +114,9 @@ struct MapTab: View {
     @State private var showCamera = false
     @State private var points: [MapPoint] = []
     @State private var filter = "all"
+    @StateObject private var patrol = PatrolRecorder()
+    @State private var savedPatrolId: String? = nil
+    @State private var showPublish = false
 
     private func reload() {
         points = IosEntryKt.mapPoints().map { p in
@@ -133,7 +136,8 @@ struct MapTab: View {
                     center: MapLibreView.gazipasa,
                     zoomLevel: 12,
                     showsCallout: false,
-                    onSelect: { id in path.append(Route.nest(id)) }
+                    onSelect: { id in path.append(Route.nest(id)) },
+                    track: patrol.coords
                 )
                 .ignoresSafeArea()
 
@@ -148,11 +152,13 @@ struct MapTab: View {
                         }
                         .padding(.horizontal, 14)
                     }
-                    Text("✓ Patrolled 6:10 today · Mert · 2.3 km")
-                        .font(.caption.weight(.bold)).foregroundColor(.white)
-                        .padding(.horizontal, 12).padding(.vertical, 7)
-                        .background(Color.cfGood).clipShape(Capsule())
-                        .padding(.leading, 14)
+                    if patrol.isRecording {
+                        Text("● Recording · \(patrol.timeLabel) · \(patrol.kmLabel)")
+                            .font(.caption.weight(.bold)).foregroundColor(.white)
+                            .padding(.horizontal, 12).padding(.vertical, 7)
+                            .background(Color.cfCoral).clipShape(Capsule())
+                            .padding(.leading, 14)
+                    }
                 }
                 .padding(.top, 8)
 
@@ -160,10 +166,21 @@ struct MapTab: View {
                 VStack {
                     Spacer()
                     HStack(alignment: .bottom) {
-                        Text("● Start patrol")
-                            .font(.subheadline.weight(.bold)).foregroundColor(.white)
-                            .padding(.horizontal, 14).padding(.vertical, 10)
-                            .background(Color.cfGood).clipShape(Capsule())
+                        Button {
+                            if patrol.isRecording {
+                                let r = patrol.stop()
+                                savedPatrolId = IosEntryKt.savePatrol(meters: Int32(r.meters), seconds: Int32(r.seconds), trackCsv: r.trackCsv)
+                                reload()
+                                showPublish = true
+                            } else {
+                                patrol.start()
+                            }
+                        } label: {
+                            Text(patrol.isRecording ? "■ Stop patrol" : "● Start patrol")
+                                .font(.subheadline.weight(.bold)).foregroundColor(.white)
+                                .padding(.horizontal, 14).padding(.vertical, 10)
+                                .background(patrol.isRecording ? Color.cfCoral : Color.cfGood).clipShape(Capsule())
+                        }
                         Spacer()
                         Button { showCamera = true } label: {
                             Image(systemName: "plus")
@@ -210,6 +227,12 @@ struct MapTab: View {
                 },
                 onCancel: { showCamera = false }
             )
+        }
+        .alert("Publish this patrol?", isPresented: $showPublish) {
+            Button("Keep private", role: .cancel) {}
+            Button("Publish") { if let id = savedPatrolId { IosEntryKt.publishPatrol(id: id) } }
+        } message: {
+            Text("Your walk is saved on your phone. Publish to share the route with your community — your live location is never shared.")
         }
     }
 

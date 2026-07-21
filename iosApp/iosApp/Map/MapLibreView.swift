@@ -38,6 +38,8 @@ struct MapLibreView: UIViewRepresentable {
     var showsCallout: Bool = true
     /// Fires with the tapped point's id.
     var onSelect: (String) -> Void = { _ in }
+    /// Live patrol track (breadcrumb coordinates) drawn as a polyline.
+    var track: [CLLocationCoordinate2D] = []
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -55,6 +57,7 @@ struct MapLibreView: UIViewRepresentable {
     func updateUIView(_ mapView: MLNMapView, context: Context) {
         context.coordinator.parent = self          // keep closure/props fresh across SwiftUI updates
         context.coordinator.sync(points, on: mapView)
+        context.coordinator.syncTrack(track, on: mapView)
     }
 
     // MARK: Coordinator = MLNMapViewDelegate
@@ -62,8 +65,29 @@ struct MapLibreView: UIViewRepresentable {
     final class Coordinator: NSObject, MLNMapViewDelegate {
         var parent: MapLibreView
         private var currentIDs: Set<String> = []
+        private var polyline: MLNPolyline?
+        private var trackCount = -1
 
         init(_ parent: MapLibreView) { self.parent = parent }
+
+        /// Rebuild the patrol polyline only when the breadcrumb count changes (grows while recording).
+        func syncTrack(_ coords: [CLLocationCoordinate2D], on mapView: MLNMapView) {
+            guard coords.count != trackCount else { return }
+            trackCount = coords.count
+            if let old = polyline { mapView.removeAnnotation(old); polyline = nil }
+            guard coords.count >= 2 else { return }
+            var pts = coords
+            let line = MLNPolyline(coordinates: &pts, count: UInt(pts.count))
+            mapView.addAnnotation(line)
+            polyline = line
+        }
+
+        // Patrol track styling (coral, matches the FAB).
+        func mapView(_ mapView: MLNMapView, strokeColorForShapeAnnotation annotation: MLNShape) -> UIColor {
+            UIColor(red: 0.98, green: 0.45, blue: 0.36, alpha: 1.0)
+        }
+
+        func mapView(_ mapView: MLNMapView, lineWidthForPolylineAnnotation annotation: MLNPolyline) -> CGFloat { 4 }
 
         /// Rebuild annotations only when the id set changes (fine for small counts).
         func sync(_ points: [MapPoint], on mapView: MLNMapView) {
