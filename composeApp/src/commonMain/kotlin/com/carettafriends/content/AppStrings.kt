@@ -63,6 +63,13 @@ data class AppStrings(
     val newHere: String,
     val saveAccountBody: String,
     val welcomeBack: String,
+    // beach card metrics (word after a number) + labels
+    val nestsWord: String,
+    val activeWord: String,
+    val soonWord: String,
+    val hatchedWord: String,
+    val beachWord: String,
+    val protectedWord: String,
 )
 
 private val EN = AppStrings(
@@ -85,6 +92,8 @@ private val EN = AppStrings(
     haveAccount = "Already have an account? Sign in", newHere = "New here? Create an account",
     saveAccountBody = "Add an email + password so your work syncs and isn't lost if you change phone.",
     welcomeBack = "Welcome back — sign in to load your nests & impact.",
+    nestsWord = "nests", activeWord = "active", soonWord = "soon", hatchedWord = "hatched",
+    beachWord = "Beach", protectedWord = "protected",
 )
 
 private val RU = AppStrings(
@@ -107,6 +116,8 @@ private val RU = AppStrings(
     haveAccount = "Уже есть аккаунт? Войти", newHere = "Впервые? Создать аккаунт",
     saveAccountBody = "Добавь почту и пароль — данные синхронизируются и не потеряются при смене телефона.",
     welcomeBack = "С возвращением — войди, чтобы загрузить свои гнёзда и вклад.",
+    nestsWord = "гнёзд", activeWord = "активн.", soonWord = "скоро", hatchedWord = "вылупились",
+    beachWord = "Пляж", protectedWord = "под охраной",
 )
 
 private val TR = AppStrings(
@@ -129,6 +140,8 @@ private val TR = AppStrings(
     haveAccount = "Hesabın var mı? Giriş yap", newHere = "Yeni misin? Hesap oluştur",
     saveAccountBody = "E-posta + şifre ekle — verilerin senkronize olur, telefon değişince kaybolmaz.",
     welcomeBack = "Tekrar hoş geldin — yuvalarını ve katkını yüklemek için giriş yap.",
+    nestsWord = "yuva", activeWord = "aktif", soonWord = "yakında", hatchedWord = "çıktı",
+    beachWord = "Plaj", protectedWord = "korunan",
 )
 
 /** The string bundle for [lang] ("ru" / "tr" / anything else → EN). */

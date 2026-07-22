@@ -216,7 +216,7 @@ private fun CoveragePill(state: AppState) {
         val km = (patrol.distanceMeters / 100).toInt() / 10.0
         "✓ Patrolled ${patrol.startedLabel} · ${patrol.by} · $km km"
     } else {
-        "No patrol yet today"
+        com.carettafriends.content.appStrings(state.profile.language).noPatrolYet
     }
     Box(
         Modifier.padding(start = 14.dp)

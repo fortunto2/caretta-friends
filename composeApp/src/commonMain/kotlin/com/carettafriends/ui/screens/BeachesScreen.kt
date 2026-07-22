@@ -82,6 +82,7 @@ fun BeachesScreen(state: AppState, onOpenNest: (String) -> Unit, onOpenBeach: (S
                     ordered.forEach { beach ->
                         val nests = state.nests.filter { it.beachId == beach.id }
                         BeachListCard(
+                            s = s,
                             beach = beach,
                             total = nests.size,
                             active = nests.count { it.status == NestStatus.INCUBATING || it.status == NestStatus.HATCHING },
@@ -170,6 +171,7 @@ private fun ScopeRow(label: String, selected: Boolean, onClick: () -> Unit) {
 /** One compact beach card in the list — metrics only; tap to open the beach (its nests live inside). */
 @Composable
 private fun BeachListCard(
+    s: com.carettafriends.content.AppStrings,
     beach: Beach,
     total: Int,
     active: Int,
@@ -195,8 +197,8 @@ private fun BeachListCard(
                     Text(beach.name, color = c.deep, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
                     Text(
                         buildString {
-                            append(if (distanceAway != null) "$distanceAway away" else beach.city.ifBlank { "Beach" })
-                            if (beach.protected) append(" · 🛡️ protected")
+                            append(if (distanceAway != null) "$distanceAway away" else beach.city.ifBlank { s.beachWord })
+                            if (beach.protected) append(" · 🛡️ ${s.protectedWord}")
                         },
                         color = if (beach.protected) accent else c.muted,
                         fontSize = 12.sp,
@@ -208,10 +210,10 @@ private fun BeachListCard(
             }
             // metrics only — the nests themselves are inside the beach.
             Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                Pill("🥚 $total nests", c.deep)
-                if (active > 0) Pill("● $active active", c.sea)
-                if (hatchingSoon > 0) Pill("🐣 $hatchingSoon soon", c.warn)
-                if (hatched > 0) Pill("🐢 $hatched hatched", c.good)
+                Pill("🥚 $total ${s.nestsWord}", c.deep)
+                if (active > 0) Pill("● $active ${s.activeWord}", c.sea)
+                if (hatchingSoon > 0) Pill("🐣 $hatchingSoon ${s.soonWord}", c.warn)
+                if (hatched > 0) Pill("🐢 $hatched ${s.hatchedWord}", c.good)
             }
         }
     }
