@@ -67,7 +67,12 @@ fun CarettaApp() {
             Column(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     when (current) {
-                        is Screen.Map -> MapScreen(state, { nav.go(Screen.AddNest) }, { nav.go(Screen.NestDetail(it)) })
+                        is Screen.Map -> MapScreen(
+                            state,
+                            onAddMarker = { nav.go(Screen.AddNest) },
+                            onOpenNest = { nav.go(Screen.NestDetail(it)) },
+                            onOpenBeach = { nav.go(Screen.BeachDetail(it)) },
+                        )
                         is Screen.Beaches -> BeachesScreen(
                             state,
                             onOpenNest = { nav.go(Screen.NestDetail(it)) },

@@ -35,6 +35,7 @@ import com.carettafriends.domain.MarkerType
 import com.carettafriends.domain.Nest
 import com.carettafriends.domain.NestStatus
 import com.carettafriends.domain.SimpleMarker
+import com.carettafriends.domain.TURKEY_PROTECTED_BEACHES
 import com.carettafriends.ui.map.MapMarker
 import com.carettafriends.ui.map.OsmMap
 import com.carettafriends.ui.theme.caretta
@@ -44,21 +45,34 @@ import com.carettafriends.ui.theme.caretta
  * Nests are coral dots, beaches are teal labelled dots; tapping a nest opens its detail.
  */
 @Composable
-fun MapScreen(state: AppState, onAddMarker: () -> Unit, onOpenNest: (String) -> Unit) {
+fun MapScreen(state: AppState, onAddMarker: () -> Unit, onOpenNest: (String) -> Unit, onOpenBeach: (String) -> Unit = {}) {
     val c = caretta
     var filter by remember { mutableStateOf("all") }
+    var tappedBeach by remember { mutableStateOf<String?>(null) }
 
     val markers = buildList {
         state.nests.filter { showNest(filter, it) }
             .forEach { add(MapMarker(it.id, it.point.lat, it.point.lng, isBeach = false)) }
         state.markers.filter { showMarker(filter, it) }
             .forEach { add(MapMarker(it.id, it.point.lat, it.point.lng, isBeach = false)) }
-        // Beaches are always shown (reference) — highlighted by their OSM sand polygon.
-        state.beaches.forEach { add(MapMarker(it.id, it.center.lat, it.center.lng, isBeach = true, label = it.name, polygon = it.polygon)) }
+        // Baked-in: Türkiye's 21 official protected nesting beaches — green dots, always shown (zoom out
+        // for the whole Turkey overview).
+        TURKEY_PROTECTED_BEACHES.forEach {
+            add(MapMarker("pa:${it.name}", it.lat, it.lng, isBeach = true, label = it.name, protected = true))
+        }
+        // Auto-discovered community beaches (cached on demand): sand polygon + dot, green if protected.
+        state.beaches.forEach {
+            add(MapMarker(it.id, it.center.lat, it.center.lng, isBeach = true, label = it.name, polygon = it.polygon, protected = it.protected))
+        }
     }
 
     Box(Modifier.fillMaxSize()) {
-        OsmMap(Modifier.fillMaxSize(), markers) { id -> onOpenNest(id) }
+        OsmMap(
+            Modifier.fillMaxSize(),
+            markers,
+            onClick = { id -> onOpenNest(id) },
+            onBeachTap = { id -> tappedBeach = id },
+        )
 
         // --- Top overlays: filter chips + coverage chip ---
         Column(Modifier.align(Alignment.TopStart).fillMaxWidth().padding(top = 12.dp)) {
@@ -92,6 +106,59 @@ fun MapScreen(state: AppState, onAddMarker: () -> Unit, onOpenNest: (String) -> 
         ) {
             Text("＋", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
         }
+
+        // --- Beach tooltip (shown when a beach is tapped) ---
+        tappedBeach?.let { id ->
+            val beach = state.beaches.firstOrNull { it.id == id }
+            val protectedFlag = beach?.protected ?: id.startsWith("pa:")
+            BeachTooltip(
+                name = beach?.name ?: id.removePrefix("pa:"),
+                protectedBeach = protectedFlag,
+                official = id.startsWith("pa:"),
+                canOpen = beach != null,
+                onOpen = { beach?.let { onOpenBeach(it.id) }; tappedBeach = null },
+                onDismiss = { tappedBeach = null },
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp, start = 14.dp, end = 14.dp),
+            )
+        }
+    }
+}
+
+private val protectedGreen = Color(0xFF2E9E5B)
+private val unprotectedAmber = Color(0xFFE0A82E)
+
+@Composable
+private fun BeachTooltip(
+    name: String,
+    protectedBeach: Boolean,
+    official: Boolean,
+    canOpen: Boolean,
+    onOpen: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val c = caretta
+    val accent = if (protectedBeach) protectedGreen else unprotectedAmber
+    Row(
+        modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.surface)
+            .border(1.5.dp, accent, RoundedCornerShape(16.dp))
+            .then(if (canOpen) Modifier.clickable { onOpen() } else Modifier)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(Modifier.size(12.dp).clip(CircleShape).background(accent))
+        Column(Modifier.weight(1f)) {
+            Text(name, color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
+            Text(
+                if (protectedBeach) "🛡️ Protected nesting beach" else "Beach",
+                color = accent,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        if (canOpen) Text("Open ›", color = c.sea, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+        Text("✕", color = c.muted, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.clickable { onDismiss() })
     }
 }
 

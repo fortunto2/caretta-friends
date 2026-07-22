@@ -23,6 +23,7 @@ import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.plugins.annotation.CircleManager
 import org.maplibre.android.plugins.annotation.CircleOptions
+import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.PropertyFactory
@@ -32,17 +33,22 @@ import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
 import org.maplibre.geojson.Polygon
 
-// Nests are GL circles (coral); beaches are highlighted by their OSM sand POLYGON (teal fill +
-// outline). Both are basic GL fills → they render on the emulator's software GL (SwiftShader),
-// where SymbolManager's SDF icon layer does not.
-private const val NEST_COLOR = "#E0533D"
-private const val BEACH_COLOR = "#178C9E"
+// Protected beaches = green, unprotected = amber, nests = coral. Circles + polygon fills are basic
+// GL fills → they render on the emulator's software GL (SwiftShader).
+private const val GREEN = "#2E9E5B"
+private const val AMBER = "#E0A82E"
+private const val NEST = "#E0533D"
 private const val BEACH_SRC = "cf-beaches-src"
 private const val BEACH_FILL = "cf-beaches-fill"
 private const val BEACH_LINE = "cf-beaches-line"
 
 @Composable
-actual fun OsmMap(modifier: Modifier, points: List<MapMarker>, onClick: (String) -> Unit) {
+actual fun OsmMap(
+    modifier: Modifier,
+    points: List<MapMarker>,
+    onClick: (String) -> Unit,
+    onBeachTap: (String) -> Unit,
+) {
     val ctx = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val mapView = remember {
@@ -74,25 +80,39 @@ actual fun OsmMap(modifier: Modifier, points: List<MapMarker>, onClick: (String)
         factory = {
             mapView.getMapAsync { map ->
                 map.setStyle(Style.Builder().fromJson(osmRasterStyle())) { style ->
-                    // Beach highlight: a GeoJSON source with a translucent fill + outline.
                     style.addSource(GeoJsonSource(BEACH_SRC))
+                    // Subtle fill so beaches read as "areas", not "selected"; colour by protection.
+                    val colorByProtected = Expression.switchCase(
+                        Expression.get("protected"), Expression.color(android.graphics.Color.parseColor(GREEN)),
+                        Expression.color(android.graphics.Color.parseColor(AMBER)),
+                    )
                     style.addLayer(
                         FillLayer(BEACH_FILL, BEACH_SRC).withProperties(
-                            PropertyFactory.fillColor(BEACH_COLOR),
-                            PropertyFactory.fillOpacity(0.28f),
+                            PropertyFactory.fillColor(colorByProtected),
+                            PropertyFactory.fillOpacity(0.18f),
                         ),
                     )
                     style.addLayer(
                         LineLayer(BEACH_LINE, BEACH_SRC).withProperties(
-                            PropertyFactory.lineColor(BEACH_COLOR),
+                            PropertyFactory.lineColor(colorByProtected),
                             PropertyFactory.lineWidth(2.5f),
                         ),
                     )
                     val cm = CircleManager(mapView, map, style)
                     cm.addClickListener { circle ->
-                        val data = circle.data?.asString
-                        if (data != null && data.startsWith("n:")) onClick(data.removePrefix("n:"))
+                        val data = circle.data?.asString ?: return@addClickListener false
+                        when {
+                            data.startsWith("n:") -> onClick(data.removePrefix("n:"))
+                            data.startsWith("b:") -> onBeachTap(data.removePrefix("b:"))
+                        }
                         true
+                    }
+                    // Tap a beach polygon (not a circle) → open its tooltip.
+                    map.addOnMapClickListener { latLng ->
+                        val pt = map.projection.toScreenLocation(latLng)
+                        val feats = map.queryRenderedFeatures(pt, BEACH_FILL)
+                        val id = feats.firstOrNull()?.getStringProperty("id")
+                        if (id != null) { onBeachTap(id); true } else false
                     }
                     circleManager = cm
                     mapStyle = style
@@ -107,7 +127,6 @@ actual fun OsmMap(modifier: Modifier, points: List<MapMarker>, onClick: (String)
     val cm = circleManager
     val style = mapStyle
     LaunchedEffect(cm, style, points) {
-        // Nests + any polygon-less beaches → circles; beaches with an outline → highlighted polygon.
         cm?.let { renderCircles(it, points.filter { m -> !m.isBeach || m.polygon.size < 3 }) }
         style?.let { updateBeachPolygons(it, points.filter { m -> m.isBeach && m.polygon.size >= 3 }) }
     }
@@ -116,11 +135,16 @@ actual fun OsmMap(modifier: Modifier, points: List<MapMarker>, onClick: (String)
 private fun renderCircles(cm: CircleManager, points: List<MapMarker>) {
     cm.deleteAll()
     points.forEach { m ->
+        val color = when {
+            !m.isBeach -> NEST
+            m.protected -> GREEN
+            else -> AMBER
+        }
         cm.create(
             CircleOptions()
                 .withLatLng(LatLng(m.lat, m.lng))
-                .withCircleRadius(if (m.isBeach) 7f else 8f)
-                .withCircleColor(if (m.isBeach) BEACH_COLOR else NEST_COLOR)
+                .withCircleRadius(if (m.isBeach) 6.5f else 8f)
+                .withCircleColor(color)
                 .withCircleStrokeColor("#FFFFFF")
                 .withCircleStrokeWidth(2.5f)
                 .withData(JsonPrimitive(if (m.isBeach) "b:${m.id}" else "n:${m.id}")),
@@ -130,21 +154,26 @@ private fun renderCircles(cm: CircleManager, points: List<MapMarker>) {
 
 private fun updateBeachPolygons(style: Style, beaches: List<MapMarker>) {
     val src = style.getSourceAs<GeoJsonSource>(BEACH_SRC) ?: return
-    val features = beaches.map { b ->
-        val ring = b.polygon.map { Point.fromLngLat(it.lng, it.lat) }.toMutableList()
+    val features = beaches.map { m ->
+        val ring = m.polygon.map { Point.fromLngLat(it.lng, it.lat) }.toMutableList()
         val f = ring.first()
         val l = ring.last()
-        if (f.longitude() != l.longitude() || f.latitude() != l.latitude()) ring.add(f) // close the ring
-        Feature.fromGeometry(Polygon.fromLngLats(listOf(ring)))
+        if (f.longitude() != l.longitude() || f.latitude() != l.latitude()) ring.add(f)
+        Feature.fromGeometry(Polygon.fromLngLats(listOf(ring))).apply {
+            addStringProperty("id", m.id)
+            addBooleanProperty("protected", m.protected)
+        }
     }
     src.setGeoJson(FeatureCollection.fromFeatures(features))
 }
 
 private fun centerCamera(map: MapLibreMap, points: List<MapMarker>) {
-    val target = if (points.isEmpty()) {
+    val beaches = points.filter { it.isBeach && !it.id.startsWith("pa:") }
+    val focus = beaches.ifEmpty { points }
+    val target = if (focus.isEmpty()) {
         LatLng(36.27, 32.31)
     } else {
-        LatLng(points.map { it.lat }.average(), points.map { it.lng }.average())
+        LatLng(focus.map { it.lat }.average(), focus.map { it.lng }.average())
     }
     map.moveCamera(CameraUpdateFactory.newLatLngZoom(target, 11.5))
 }
