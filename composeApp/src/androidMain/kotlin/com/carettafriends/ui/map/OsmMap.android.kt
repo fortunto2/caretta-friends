@@ -13,6 +13,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
 import com.google.gson.JsonPrimitive
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -23,6 +28,8 @@ import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.plugins.annotation.CircleManager
 import org.maplibre.android.plugins.annotation.CircleOptions
+import org.maplibre.android.plugins.annotation.SymbolManager
+import org.maplibre.android.plugins.annotation.SymbolOptions
 import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
@@ -42,6 +49,7 @@ private const val COMMUNITY = "#F97316"
 private const val BEACH_SRC = "cf-beaches-src"
 private const val BEACH_FILL = "cf-beaches-fill"
 private const val BEACH_LINE = "cf-beaches-line"
+private const val COMMUNITY_ICON = "cf-community-icon"
 
 @Composable
 actual fun OsmMap(
@@ -59,6 +67,7 @@ actual fun OsmMap(
         MapView(ctx, opts).apply { onCreate(null) }
     }
     var circleManager by remember { mutableStateOf<CircleManager?>(null) }
+    var symbolManager by remember { mutableStateOf<SymbolManager?>(null) }
     var mapStyle by remember { mutableStateOf<Style?>(null) }
 
     DisposableEffect(lifecycleOwner) {
@@ -117,7 +126,18 @@ actual fun OsmMap(
                         val id = feats.firstOrNull()?.getStringProperty("id")
                         if (id != null) { onBeachTap(id); true } else false
                     }
+                    // Community hubs = orange SQUARE icons (SymbolManager, distinct from round circles).
+                    style.addImage(COMMUNITY_ICON, communityBitmap())
+                    val sm = SymbolManager(mapView, map, style).apply {
+                        iconAllowOverlap = true
+                        iconIgnorePlacement = true
+                    }
+                    sm.addClickListener { sym ->
+                        val data = sym.data?.asString
+                        if (data != null && data.startsWith("c:")) { onCommunityTap(data.removePrefix("c:")); true } else false
+                    }
                     circleManager = cm
+                    symbolManager = sm
                     mapStyle = style
                     centerCamera(map, points)
                 }
@@ -128,35 +148,65 @@ actual fun OsmMap(
     )
 
     val cm = circleManager
+    val sm = symbolManager
     val style = mapStyle
-    LaunchedEffect(cm, style, points) {
-        cm?.let { renderCircles(it, points.filter { m -> !m.isBeach || m.polygon.size < 3 }) }
+    LaunchedEffect(cm, sm, style, points) {
+        cm?.let { renderCircles(it, points.filter { m -> (!m.isBeach || m.polygon.size < 3) && !m.isCommunity }) }
         style?.let { updateBeachPolygons(it, points.filter { m -> m.isBeach && m.polygon.size >= 3 }) }
+        sm?.let { renderCommunitySymbols(it, points.filter { m -> m.isCommunity }) }
     }
+}
+
+private fun renderCommunitySymbols(sm: SymbolManager, points: List<MapMarker>) {
+    sm.deleteAll()
+    points.forEach { m ->
+        sm.create(
+            SymbolOptions()
+                .withLatLng(LatLng(m.lat, m.lng))
+                .withIconImage(COMMUNITY_ICON)
+                .withIconSize(1.0f)
+                .withData(JsonPrimitive("c:${m.id}")),
+        )
+    }
+}
+
+/** A rounded orange SQUARE marking a community hub — distinct from round beach/nest circles. */
+private fun communityBitmap(): Bitmap {
+    val size = 54
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bmp)
+    val rect = RectF(6f, 6f, size - 6f, size - 6f)
+    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor(COMMUNITY)
+        style = Paint.Style.FILL
+    }
+    canvas.drawRoundRect(rect, 11f, 11f, fill)
+    val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = 6f
+    }
+    canvas.drawRoundRect(rect, 11f, 11f, stroke)
+    return bmp
 }
 
 private fun renderCircles(cm: CircleManager, points: List<MapMarker>) {
     cm.deleteAll()
     points.forEach { m ->
+        // Community hubs are square SymbolManager icons, not circles (handled separately).
         val color = when {
-            m.isCommunity -> COMMUNITY
             !m.isBeach -> NEST
             m.protected -> GREEN
             else -> AMBER
         }
-        val data = when {
-            m.isCommunity -> "c:${m.id}"
-            m.isBeach -> "b:${m.id}"
-            else -> "n:${m.id}"
-        }
         cm.create(
             CircleOptions()
                 .withLatLng(LatLng(m.lat, m.lng))
-                .withCircleRadius(if (m.isCommunity) 9f else if (m.isBeach) 6.5f else 8f)
+                .withCircleRadius(if (m.isBeach) 6.5f else 8f)
                 .withCircleColor(color)
                 .withCircleStrokeColor("#FFFFFF")
-                .withCircleStrokeWidth(if (m.isCommunity) 3f else 2.5f)
-                .withData(JsonPrimitive(data)),
+                .withCircleStrokeWidth(2.5f)
+                .withData(JsonPrimitive(if (m.isBeach) "b:${m.id}" else "n:${m.id}")),
         )
     }
 }

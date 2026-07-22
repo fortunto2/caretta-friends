@@ -148,15 +148,16 @@ struct MapLibreView: UIViewRepresentable {
             style.addLayer(dots)
             beachDotSource = dotSrc
 
-            // Community hubs (registered city) — orange dots, drawn on top of everything.
+            // Community hubs (registered city) — orange SQUARE icons (distinct from round dots/pins),
+            // drawn on top of everything.
             let cSrc = MLNShapeSource(identifier: "cf-community-dots", shape: nil, options: nil)
             style.addSource(cSrc)
-            let cDots = MLNCircleStyleLayer(identifier: "cf-community-dots", source: cSrc)
-            cDots.circleRadius = NSExpression(forConstantValue: 8.5)
-            cDots.circleColor = NSExpression(forConstantValue: orange)
-            cDots.circleStrokeColor = NSExpression(forConstantValue: UIColor.white)
-            cDots.circleStrokeWidth = NSExpression(forConstantValue: 3)
-            style.addLayer(cDots)
+            style.setImage(Coordinator.communityIcon(), forName: "cf-community-icon")
+            let cSym = MLNSymbolStyleLayer(identifier: "cf-community-dots", source: cSrc)
+            cSym.iconImageName = NSExpression(forConstantValue: "cf-community-icon")
+            cSym.iconAllowsOverlap = NSExpression(forConstantValue: true)
+            cSym.iconIgnoresPlacement = NSExpression(forConstantValue: true)
+            style.addLayer(cSym)
             communitySource = cSrc
 
             applyBeachPolygons(parent.beachPolygons)
@@ -253,6 +254,17 @@ struct MapLibreView: UIViewRepresentable {
         private var green: UIColor { Coordinator.green }
         private var amber: UIColor { Coordinator.amber }
         private var orange: UIColor { Coordinator.orange }
+
+        /// A rounded orange SQUARE marking a community hub (distinct from round beach dots / nest pins).
+        static func communityIcon() -> UIImage {
+            let size = CGSize(width: 26, height: 26)
+            return UIGraphicsImageRenderer(size: size).image { _ in
+                let rect = CGRect(x: 3, y: 3, width: 20, height: 20)
+                let path = UIBezierPath(roundedRect: rect, cornerRadius: 5)
+                orange.setFill(); path.fill()
+                UIColor.white.setStroke(); path.lineWidth = 3; path.stroke()
+            }
+        }
 
         // Patrol track (polyline) styling.
         func mapView(_ mapView: MLNMapView, strokeColorForShapeAnnotation annotation: MLNShape) -> UIColor { coral }
