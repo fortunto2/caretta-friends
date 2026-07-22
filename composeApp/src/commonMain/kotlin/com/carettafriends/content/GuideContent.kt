@@ -49,6 +49,7 @@ object GuideContent {
         GuideMeta("beach-rules", "⛔", L10n("Правила пляжа и запреты", "Plaj kuralları ve yasaklar", "Beach rules & what's banned")),
         GuideMeta("hatchlings", "🐣", L10n("Как помочь черепашатам", "Yavrulara nasıl yardım edilir", "Helping hatchlings out")),
         GuideMeta("protection", "🛡️", L10n("Как мы защищаем гнёзда", "Yuvaları nasıl koruruz", "How we protect nests")),
+        GuideMeta("partners", "🤝", L10n("Партнёры и контакты", "Ortaklar ve iletişim", "Partners & contacts")),
     )
 
     /** Loads the markdown body for [id] in [lang] (falls back to EN), dropping the leading H1 title. */

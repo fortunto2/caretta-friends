@@ -1,3 +1,106 @@
 {
-  "communities": []
+  "communities": [
+    {
+      "id": "dekamer",
+      "name": "DEKAMER — Sea Turtle Research & Rescue Center",
+      "tagline": "Pamukkale University · İztuzu–Dalaman monitoring & rescue",
+      "website": "https://www.dekamer.org.tr/",
+      "phone": "+90 252 289 00 77",
+      "email": "dekamerturkey@gmail.com",
+      "lat": 36.7544,
+      "lng": 28.6333,
+      "nearArea": "Dalyan / İztuzu · Dalaman · Ekincik · Fethiye"
+    },
+    {
+      "id": "kaptan-june",
+      "name": "Kaptan June Sea Turtle Conservation Foundation",
+      "tagline": "Dalyan / İztuzu beach protection",
+      "website": "https://dalyanturtles.com",
+      "lat": 36.762,
+      "lng": 28.6215,
+      "nearArea": "Dalyan / İztuzu"
+    },
+    {
+      "id": "fethiye-sepa",
+      "name": "Fethiye-Göcek SEPA Sea Turtle Monitoring",
+      "tagline": "Pamukkale University · Çalış / Fethiye",
+      "website": "https://akbis.pau.edu.tr/personel/49386",
+      "lat": 36.6519,
+      "lng": 29.1028,
+      "nearArea": "Fethiye / Çalış"
+    },
+    {
+      "id": "patara-pau",
+      "name": "Pamukkale University Patara Sea Turtle Team",
+      "tagline": "Patara SEPA nest monitoring (Prof. Dr. Eyüp Başkale)",
+      "website": "https://akbis.pau.edu.tr/personel/279",
+      "lat": 36.2713,
+      "lng": 29.2897,
+      "nearArea": "Patara"
+    },
+    {
+      "id": "lidosk",
+      "name": "LİDOSK — Lykia Scouting & Nature Sports Club",
+      "tagline": "Kale (Demre) beach monitoring",
+      "website": "https://lidosk.org.tr",
+      "lat": 36.23,
+      "lng": 29.96,
+      "nearArea": "Kale (Demre)"
+    },
+    {
+      "id": "cirali-ulupinar",
+      "name": "Çıralı Ulupınar Environmental Cooperative",
+      "tagline": "Community-run Çıralı beach protection",
+      "website": "http://www.ulupinarkoop.org",
+      "instagram": "https://www.instagram.com/cirali.caretta/",
+      "lat": 36.4086,
+      "lng": 30.4815,
+      "nearArea": "Çıralı · Kumluca"
+    },
+    {
+      "id": "ekad",
+      "name": "EKAD — Ecological Research Society",
+      "tagline": "Ekolojik Araştırmalar Derneği · Antalya beaches",
+      "website": "https://ekad.org.tr",
+      "lat": 36.851,
+      "lng": 31.055,
+      "nearArea": "Belek · Kızılot · Demirtaş · Kumluca · Tekirova"
+    },
+    {
+      "id": "mersin-dekuyam",
+      "name": "Mersin University Sea Turtle Center (DEKUYAM)",
+      "tagline": "Deniz Kaplumbağaları Uygulama ve Araştırma Merkezi",
+      "website": "https://www.mersin.edu.tr/akademik/deniz-kaplumbagalari-uygulama-ve-arastirma-merkezi",
+      "lat": 36.601,
+      "lng": 34.303,
+      "nearArea": "Demirtaş · Anamur · Kazanlı · Alata · Göksu Delta"
+    },
+    {
+      "id": "anamur-gonullu",
+      "name": "Anamur Sea Turtle Monitoring",
+      "tagline": "Volunteer Projects Türkiye · Anamur & Trionyx",
+      "website": "https://gonulluprojeleri.com/anamur.html",
+      "lat": 36.018,
+      "lng": 32.803,
+      "nearArea": "Anamur"
+    },
+    {
+      "id": "wwf-turkiye",
+      "name": "WWF-Türkiye",
+      "tagline": "Doğal Hayatı Koruma Vakfı · Çukurova deltas",
+      "website": "https://www.wwf.org.tr",
+      "lat": 36.62,
+      "lng": 35.28,
+      "nearArea": "Akyatan · Yumurtalık · Samandağ"
+    },
+    {
+      "id": "cukurova-suf",
+      "name": "Çukurova University · Faculty of Fisheries",
+      "tagline": "Su Ürünleri Fakültesi · Çukurova coast research",
+      "website": "https://suf.cu.edu.tr/",
+      "lat": 36.082,
+      "lng": 35.95,
+      "nearArea": "Yumurtalık · Samandağ"
+    }
+  ]
 }
