@@ -475,7 +475,8 @@ struct ContentView: View {
                 ComposeHost {
                     IosEntryKt.ProfileVC(
                         onOpenCommunity: { path.wrappedValue.append(Route.community(IosEntryKt.primaryCommunityId())) },
-                        onOpenStats: { path.wrappedValue.append(Route.stats) }
+                        onOpenStats: { path.wrappedValue.append(Route.stats) },
+                        onOpenNest: { path.wrappedValue.append(Route.nest($0)) }
                     )
                 }
             }

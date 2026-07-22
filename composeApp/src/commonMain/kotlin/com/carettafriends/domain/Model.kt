@@ -221,6 +221,8 @@ data class Profile(
     val experienced: Boolean = false,
     /** One public link the volunteer can share (Instagram / blog / website). Empty = none. */
     val link: String = "",
+    /** Optional profile photo (local path) the volunteer may add later; null → emoji avatar. */
+    val photoPath: String? = null,
 ) {
     /** Excavating a nest is delicate → only experienced volunteers, beach leaders and admins. */
     val canExcavate: Boolean

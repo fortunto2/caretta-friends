@@ -150,9 +150,9 @@ fun LearnVC(): UIViewController = host {
     LearnScreen(state, SharedRepo.repo)
 }
 
-fun ProfileVC(onOpenCommunity: () -> Unit, onOpenStats: () -> Unit): UIViewController = host {
+fun ProfileVC(onOpenCommunity: () -> Unit, onOpenStats: () -> Unit, onOpenNest: (String) -> Unit): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
-    ProfileScreen(SharedRepo.repo, state, onOpenCommunity, onOpenStats)
+    ProfileScreen(SharedRepo.repo, state, onOpenCommunity, onOpenStats, onOpenNest)
 }
 
 fun StatsVC(onBack: () -> Unit): UIViewController = host {

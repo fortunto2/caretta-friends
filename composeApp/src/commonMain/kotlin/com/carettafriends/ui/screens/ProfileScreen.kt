@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -33,11 +34,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.carettafriends.data.CarettaRepository
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Badge
 import com.carettafriends.ui.components.CarettaCard
+import com.carettafriends.ui.components.LocalPhoto
 import com.carettafriends.ui.components.Pill
-import com.carettafriends.data.CarettaRepository
 import com.carettafriends.ui.components.SectionLabel
 import com.carettafriends.ui.components.TopBar
 import com.carettafriends.ui.theme.caretta
@@ -48,10 +50,24 @@ fun ProfileScreen(
     state: AppState,
     onOpenCommunity: () -> Unit,
     onOpenStats: () -> Unit = {},
+    onOpenNest: (String) -> Unit = {},
 ) {
     val c = caretta
     val p = state.profile
     var editingName by remember { mutableStateOf(false) }
+    var pickingBeach by remember { mutableStateOf(false) }
+
+    // "Beaches you've been to" — where this volunteer has patrolled or logged a nest.
+    val visitedIds = (state.patrols.map { it.beachId } + state.nests.filter { it.foundBy == p.displayName }.map { it.beachId }).toSet()
+    val visited = state.beaches.filter { it.id in visitedIds }
+    val home = p.homeBeachId?.let { state.beach(it) }
+    // Latest photos across this volunteer's nests → an Instagram-style grid.
+    val myPhotos = state.nests
+        .sortedByDescending { it.updatedAtMillis }
+        .flatMap { n -> n.photos.mapNotNull { ph -> ph.localUri?.let { uri -> uri to n.id } } }
+        .take(9)
+    val earnedBadges = state.badges.filter { it.earned }
+
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         TopBar("Profile")
         Column(Modifier.padding(horizontal = 15.dp).padding(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -65,13 +81,20 @@ fun ProfileScreen(
                     Modifier.size(62.dp).clip(RoundedCornerShape(20.dp))
                         .background(Brush.linearGradient(listOf(c.sunlit, c.coral))),
                     contentAlignment = Alignment.Center,
-                ) { Text(p.avatar, fontSize = 32.sp) }
+                ) {
+                    // A photo (once added) replaces the emoji; tap the name row to edit for now.
+                    if (p.photoPath != null) {
+                        LocalPhoto(p.photoPath, Modifier.fillMaxSize().clip(RoundedCornerShape(20.dp)))
+                    } else {
+                        Text(p.avatar, fontSize = 32.sp)
+                    }
+                }
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(p.displayName, color = c.deep, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                         Text("✎", color = c.muted, fontSize = 15.sp)
                     }
-                    Text("Tap to set your name", color = c.muted, fontSize = 12.sp)
+                    Text(p.role, color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
             if (editingName) {
@@ -113,31 +136,141 @@ fun ProfileScreen(
                 StatTile("${p.kmWalked.toInt()} km", "walked", Modifier.weight(1f))
                 StatTile("${p.patrols}", "patrols", Modifier.weight(1f))
             }
-            // badges
-            SectionLabel("Badges")
-            Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                state.badges.forEach { b -> BadgeCell(b, Modifier.weight(1f)) }
-            }
 
-            // my beach — optional home beach (most volunteers are free)
-            SectionLabel("My beach")
-            Text(
-                "Free volunteers patrol wherever's closest. Pick a home beach only if you have one.",
-                color = c.muted,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
+            // community — shown directly (a volunteer usually belongs to 1–3), tap to open.
+            SectionLabel("Community")
+            CommunityCard(
+                name = state.community.name,
+                tagline = state.community.tagline,
+                members = state.members.size,
+                onOpen = onOpenCommunity,
             )
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                HomeBeachChip("🌊 Free", p.homeBeachId == null) { repo.setHomeBeach(null) }
-                state.beaches.forEach { b ->
-                    HomeBeachChip("${b.leaderAvatar} ${b.name}", p.homeBeachId == b.id) { repo.setHomeBeach(b.id) }
+
+            // my beach — one pinned home beach + everywhere you've patrolled.
+            SectionLabel("My beach")
+            HomeBeachCard(
+                title = home?.let { "${it.leaderAvatar} ${it.name}" } ?: "🌊 Free volunteer",
+                sub = if (home != null) "Your home beach" else "Patrol wherever's closest",
+                onChange = { pickingBeach = true },
+            )
+            if (visited.isNotEmpty()) {
+                Text("Patrolled", color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    visited.forEach { Pill("🏖️ ${it.name}", c.sea) }
                 }
             }
-            // community
-            ProfileNavRow("🐢  Community", onOpenCommunity)
+            if (pickingBeach) {
+                AlertDialog(
+                    onDismissRequest = { pickingBeach = false },
+                    title = { Text("Home beach") },
+                    text = {
+                        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            BeachPickRow("🌊 Free volunteer (no home beach)", p.homeBeachId == null) {
+                                repo.setHomeBeach(null); pickingBeach = false
+                            }
+                            state.beaches.forEach { b ->
+                                BeachPickRow("${b.leaderAvatar} ${b.name}", p.homeBeachId == b.id) {
+                                    repo.setHomeBeach(b.id); pickingBeach = false
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = { TextButton(onClick = { pickingBeach = false }) { Text("Done") } },
+                )
+            }
+
+            // badges — only the ones actually earned (no confusing greyed-out locks).
+            SectionLabel("Badges")
+            if (earnedBadges.isEmpty()) {
+                Text(
+                    "No badges yet — patrol & log nests to earn your first 🐢",
+                    color = c.muted,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            } else {
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                    earnedBadges.forEach { b -> BadgeCell(b) }
+                }
+            }
+
+            // my photos — recent nest photos as a square grid (tap opens the nest).
+            if (myPhotos.isNotEmpty()) {
+                SectionLabel("My photos")
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    myPhotos.chunked(3).forEach { rowPhotos ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            rowPhotos.forEach { (uri, nestId) ->
+                                LocalPhoto(
+                                    uri,
+                                    Modifier.weight(1f).aspectRatio(1f).clip(RoundedCornerShape(10.dp))
+                                        .clickable { onOpenNest(nestId) },
+                                )
+                            }
+                            repeat(3 - rowPhotos.size) { Box(Modifier.weight(1f)) }
+                        }
+                    }
+                }
+            }
+
             // trends / charts
             ProfileNavRow("📊  Trends & charts", onOpenStats)
         }
+    }
+}
+
+@Composable
+private fun CommunityCard(name: String, tagline: String, members: Int, onOpen: () -> Unit) {
+    val c = caretta
+    CarettaCard(modifier = Modifier.clickable { onOpen() }) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(
+                Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(listOf(c.good, c.deep))),
+                contentAlignment = Alignment.Center,
+            ) { Text("🐢", fontSize = 22.sp) }
+            Column(Modifier.weight(1f)) {
+                Text(name, color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
+                Text(
+                    tagline.ifBlank { "Your community" } + if (members > 0) " · $members volunteers" else "",
+                    color = c.muted,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                )
+            }
+            Text("›", color = c.muted, fontSize = 18.sp)
+        }
+    }
+}
+
+@Composable
+private fun HomeBeachCard(title: String, sub: String, onChange: () -> Unit) {
+    val c = caretta
+    Box(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(c.surface)
+            .border(1.dp, c.line, RoundedCornerShape(13.dp)).clickable { onChange() }.padding(14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(title, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                Text(sub, color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+            }
+            Text("Change ›", color = c.sea, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+        }
+    }
+}
+
+@Composable
+private fun BeachPickRow(label: String, selected: Boolean, onClick: () -> Unit) {
+    val c = caretta
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(11.dp))
+            .background(if (selected) c.sea.copy(alpha = 0.12f) else Color.Transparent)
+            .clickable { onClick() }.padding(horizontal = 10.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, color = c.ink, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        if (selected) Text("✓", color = c.sea, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
     }
 }
 
@@ -152,26 +285,6 @@ private fun ProfileNavRow(label: String, onClick: () -> Unit) {
             Text(label, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
             Text("›", color = c.muted, fontSize = 18.sp)
         }
-    }
-}
-
-@Composable
-private fun HomeBeachChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    val c = caretta
-    Box(
-        Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(if (selected) c.sea else c.surface)
-            .border(1.dp, if (selected) c.sea else c.line, RoundedCornerShape(20.dp))
-            .clickable { onClick() }
-            .padding(horizontal = 14.dp, vertical = 9.dp),
-    ) {
-        Text(
-            label,
-            color = if (selected) Color.White else c.deep,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.ExtraBold,
-        )
     }
 }
 
@@ -191,16 +304,14 @@ private fun StatTile(value: String, label: String, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun BadgeCell(b: Badge, modifier: Modifier = Modifier) {
+private fun BadgeCell(b: Badge) {
     val c = caretta
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(Modifier.width(68.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(15.dp))
-                .background(if (b.earned) c.sunlit.copy(alpha = 0.22f) else c.line.copy(alpha = 0.4f))
-                .border(1.dp, c.line, RoundedCornerShape(15.dp)),
+            Modifier.size(56.dp).clip(RoundedCornerShape(15.dp))
+                .background(c.sunlit.copy(alpha = 0.22f)).border(1.dp, c.line, RoundedCornerShape(15.dp)),
             contentAlignment = Alignment.Center,
         ) { Text(b.emoji, fontSize = 22.sp) }
-        Text(b.name, color = c.muted, fontSize = 8.5.sp, fontWeight = FontWeight.Bold)
+        Text(b.name, color = c.muted, fontSize = 8.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }
-

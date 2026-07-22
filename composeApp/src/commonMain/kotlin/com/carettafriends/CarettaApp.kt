@@ -85,6 +85,7 @@ fun CarettaApp() {
                             repo, state,
                             onOpenCommunity = { nav.go(Screen.Community(state.community.id)) },
                             onOpenStats = { nav.go(Screen.Stats) },
+                            onOpenNest = { nav.go(Screen.NestDetail(it)) },
                         )
                         is Screen.Stats -> StatsScreen(state) { nav.back() }
                         is Screen.AddNest -> AddNestScreen(repo, state, { nav.back() }, { nav.go(Screen.Camera) })
