@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.carettafriends.content.appStrings
 import com.carettafriends.data.CarettaRepository
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Badge
@@ -55,8 +56,10 @@ fun ProfileScreen(
 ) {
     val c = caretta
     val p = state.profile
+    val s = appStrings(p.language)
     var editingName by remember { mutableStateOf(false) }
     var pickingBeach by remember { mutableStateOf(false) }
+    var pickingLang by remember { mutableStateOf(false) }
     var showAuth by remember { mutableStateOf(false) }
 
     // "Beaches you've been to" — where this volunteer has patrolled or logged a nest.
@@ -71,7 +74,7 @@ fun ProfileScreen(
     val earnedBadges = state.badges.filter { it.earned }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        TopBar("Profile")
+        TopBar(s.profile)
         Column(Modifier.padding(horizontal = 15.dp).padding(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             // header — tap to set your name (works offline, before any login)
             Row(
@@ -103,32 +106,32 @@ fun ProfileScreen(
                 var draft by remember { mutableStateOf(p.displayName) }
                 AlertDialog(
                     onDismissRequest = { editingName = false },
-                    title = { Text("Your name") },
+                    title = { Text(s.yourName) },
                     text = {
                         OutlinedTextField(
                             value = draft,
                             onValueChange = { draft = it.take(40) },
                             singleLine = true,
-                            label = { Text("Display name") },
+                            label = { Text(s.displayName) },
                         )
                     },
                     confirmButton = {
-                        TextButton(onClick = { repo.setDisplayName(draft); editingName = false }) { Text("Save") }
+                        TextButton(onClick = { repo.setDisplayName(draft); editingName = false }) { Text(s.save) }
                     },
                     dismissButton = {
-                        TextButton(onClick = { editingName = false }) { Text("Cancel") }
+                        TextButton(onClick = { editingName = false }) { Text(s.cancel) }
                     },
                 )
             }
 
             // account — anonymous volunteers get a nudge to save their work under an email.
             if (state.accountEmail == null) {
-                AccountCta { showAuth = true }
+                AccountCta(s.saveAccount, s.saveAccountSub) { showAuth = true }
             } else {
-                SignedInRow(state.accountEmail!!)
+                SignedInRow(s.signedIn, state.accountEmail!!)
             }
             if (showAuth) {
-                EmailAuthDialog(repo, onDismiss = { showAuth = false })
+                EmailAuthDialog(repo, appStrings(p.language), onDismiss = { showAuth = false })
             }
 
             // impact tile
@@ -139,18 +142,18 @@ fun ProfileScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("${p.hatchlingsReached}", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.ExtraBold)
-                    Text("hatchlings reached the sea 🌊", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
+                    Text(s.hatchlingsReached, color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
                 }
             }
             // stats
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatTile("🔥 ${p.streakDays}", "day streak", Modifier.weight(1f))
-                StatTile("${p.kmWalked.toInt()} km", "walked", Modifier.weight(1f))
-                StatTile("${p.patrols}", "patrols", Modifier.weight(1f))
+                StatTile("🔥 ${p.streakDays}", s.dayStreak, Modifier.weight(1f))
+                StatTile("${p.kmWalked.toInt()} km", s.walked, Modifier.weight(1f))
+                StatTile("${p.patrols}", s.patrols, Modifier.weight(1f))
             }
 
             // community — shown directly (a volunteer usually belongs to 1–3), tap to open.
-            SectionLabel("Community")
+            SectionLabel(s.community)
             CommunityCard(
                 name = state.community.name,
                 tagline = state.community.tagline,
@@ -159,14 +162,15 @@ fun ProfileScreen(
             )
 
             // my beach — one pinned home beach + everywhere you've patrolled.
-            SectionLabel("My beach")
+            SectionLabel(s.myBeach)
             HomeBeachCard(
-                title = home?.let { "${it.leaderAvatar} ${it.name}" } ?: "🌊 Free volunteer",
-                sub = if (home != null) "Your home beach" else "Patrol wherever's closest",
+                title = home?.let { "${it.leaderAvatar} ${it.name}" } ?: s.freeVolunteer,
+                sub = if (home != null) s.yourHomeBeach else s.patrolClosest,
+                change = s.change,
                 onChange = { pickingBeach = true },
             )
             if (visited.isNotEmpty()) {
-                Text("Patrolled", color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(s.patrolled, color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                     visited.forEach { Pill("🏖️ ${it.name}", c.sea) }
                 }
@@ -174,10 +178,10 @@ fun ProfileScreen(
             if (pickingBeach) {
                 AlertDialog(
                     onDismissRequest = { pickingBeach = false },
-                    title = { Text("Home beach") },
+                    title = { Text(s.homeBeach) },
                     text = {
                         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            BeachPickRow("🌊 Free volunteer (no home beach)", p.homeBeachId == null) {
+                            BeachPickRow(s.freeVolunteer, p.homeBeachId == null) {
                                 repo.setHomeBeach(null); pickingBeach = false
                             }
                             state.beaches.forEach { b ->
@@ -187,15 +191,15 @@ fun ProfileScreen(
                             }
                         }
                     },
-                    confirmButton = { TextButton(onClick = { pickingBeach = false }) { Text("Done") } },
+                    confirmButton = { TextButton(onClick = { pickingBeach = false }) { Text(s.done) } },
                 )
             }
 
             // badges — only the ones actually earned (no confusing greyed-out locks).
-            SectionLabel("Badges")
+            SectionLabel(s.badges)
             if (earnedBadges.isEmpty()) {
                 Text(
-                    "No badges yet — patrol & log nests to earn your first 🐢",
+                    s.noBadges,
                     color = c.muted,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
@@ -208,7 +212,7 @@ fun ProfileScreen(
 
             // my photos — recent nest photos as a square grid (tap opens the nest).
             if (myPhotos.isNotEmpty()) {
-                SectionLabel("My photos")
+                SectionLabel(s.myPhotos)
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     myPhotos.chunked(3).forEach { rowPhotos ->
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -226,10 +230,30 @@ fun ProfileScreen(
             }
 
             // trends / charts
-            ProfileNavRow("📊  Trends & charts", onOpenStats)
+            ProfileNavRow(s.trends, onOpenStats)
+            // language — switch the whole interface (RU / TR / EN).
+            ProfileNavRow(s.language) { pickingLang = true }
+            if (pickingLang) {
+                AlertDialog(
+                    onDismissRequest = { pickingLang = false },
+                    title = { Text(s.language.trim()) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            LANGUAGES.forEach { (code, label) ->
+                                BeachPickRow(label, p.language.equals(code, ignoreCase = true)) {
+                                    repo.setLanguage(code); pickingLang = false
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = { TextButton(onClick = { pickingLang = false }) { Text(s.close) } },
+                )
+            }
         }
     }
 }
+
+private val LANGUAGES = listOf("en" to "🇬🇧 English", "ru" to "🇷🇺 Русский", "tr" to "🇹🇷 Türkçe")
 
 @Composable
 private fun CommunityCard(name: String, tagline: String, members: Int, onOpen: () -> Unit) {
@@ -256,7 +280,7 @@ private fun CommunityCard(name: String, tagline: String, members: Int, onOpen: (
 }
 
 @Composable
-private fun HomeBeachCard(title: String, sub: String, onChange: () -> Unit) {
+private fun HomeBeachCard(title: String, sub: String, change: String, onChange: () -> Unit) {
     val c = caretta
     Box(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(c.surface)
@@ -267,7 +291,7 @@ private fun HomeBeachCard(title: String, sub: String, onChange: () -> Unit) {
                 Text(title, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
                 Text(sub, color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Medium)
             }
-            Text("Change ›", color = c.sea, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+            Text(change, color = c.sea, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
         }
     }
 }
@@ -316,7 +340,7 @@ private fun StatTile(value: String, label: String, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun AccountCta(onClick: () -> Unit) {
+private fun AccountCta(title: String, sub: String, onClick: () -> Unit) {
     val c = caretta
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
@@ -327,15 +351,15 @@ private fun AccountCta(onClick: () -> Unit) {
     ) {
         Text("🔒", fontSize = 20.sp)
         Column(Modifier.weight(1f)) {
-            Text("Save your account", color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
-            Text("Add an email so your work isn't lost if you change phone.", color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+            Text(title, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+            Text(sub, color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Medium)
         }
         Text("›", color = c.muted, fontSize = 18.sp)
     }
 }
 
 @Composable
-private fun SignedInRow(email: String) {
+private fun SignedInRow(label: String, email: String) {
     val c = caretta
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
@@ -346,14 +370,14 @@ private fun SignedInRow(email: String) {
     ) {
         Text("✓", color = c.good, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
         Column(Modifier.weight(1f)) {
-            Text("Signed in", color = c.deep, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+            Text(label, color = c.deep, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
             Text(email, color = c.muted, fontSize = 11.5.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
 
 @Composable
-private fun EmailAuthDialog(repo: CarettaRepository, onDismiss: () -> Unit) {
+private fun EmailAuthDialog(repo: CarettaRepository, s: com.carettafriends.content.AppStrings, onDismiss: () -> Unit) {
     val c = caretta
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -364,29 +388,29 @@ private fun EmailAuthDialog(repo: CarettaRepository, onDismiss: () -> Unit) {
 
     AlertDialog(
         onDismissRequest = { if (!busy) onDismiss() },
-        title = { Text(if (signIn) "Sign in" else "Save your account") },
+        title = { Text(if (signIn) s.signIn else s.saveAccount) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    if (signIn) "Welcome back — sign in to load your nests & impact." else "Add an email + password so your work syncs and isn't lost if you change phone.",
+                    if (signIn) s.welcomeBack else s.saveAccountBody,
                     color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium,
                 )
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it.trim(); error = null },
                     singleLine = true,
-                    label = { Text("Email") },
+                    label = { Text(s.email) },
                 )
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it; error = null },
                     singleLine = true,
-                    label = { Text("Password (6+ chars)") },
+                    label = { Text(s.passwordHint) },
                     visualTransformation = PasswordVisualTransformation(),
                 )
                 error?.let { Text(it, color = c.coral, fontSize = 12.sp, fontWeight = FontWeight.Bold) }
                 Text(
-                    if (signIn) "New here? Create an account" else "Already have an account? Sign in",
+                    if (signIn) s.newHere else s.haveAccount,
                     color = c.sea,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -402,9 +426,9 @@ private fun EmailAuthDialog(repo: CarettaRepository, onDismiss: () -> Unit) {
                     val cb: (String?) -> Unit = { err -> busy = false; if (err == null) onDismiss() else error = err }
                     if (signIn) repo.signInEmail(email, password, cb) else repo.linkEmail(email, password, cb)
                 },
-            ) { Text(if (busy) "…" else if (signIn) "Sign in" else "Save") }
+            ) { Text(if (busy) "…" else if (signIn) s.signIn else s.save) }
         },
-        dismissButton = { TextButton(enabled = !busy, onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(enabled = !busy, onClick = onDismiss) { Text(s.cancel) } },
     )
 }
 

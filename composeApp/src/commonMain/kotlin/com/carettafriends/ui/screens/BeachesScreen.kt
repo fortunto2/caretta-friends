@@ -53,20 +53,22 @@ fun BeachesScreen(state: AppState, onOpenNest: (String) -> Unit, onOpenBeach: (S
     val homeCity = state.beaches.firstOrNull { it.city.isNotBlank() }?.city?.trim() ?: "Gazipaşa"
     val cityOf: (Beach) -> String = { it.city.trim().ifBlank { homeCity } }
     val cities = state.beaches.map(cityOf).distinct().sorted()
+    val s = com.carettafriends.content.appStrings(state.profile.language)
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        TopBar("Beaches")
+        TopBar(s.beaches)
         Column(
             Modifier.padding(horizontal = 15.dp).padding(bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             ScopeHeader(
-                label = cityScope ?: if (me != null) "Near you" else "All beaches",
+                label = cityScope ?: if (me != null) s.nearYou else s.allBeaches,
+                change = s.change,
                 canChange = cities.isNotEmpty(),
                 onChange = { showScopePicker = true },
             )
             if (state.beaches.isEmpty()) {
-                EmptyHint("🏖️", "Finding beaches near you…\nThey load automatically from the map.")
+                EmptyHint("🏖️", s.findingBeaches)
             } else {
                 val scoped = if (cityScope != null) {
                     state.beaches.filter { cityOf(it).equals(cityScope, ignoreCase = true) }
@@ -97,6 +99,10 @@ fun BeachesScreen(state: AppState, onOpenNest: (String) -> Unit, onOpenBeach: (S
 
     if (showScopePicker) {
         ScopePickerDialog(
+            title = s.showBeaches,
+            nearMe = s.nearMeAuto,
+            allLabel = s.allBeaches,
+            close = s.close,
             cities = cities,
             current = cityScope,
             hasGeo = me != null,
@@ -108,7 +114,7 @@ fun BeachesScreen(state: AppState, onOpenNest: (String) -> Unit, onOpenBeach: (S
 
 /** Location scope header: "📍 Near you / [City]" + a Change chip that opens the city picker. */
 @Composable
-private fun ScopeHeader(label: String, canChange: Boolean, onChange: () -> Unit) {
+private fun ScopeHeader(label: String, change: String, canChange: Boolean, onChange: () -> Unit) {
     val c = caretta
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text("📍 $label", color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
@@ -117,13 +123,17 @@ private fun ScopeHeader(label: String, canChange: Boolean, onChange: () -> Unit)
                 Modifier.clip(RoundedCornerShape(10.dp)).background(c.sand)
                     .border(1.dp, c.line, RoundedCornerShape(10.dp))
                     .clickable(onClick = onChange).padding(horizontal = 11.dp, vertical = 6.dp),
-            ) { Text("Change ›", color = c.sea, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold) }
+            ) { Text(change, color = c.sea, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold) }
         }
     }
 }
 
 @Composable
 private fun ScopePickerDialog(
+    title: String,
+    nearMe: String,
+    allLabel: String,
+    close: String,
     cities: List<String>,
     current: String?,
     hasGeo: Boolean,
@@ -134,10 +144,10 @@ private fun ScopePickerDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = RoundedCornerShape(20.dp), color = c.surface) {
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Show beaches", color = c.deep, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
-                ScopeRow(if (hasGeo) "📍 Near me (auto)" else "🏖️ All beaches", current == null) { onPick(null) }
+                Text(title, color = c.deep, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
+                ScopeRow(if (hasGeo) nearMe else "🏖️ $allLabel", current == null) { onPick(null) }
                 cities.forEach { city -> ScopeRow("🏙️ $city", current.equals(city, ignoreCase = true)) { onPick(city) } }
-                TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) { Text("Close", color = c.muted) }
+                TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) { Text(close, color = c.muted) }
             }
         }
     }

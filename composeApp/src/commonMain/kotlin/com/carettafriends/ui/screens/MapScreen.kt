@@ -92,10 +92,11 @@ fun MapScreen(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                FilterChip("all", "All", filter) { filter = it }
-                FilterChip("nests", "🥚 Nests", filter) { filter = it }
-                FilterChip("hatching", "● Hatching soon", filter) { filter = it }
-                FilterChip("trash", "🧺 Trash", filter) { filter = it }
+                val s = com.carettafriends.content.appStrings(state.profile.language)
+                FilterChip("all", s.filterAll, filter) { filter = it }
+                FilterChip("nests", s.filterNests, filter) { filter = it }
+                FilterChip("hatching", s.filterHatching, filter) { filter = it }
+                FilterChip("trash", s.filterTrash, filter) { filter = it }
             }
             Spacer(Modifier.height(10.dp))
             CoveragePill(state)
@@ -118,7 +119,7 @@ fun MapScreen(
                 .padding(horizontal = 14.dp, vertical = 9.dp),
         ) {
             Text(
-                if (patrolBlocked) "⚠ Dust — patrol not advised" else "● Start patrol",
+                if (patrolBlocked) "⚠ Dust — patrol not advised" else com.carettafriends.content.appStrings(state.profile.language).startPatrol,
                 color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
             )
         }

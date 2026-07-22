@@ -32,11 +32,11 @@ import com.carettafriends.ui.screens.StatsScreen
 import com.carettafriends.ui.theme.CarettaTheme
 import com.carettafriends.ui.theme.caretta
 
-private val navItems = listOf(
-    NavItem("map", "🗺️", "Map"),
-    NavItem("beaches", "🏖️", "Beaches"),
-    NavItem("learn", "📖", "Learn"),
-    NavItem("profile", "🐢", "Profile"),
+private fun navItems(s: com.carettafriends.content.AppStrings) = listOf(
+    NavItem("map", "🗺️", s.navMap),
+    NavItem("beaches", "🏖️", s.navBeaches),
+    NavItem("learn", "📖", s.navLearn),
+    NavItem("profile", "🐢", s.navProfile),
 )
 
 private fun tabKey(s: Screen): String = when (s) {
@@ -116,7 +116,7 @@ fun CarettaApp() {
                 // Always visible — tabs switch, the centre + adds a nest from anywhere.
                 BottomBar(
                     current = tabKey(current),
-                    items = navItems,
+                    items = navItems(com.carettafriends.content.appStrings(state.profile.language)),
                     onSelect = { nav.selectTab(tabFromKey(it)) },
                     onAdd = { nav.go(Screen.AddNest) },
                 )
