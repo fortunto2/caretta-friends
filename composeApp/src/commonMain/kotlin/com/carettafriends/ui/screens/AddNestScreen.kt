@@ -65,6 +65,8 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
     var isNest by remember { mutableStateOf(true) }
     var hasPhoto by remember { mutableStateOf(pending != null) }
     var exposure by remember { mutableStateOf(SunExposure.PARTIAL) }
+    var beachManual by remember { mutableStateOf(false) }
+    var showDetails by remember { mutableStateOf(false) }
     var protection by remember { mutableStateOf(ProtectionLevel.NONE) }
     var visibility by remember { mutableStateOf(Visibility.PUBLIC) }
     // Turtles nest on beaches → bind every nest to a beach (→ community). Default = nearest to the
@@ -150,28 +152,35 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                 }
             }
 
-            // ── Beach (turtles nest on beaches → bind to a beach → community) ──
+            // ── Beach — auto-detected from the location; manual pick only if unrecognized ──
             SectionLabel("Beach")
-            BeachPicker(state.beaches, selectedBeach, fixPoint) { selectedBeach = it }
-            if (nearestDist != null && nearestDist > 2000) {
-                Text(
-                    "🌊 Looks far from a known nesting beach — loggerheads nest on the shore. Pick the right beach.",
-                    color = c.muted,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                )
+            val autoDetected = fixPoint != null && nearestDist != null && nearestDist <= 1500
+            if (autoDetected && !beachManual) {
+                Box(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.surface)
+                        .border(1.dp, c.line, RoundedCornerShape(14.dp)).padding(14.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("📍", fontSize = 18.sp)
+                        Column(Modifier.weight(1f)) {
+                            Text(selectedBeach.name, color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
+                            Text("Detected from your location · ${nearestDist!!.toInt()} m", color = c.muted, fontSize = 11.sp)
+                        }
+                        Text("Change", color = c.sea, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { beachManual = true }.padding(6.dp))
+                    }
+                }
+            } else {
+                if (fixPoint == null) {
+                    Text("No location yet — take a photo on-site or pick the beach.", color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                } else if (nearestDist != null && nearestDist > 1500) {
+                    Text("🌊 Not recognized as a known nesting beach — pick the right one.", color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+                BeachPicker(state.beaches, selectedBeach, fixPoint) { selectedBeach = it; beachManual = true }
             }
 
             // ── Nest-only fields ───────────────────────────────────────
             if (markerType == MarkerType.NEST) {
-                SectionLabel("Sun exposure")
-                Segmented(
-                    listOf(
-                        SegOption("☀️ Sun", exposure == SunExposure.FULL_SUN) { exposure = SunExposure.FULL_SUN },
-                        SegOption("⛅ Partial", exposure == SunExposure.PARTIAL) { exposure = SunExposure.PARTIAL },
-                        SegOption("🌴 Shade", exposure == SunExposure.SHADE) { exposure = SunExposure.SHADE },
-                    ),
-                )
                 SectionLabel("Protection")
                 Segmented(
                     listOf(
@@ -186,6 +195,21 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
                 )
+                // Sun exposure is optional (feeds the sex prediction; defaults to Partial) — tucked away.
+                Text(
+                    (if (showDetails) "▾ " else "▸ ") + "Optional: sun exposure",
+                    color = c.sea, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold,
+                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { showDetails = !showDetails }.padding(vertical = 4.dp),
+                )
+                if (showDetails) {
+                    Segmented(
+                        listOf(
+                            SegOption("☀️ Sun", exposure == SunExposure.FULL_SUN) { exposure = SunExposure.FULL_SUN },
+                            SegOption("⛅ Partial", exposure == SunExposure.PARTIAL) { exposure = SunExposure.PARTIAL },
+                            SegOption("🌴 Shade", exposure == SunExposure.SHADE) { exposure = SunExposure.SHADE },
+                        ),
+                    )
+                }
             }
 
             // ── Visibility ─────────────────────────────────────────────
