@@ -47,6 +47,7 @@ object GuideContent {
         GuideMeta("found", "🥚", L10n("Нашёл гнездо? Что делать", "Yuva mı buldun? Ne yapmalı", "Found a nest? What to do")),
         GuideMeta("lights", "🔦", L10n("Без света и вспышки ночью", "Gece ışık ve flaş yok", "No lights or flash at night")),
         GuideMeta("beach-rules", "⛔", L10n("Правила пляжа и запреты", "Plaj kuralları ve yasaklar", "Beach rules & what's banned")),
+        GuideMeta("patrol-timing", "🕗", L10n("Когда патрулировать", "Ne zaman devriye gezilir", "When to patrol")),
         GuideMeta("hatchlings", "🐣", L10n("Как помочь черепашатам", "Yavrulara nasıl yardım edilir", "Helping hatchlings out")),
         GuideMeta("protection", "🛡️", L10n("Как мы защищаем гнёзда", "Yuvaları nasıl koruruz", "How we protect nests")),
         GuideMeta("partners", "🤝", L10n("Партнёры и контакты", "Ortaklar ve iletişim", "Partners & contacts")),
