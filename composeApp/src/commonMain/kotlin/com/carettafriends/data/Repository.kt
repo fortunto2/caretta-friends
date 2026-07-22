@@ -87,6 +87,8 @@ class CarettaRepository {
     init {
         // Offline-first: persist every change locally so data survives restarts and works offline.
         scope.launch { _state.drop(1).collect { persist(json, it) } }
+        // Load the official protected-beach catalogue (by-country data file) → state.
+        scope.launch { _state.value = _state.value.copy(protectedAreas = loadProtectedAreas()) }
         // Best-effort cloud sync (no-op when offline).
         scope.launch { syncOnStart() }
     }
@@ -104,7 +106,7 @@ class CarettaRepository {
         val stale = nowMillis() - _state.value.beachesSyncedAt > 30L * 24 * 3600 * 1000
         if (!haveOsm || stale) {
             val center = _state.value.beaches.firstOrNull()?.center ?: GeoPoint(36.27, 32.30)
-            val discovered = runCatching { beachDiscovery.nearby(center.lat, center.lng, 15_000, cid) }.getOrDefault(emptyList())
+            val discovered = runCatching { beachDiscovery.nearby(center.lat, center.lng, 15_000, cid, _state.value.protectedAreas) }.getOrDefault(emptyList())
             if (discovered.isNotEmpty()) {
                 _state.value = _state.value.copy(
                     beaches = mergeById(_state.value.beaches, discovered) { it.id },

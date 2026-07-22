@@ -125,7 +125,7 @@ struct MapTab: View {
     @State private var showCamera = false
     @State private var points: [MapPoint] = []
     @State private var beaches: [MapPoint] = []
-    @State private var beachPolygons: [[CLLocationCoordinate2D]] = []
+    @State private var beachPolygons: [BeachPolygon] = []
     @State private var filter = "all"
     @StateObject private var patrol = PatrolRecorder()
     @StateObject private var deviceLoc = DeviceLocation()
@@ -142,21 +142,36 @@ struct MapTab: View {
         }
         let shapes = IosEntryKt.beachShapes()
         let polyIds = Set(shapes.filter { !$0.polygonCsv.isEmpty }.map { $0.id })
-        // Dots only for beaches without an OSM outline; the rest are highlighted as polygons.
-        beaches = IosEntryKt.beachPoints().filter { !polyIds.contains($0.id) }.map { p in
-            MapPoint(
-                id: p.id,
-                coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng),
-                title: p.title
-            )
-        }
+        // Beaches with an OSM outline → coloured polygons (green protected / amber unprotected).
         beachPolygons = shapes.filter { !$0.polygonCsv.isEmpty }.map { s in
-            s.polygonCsv.split(separator: ";").compactMap { pair -> CLLocationCoordinate2D? in
+            let coords = s.polygonCsv.split(separator: ";").compactMap { pair -> CLLocationCoordinate2D? in
                 let xy = pair.split(separator: ",")
                 guard xy.count == 2, let lat = Double(xy[0]), let lng = Double(xy[1]) else { return nil }
                 return CLLocationCoordinate2D(latitude: lat, longitude: lng)
             }
+            return BeachPolygon(id: s.id, coords: coords, isProtected: s.isProtected)
         }
+        // Community beach dots (only those without an outline) — coloured + openable → beach card.
+        let communityDots = IosEntryKt.beachPoints().filter { !polyIds.contains($0.id) }.map { p in
+            MapPoint(
+                id: p.id,
+                coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng),
+                title: p.title,
+                protectedBeach: p.status == "beach-green",
+                openable: true
+            )
+        }
+        // Baked official protected areas — green overview dots, name callout only.
+        let areaDots = IosEntryKt.protectedAreaPoints().map { p in
+            MapPoint(
+                id: p.id,
+                coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng),
+                title: p.title,
+                protectedBeach: true,
+                openable: false
+            )
+        }
+        beaches = communityDots + areaDots
     }
 
     var body: some View {
@@ -169,6 +184,7 @@ struct MapTab: View {
                     zoomLevel: 12,
                     showsCallout: false,
                     onSelect: { id in path.append(Route.nest(id)) },
+                    onSelectBeach: { id in path.append(Route.beach(id)) },
                     track: patrol.coords,
                     beachPolygons: beachPolygons
                 )

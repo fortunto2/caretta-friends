@@ -35,7 +35,6 @@ import com.carettafriends.domain.MarkerType
 import com.carettafriends.domain.Nest
 import com.carettafriends.domain.NestStatus
 import com.carettafriends.domain.SimpleMarker
-import com.carettafriends.domain.TURKEY_PROTECTED_BEACHES
 import com.carettafriends.ui.map.MapMarker
 import com.carettafriends.ui.map.OsmMap
 import com.carettafriends.ui.theme.caretta
@@ -55,9 +54,9 @@ fun MapScreen(state: AppState, onAddMarker: () -> Unit, onOpenNest: (String) -> 
             .forEach { add(MapMarker(it.id, it.point.lat, it.point.lng, isBeach = false)) }
         state.markers.filter { showMarker(filter, it) }
             .forEach { add(MapMarker(it.id, it.point.lat, it.point.lng, isBeach = false)) }
-        // Baked-in: Türkiye's 21 official protected nesting beaches — green dots, always shown (zoom out
-        // for the whole Turkey overview).
-        TURKEY_PROTECTED_BEACHES.forEach {
+        // Baked-in: the official protected nesting beaches (loaded from the by-country data file) —
+        // green dots, always shown (zoom out for the whole-country overview).
+        state.protectedAreas.forEach {
             add(MapMarker("pa:${it.name}", it.lat, it.lng, isBeach = true, label = it.name, protected = true))
         }
         // Auto-discovered community beaches (cached on demand): sand polygon + dot, green if protected.

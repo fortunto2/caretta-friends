@@ -39,10 +39,20 @@ fun mapPoints(): List<IosMapPoint> {
     return s.nests.map { IosMapPoint(it.id, it.point.lat, it.point.lng, it.code, it.status.name) }
 }
 
-/** Beach points (name-labelled) for the native map — auto-discovered beaches shown brightly. */
+/** Beach points (name-labelled) for the native map. [status] encodes the dot colour:
+ *  "beach-green" = protected, "beach-amber" = unprotected. Tappable → opens the beach card. */
 fun beachPoints(): List<IosMapPoint> {
     val s = SharedRepo.repo.state.value
-    return s.beaches.map { IosMapPoint(it.id, it.center.lat, it.center.lng, it.name, "beach") }
+    return s.beaches.map {
+        IosMapPoint(it.id, it.center.lat, it.center.lng, it.name, if (it.protected) "beach-green" else "beach-amber")
+    }
+}
+
+/** The baked official protected nesting areas (green overview dots). Status "area" = not openable
+ *  (they're country-overview markers, not community beaches with a detail page). */
+fun protectedAreaPoints(): List<IosMapPoint> {
+    val s = SharedRepo.repo.state.value
+    return s.protectedAreas.map { IosMapPoint("pa:${it.name}", it.lat, it.lng, it.name, "area") }
 }
 
 /** A beach's OSM sand outline for the native map. [polygonCsv] = "lat,lng;lat,lng;…" (empty = no outline). */

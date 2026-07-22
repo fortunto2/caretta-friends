@@ -1,18 +1,23 @@
 package com.carettafriends.domain
 
-/**
- * Türkiye's 21 official sea-turtle nesting beaches, protected under national legislation
- * (Circular 2009/10; Special Environmental Protection Areas of the Ministry of Environment).
- * Night access is banned on these beaches in the nesting season. A discovered beach is flagged
- * "protected" when it lies within ~[PROTECTED_RADIUS_M] of one of these official areas — so the
- * flag is set AUTOMATICALLY for any coastal city, not hand-entered per beach.
- *
- * West → east. Coordinates are approximate area centres (good enough for proximity matching).
- * Source: Turkey Circular 2009/10 (21 protected turtle nesting beaches), goturkiye.com, MEDASSET.
- */
-data class ProtectedArea(val name: String, val lat: Double, val lng: Double)
+import kotlinx.serialization.Serializable
 
-val TURKEY_PROTECTED_BEACHES: List<ProtectedArea> = listOf(
+/**
+ * An official protected sea-turtle nesting area. The catalogue lives in a baked data file
+ * (`files/data/protected-beaches.json`), organised by country, so new countries (Greece, Cyprus…)
+ * are added by editing data — not code. Loaded at startup into AppState.protectedAreas; the list
+ * below is the offline fallback used before the file loads.
+ */
+@Serializable
+data class ProtectedArea(
+    val name: String,
+    val lat: Double,
+    val lng: Double,
+    val country: String = "TR",
+)
+
+/** Fallback = Türkiye's 21 official protected nesting beaches (national Circular 2009/10). */
+val DEFAULT_PROTECTED_AREAS: List<ProtectedArea> = listOf(
     ProtectedArea("Ekincik", 36.822, 28.556),
     ProtectedArea("Dalyan / İztuzu", 36.761, 28.613),
     ProtectedArea("Dalaman", 36.693, 28.804),
@@ -38,5 +43,5 @@ val TURKEY_PROTECTED_BEACHES: List<ProtectedArea> = listOf(
 private const val PROTECTED_RADIUS_M = 15_000.0
 
 /** The official protected area a point falls within (~15 km), or null. */
-fun protectedAreaFor(point: GeoPoint): ProtectedArea? =
-    TURKEY_PROTECTED_BEACHES.firstOrNull { distanceMeters(point, GeoPoint(it.lat, it.lng)) <= PROTECTED_RADIUS_M }
+fun protectedAreaFor(point: GeoPoint, areas: List<ProtectedArea>): ProtectedArea? =
+    areas.firstOrNull { distanceMeters(point, GeoPoint(it.lat, it.lng)) <= PROTECTED_RADIUS_M }

@@ -76,7 +76,10 @@ fun CommunityScreen(state: AppState, onBack: () -> Unit) {
             SectionLabel("Team")
             state.members.sortedBy { it.role.ordinal }.forEach { m -> MemberRow(m) }
             MemberRow(
-                Member("you", "${state.profile.displayName} (you)", state.profile.memberRole, state.profile.avatar),
+                Member(
+                    "you", "${state.profile.displayName} (you)", state.profile.memberRole,
+                    state.profile.avatar, link = state.profile.link,
+                ),
             )
 
             // ── Reach us (tappable) ─────────────────────────────────────
@@ -84,6 +87,11 @@ fun CommunityScreen(state: AppState, onBack: () -> Unit) {
             LinkRow("💬", "WhatsApp", community.whatsappUrl.removePrefix("https://"), c.good) { uri.openUri(community.whatsappUrl) }
             LinkRow("📸", "Instagram", "@gazipasa_caretta_ve_kumzambagi", c.coral) { uri.openUri(community.instagramUrl) }
             LinkRow("🌐", "carettafriends.com", "Official website", c.sea) { uri.openUri(community.websiteUrl) }
+            if (community.adminContact.isNotBlank()) {
+                LinkRow("📞", "Admin contact", community.adminContact, c.deep) {
+                    if (community.adminContact.startsWith("http")) uri.openUri(community.adminContact)
+                }
+            }
 
             // ── Top volunteers — by nests found & hatchlings freed ──────
             SectionLabel("Top volunteers · by nests")
@@ -117,14 +125,17 @@ private fun roleLabel(role: MemberRole): String = when (role) {
 @Composable
 private fun MemberRow(m: Member) {
     val c = caretta
+    val uri = LocalUriHandler.current
+    val hasLink = m.link.isNotBlank()
     val tint = when (m.role) {
         MemberRole.ADMIN -> c.coral
         MemberRole.BEACH_LEADER -> c.sea
         MemberRole.VOLUNTEER -> c.muted
     }
+    val base = Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(c.surface)
+        .border(1.dp, c.line, RoundedCornerShape(15.dp))
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(c.surface)
-            .border(1.dp, c.line, RoundedCornerShape(15.dp)).padding(12.dp),
+        (if (hasLink) base.clickable { runCatching { uri.openUri(m.link) } } else base).padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -134,11 +145,18 @@ private fun MemberRow(m: Member) {
         ) { Text(m.avatar, fontSize = 20.sp) }
         Column(Modifier.weight(1f)) {
             Text(m.name, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
-            if (m.note.isNotBlank()) Text(m.note, color = c.muted, fontSize = 12.sp)
+            when {
+                hasLink -> Text("🔗 ${linkHost(m.link)}", color = c.sea, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                m.note.isNotBlank() -> Text(m.note, color = c.muted, fontSize = 12.sp)
+            }
         }
         Pill(roleLabel(m.role), tint)
     }
 }
+
+/** Trim a URL/handle to a compact display host (e.g. "instagram.com/foo" → "instagram.com/foo"). */
+private fun linkHost(link: String): String =
+    link.removePrefix("https://").removePrefix("http://").removePrefix("www.").trimEnd('/')
 
 @Composable
 private fun BoardRow(rank: Int, r: Ranked) {

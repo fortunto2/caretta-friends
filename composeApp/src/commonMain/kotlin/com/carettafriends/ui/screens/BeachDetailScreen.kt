@@ -45,10 +45,13 @@ fun BeachDetailScreen(beach: Beach, state: AppState, onBack: () -> Unit, onOpenN
     val active = nests.count { it.status == NestStatus.INCUBATING || it.status == NestStatus.HATCHING }
     val hatched = nests.count { it.status == NestStatus.HATCHED || it.status == NestStatus.EXCAVATED }
     val hatchlings = nests.sumOf { it.excavation?.hatchlingsToSea ?: 0 }
+    // Card accent mirrors the map: green = official protected beach, amber = unprotected.
+    val amber = Color(0xFFE0A82E)
+    val accent = if (beach.protected) c.good else amber
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        // cover
-        Box(Modifier.fillMaxWidth().height(120.dp).background(Brush.linearGradient(listOf(c.sea, c.deep)))) {
+        // cover — tinted by protection so the card reads at a glance like the map dot/polygon.
+        Box(Modifier.fillMaxWidth().height(120.dp).background(Brush.linearGradient(listOf(accent, c.deep)))) {
             Text("🏖️", fontSize = 60.sp, modifier = Modifier.align(Alignment.BottomEnd).padding(end = 10.dp))
             Box(
                 Modifier.align(Alignment.TopStart).padding(12.dp).size(34.dp)
@@ -66,14 +69,16 @@ fun BeachDetailScreen(beach: Beach, state: AppState, onBack: () -> Unit, onOpenN
             Modifier.padding(horizontal = 15.dp).padding(top = 12.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (beach.protected) {
-                Text(
-                    "🛡️ Official protected nesting beach (Türkiye) — night access banned in season.",
-                    color = c.good,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+            Text(
+                if (beach.protected) {
+                    "🛡️ Official protected nesting beach — night access banned in season."
+                } else {
+                    "🏖️ Not an official protected beach — nests logged here still count & sync."
+                },
+                color = accent,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+            )
             if (beach.leaderName != null) {
                 Text("👑 ${beach.leaderAvatar} ${beach.leaderName} · beach leader", color = c.ink, fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }

@@ -10,12 +10,29 @@ struct MapPoint: Identifiable, Equatable {
     let coordinate: CLLocationCoordinate2D
     var title: String? = nil
     var subtitle: String? = nil
+    /// Beach dot colour: true = protected (green), false = unprotected (amber), nil = nest (red pin).
+    var protectedBeach: Bool? = nil
+    /// A community beach (tap → beach card) vs a baked overview area (name callout only).
+    var openable: Bool = false
 
     static func == (l: MapPoint, r: MapPoint) -> Bool {
         l.id == r.id &&
         l.coordinate.latitude == r.coordinate.latitude &&
         l.coordinate.longitude == r.coordinate.longitude &&
-        l.title == r.title
+        l.title == r.title &&
+        l.protectedBeach == r.protectedBeach &&
+        l.openable == r.openable
+    }
+}
+
+/// A beach sand outline for the map, carrying its id (for tap → detail) and protected flag (for colour).
+struct BeachPolygon: Equatable {
+    let id: String
+    let coords: [CLLocationCoordinate2D]
+    let isProtected: Bool
+
+    static func == (l: BeachPolygon, r: BeachPolygon) -> Bool {
+        l.id == r.id && l.isProtected == r.isProtected && l.coords.count == r.coords.count
     }
 }
 
@@ -24,6 +41,10 @@ struct MapPoint: Identifiable, Equatable {
 final class IdentifiedAnnotation: MLNPointAnnotation {
     var pointID: String = ""
     var isBeach: Bool = false
+    /// true = protected (green dot), false = unprotected (amber dot); ignored for nests.
+    var protectedBeach: Bool = true
+    /// Community beach (tap opens the beach card) vs baked overview area (callout only).
+    var openable: Bool = false
 }
 
 // MARK: - UIViewRepresentable
@@ -38,12 +59,14 @@ struct MapLibreView: UIViewRepresentable {
     var zoomLevel: Double = 11
     /// When false, tapping a pin fires onSelect but suppresses the title callout bubble.
     var showsCallout: Bool = true
-    /// Fires with the tapped point's id.
+    /// Fires with the tapped nest's id.
     var onSelect: (String) -> Void = { _ in }
+    /// Fires with the tapped community beach's id (dot or polygon) → opens the beach card.
+    var onSelectBeach: (String) -> Void = { _ in }
     /// Live patrol track (breadcrumb coordinates) drawn as a polyline.
     var track: [CLLocationCoordinate2D] = []
-    /// Beach sand outlines (OSM polygons) drawn as translucent teal highlights.
-    var beachPolygons: [[CLLocationCoordinate2D]] = []
+    /// Beach sand outlines (OSM polygons), coloured green (protected) / amber (unprotected).
+    var beachPolygons: [BeachPolygon] = []
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -54,6 +77,13 @@ struct MapLibreView: UIViewRepresentable {
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         // Keep OSM attribution reachable (required by the tile usage policy).
         mapView.attributionButton.isHidden = false
+        // Tap on a beach polygon → open its card. Wait for the map's own gestures (annotation
+        // selection, double-tap zoom) so pin taps keep going to didSelect.
+        let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleMapTap(_:)))
+        for r in mapView.gestureRecognizers ?? [] where r is UITapGestureRecognizer {
+            tap.require(toFail: r)
+        }
+        mapView.addGestureRecognizer(tap)
         context.coordinator.sync(nests: points, beaches: beaches, on: mapView)
         return mapView
     }
@@ -78,29 +108,50 @@ struct MapLibreView: UIViewRepresentable {
 
         // Add a beach-highlight source + fill/line style layers once the style is ready. Style layers
         // render reliably (unlike MLNPolygon annotations, which didn't show); then push the polygons.
+        // Colour is data-driven per feature: green when protected == YES, amber otherwise.
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
             let src = MLNShapeSource(identifier: "cf-beaches", shape: nil, options: nil)
             style.addSource(src)
+            let protectedPred = NSPredicate(format: "protected == YES")
             let fill = MLNFillStyleLayer(identifier: "cf-beaches-fill", source: src)
-            fill.fillColor = NSExpression(forConstantValue: teal)
-            fill.fillOpacity = NSExpression(forConstantValue: 0.30)
+            fill.fillColor = NSExpression(
+                forConditional: protectedPred,
+                trueExpression: NSExpression(forConstantValue: green),
+                falseExpression: NSExpression(forConstantValue: amber))
+            fill.fillOpacity = NSExpression(forConstantValue: 0.22)
             style.addLayer(fill)
             let line = MLNLineStyleLayer(identifier: "cf-beaches-line", source: src)
-            line.lineColor = NSExpression(forConstantValue: teal)
+            line.lineColor = NSExpression(
+                forConditional: protectedPred,
+                trueExpression: NSExpression(forConstantValue: green),
+                falseExpression: NSExpression(forConstantValue: amber))
             line.lineWidth = NSExpression(forConstantValue: 2.5)
             style.addLayer(line)
             beachSource = src
             applyBeachPolygons(parent.beachPolygons)
         }
 
-        /// Push the current beach outlines into the shape source (set the whole collection).
-        func applyBeachPolygons(_ polys: [[CLLocationCoordinate2D]]) {
+        /// Push the current beach outlines into the shape source. Each feature carries `id` (for tap →
+        /// detail) and `protected` (for the green/amber colour expression above).
+        func applyBeachPolygons(_ polys: [BeachPolygon]) {
             guard let src = beachSource else { return }
-            let features: [MLNPolygonFeature] = polys.filter { $0.count >= 3 }.map { coords in
-                var c = coords
-                return MLNPolygonFeature(coordinates: &c, count: UInt(c.count))
+            let features: [MLNPolygonFeature] = polys.filter { $0.coords.count >= 3 }.map { poly in
+                var c = poly.coords
+                let f = MLNPolygonFeature(coordinates: &c, count: UInt(c.count))
+                f.attributes = ["id": poly.id, "protected": poly.isProtected]
+                return f
             }
             src.shape = MLNShapeCollectionFeature(shapes: features)
+        }
+
+        /// Tap outside any pin → hit-test beach polygons; open the beach card for the top one.
+        @objc func handleMapTap(_ gr: UITapGestureRecognizer) {
+            guard gr.state == .ended, let mapView = gr.view as? MLNMapView else { return }
+            let pt = gr.location(in: mapView)
+            let feats = mapView.visibleFeatures(at: pt, styleLayerIdentifiers: ["cf-beaches-fill"])
+            if let id = feats.compactMap({ $0.attribute(forKey: "id") as? String }).first {
+                parent.onSelectBeach(id)
+            }
         }
 
         /// Rebuild the patrol polyline only when the breadcrumb count changes (grows while recording).
@@ -115,8 +166,12 @@ struct MapLibreView: UIViewRepresentable {
             polyline = line
         }
 
-        private let teal = UIColor(red: 0.09, green: 0.55, blue: 0.62, alpha: 1.0)
         private let coral = UIColor(red: 0.98, green: 0.45, blue: 0.36, alpha: 1.0)
+        // Match Android: protected #2E9E5B (green), unprotected #E0A82E (amber).
+        fileprivate static let green = UIColor(red: 0.18, green: 0.62, blue: 0.357, alpha: 1.0)
+        fileprivate static let amber = UIColor(red: 0.878, green: 0.659, blue: 0.18, alpha: 1.0)
+        private var green: UIColor { Coordinator.green }
+        private var amber: UIColor { Coordinator.amber }
 
         // Patrol track (polyline) styling.
         func mapView(_ mapView: MLNMapView, strokeColorForShapeAnnotation annotation: MLNShape) -> UIColor { coral }
@@ -140,42 +195,50 @@ struct MapLibreView: UIViewRepresentable {
             for b in beaches {
                 let a = IdentifiedAnnotation()
                 a.pointID = b.id; a.isBeach = true
+                a.protectedBeach = b.protectedBeach ?? true
+                a.openable = b.openable
                 a.coordinate = b.coordinate; a.title = b.title
                 anns.append(a)
             }
             mapView.addAnnotations(anns)
         }
 
-        // Beaches = a teal dot; nests = MapLibre's built-in red pin (return nil).
+        // Beaches = a coloured dot (green protected / amber unprotected); nests = built-in red pin (nil).
         func mapView(_ mapView: MLNMapView, imageFor annotation: MLNAnnotation) -> MLNAnnotationImage? {
             guard let a = annotation as? IdentifiedAnnotation, a.isBeach else { return nil }
-            let id = "beach-dot"
+            let id = a.protectedBeach ? "beach-dot-green" : "beach-dot-amber"
             if let img = mapView.dequeueReusableAnnotationImage(withIdentifier: id) { return img }
-            return MLNAnnotationImage(image: Coordinator.beachDot(), reuseIdentifier: id)
+            return MLNAnnotationImage(image: Coordinator.beachDot(a.protectedBeach ? green : amber), reuseIdentifier: id)
         }
 
-        // Beaches always show their name; nests follow showsCallout.
+        // Overview area dots show their name callout; community beaches open the card on tap (no callout).
         func mapView(_ mapView: MLNMapView, annotationCanShowCallout annotation: MLNAnnotation) -> Bool {
-            if let a = annotation as? IdentifiedAnnotation, a.isBeach { return true }
+            if let a = annotation as? IdentifiedAnnotation, a.isBeach { return !a.openable }
             return parent.showsCallout
         }
 
-        // THE TAP CALLBACK — nest tap opens its detail; beach tap just shows the name callout.
+        // THE TAP CALLBACK — nest → detail; community beach dot → beach card; area dot → name callout.
         func mapView(_ mapView: MLNMapView, didSelect annotation: MLNAnnotation) {
             guard let a = annotation as? IdentifiedAnnotation else { return }
-            if a.isBeach { return }
+            if a.isBeach {
+                if a.openable {
+                    parent.onSelectBeach(a.pointID)
+                    mapView.deselectAnnotation(annotation, animated: false)
+                }
+                return
+            }
             parent.onSelect(a.pointID)
             if !parent.showsCallout {
                 mapView.deselectAnnotation(annotation, animated: false)
             }
         }
 
-        /// A small teal dot for beach markers (distinct from red nest pins).
-        static func beachDot() -> UIImage {
+        /// A small filled dot for beach markers in [color] (distinct from red nest pins).
+        static func beachDot(_ color: UIColor) -> UIImage {
             let size = CGSize(width: 22, height: 22)
             return UIGraphicsImageRenderer(size: size).image { ctx in
                 let rect = CGRect(x: 2, y: 2, width: 18, height: 18)
-                UIColor(red: 0.09, green: 0.55, blue: 0.62, alpha: 1.0).setFill()
+                color.setFill()
                 ctx.cgContext.fillEllipse(in: rect)
                 UIColor.white.setStroke()
                 ctx.cgContext.setLineWidth(2.5)

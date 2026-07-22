@@ -31,6 +31,9 @@ data class Community(
     val websiteUrl: String,
     val whatsappUrl: String,
     val instagramUrl: String,
+    /** Public admin contact (phone / handle) for other communities to reach this one. Empty = hidden.
+     *  Groundwork for connecting new communities & inter-community coordination later. */
+    val adminContact: String = "",
 )
 
 @Serializable
@@ -169,6 +172,9 @@ data class Member(
     val avatar: String = "🐢",
     val homeBeach: String? = null,
     val note: String = "",
+    /** One public link a member can share — Instagram, blog or website (tappable). Groundwork for
+     *  richer contacts / inter-community messaging later; empty = nothing shown. */
+    val link: String = "",
 )
 
 @Serializable
@@ -186,6 +192,8 @@ data class Profile(
     val memberRole: MemberRole = MemberRole.VOLUNTEER,
     /** An experienced volunteer trusted to excavate (set by a beach leader / admin). */
     val experienced: Boolean = false,
+    /** One public link the volunteer can share (Instagram / blog / website). Empty = none. */
+    val link: String = "",
 ) {
     /** Excavating a nest is delicate → only experienced volunteers, beach leaders and admins. */
     val canExcavate: Boolean
@@ -205,6 +213,8 @@ data class AppState(
     val badges: List<Badge>,
     val profile: Profile,
     val members: List<Member> = emptyList(),
+    /** Official protected nesting areas (loaded from the baked country data file). */
+    val protectedAreas: List<ProtectedArea> = DEFAULT_PROTECTED_AREAS,
     /** Epoch millis of the last successful OSM beach discovery (cache freshness). */
     val beachesSyncedAt: Long = 0,
     /** Last known device location (for "beaches near me" distances). Local only. */

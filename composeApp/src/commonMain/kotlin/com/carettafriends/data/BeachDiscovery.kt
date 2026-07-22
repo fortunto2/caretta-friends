@@ -2,6 +2,7 @@ package com.carettafriends.data
 
 import com.carettafriends.domain.Beach
 import com.carettafriends.domain.GeoPoint
+import com.carettafriends.domain.ProtectedArea
 import com.carettafriends.domain.protectedAreaFor
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
@@ -33,7 +34,7 @@ class BeachDiscovery {
     /** Named beaches within [radiusM] of (lat,lng), as [Beach] rows tied to [communityId].
      *  Each carries its OSM sand POLYGON (`out geom`) so the map highlights the real beach outline
      *  instead of a point pin (whose centroid can land inland). */
-    suspend fun nearby(lat: Double, lng: Double, radiusM: Int, communityId: String): List<Beach> {
+    suspend fun nearby(lat: Double, lng: Double, radiusM: Int, communityId: String, areas: List<ProtectedArea>): List<Beach> {
         // nwr = node+way+relation (some beaches, e.g. Koru, are relations). `out geom` returns the
         // full geometry (way node coords / relation members). POST raw QL + manual parse.
         val query = "[out:json][timeout:25];nwr[\"natural\"=\"beach\"](around:$radiusM,$lat,$lng);out geom tags;"
@@ -61,7 +62,7 @@ class BeachDiscovery {
                 city = el.tags["addr:city"] ?: "",
                 center = center,
                 polygon = ring,
-                protected = protectedAreaFor(center) != null,
+                protected = protectedAreaFor(center, areas) != null,
             )
         }
     }
