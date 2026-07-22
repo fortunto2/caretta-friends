@@ -98,6 +98,8 @@ class CarettaRepository {
         auth.ensureSession()
         val cid = _state.value.community.id
         val owner = auth.currentUserId()
+        // Purge any stale/ghost beaches left in the local cache before we push them back to the cloud.
+        _state.value = _state.value.copy(beaches = normalizeBeaches(_state.value.beaches, cid))
         // Auto-discover nearby beaches from OpenStreetMap so they appear automatically for any coastal
         // city — no hand-entered lists. CACHED: only refetch if we have none yet or the cache is stale
         // (>30 days), so normal starts are instant + offline (Overpass is slow and has no SLA).
@@ -109,7 +111,7 @@ class CarettaRepository {
             val discovered = runCatching { beachDiscovery.nearby(center.lat, center.lng, 15_000, cid, _state.value.protectedAreas) }.getOrDefault(emptyList())
             if (discovered.isNotEmpty()) {
                 _state.value = _state.value.copy(
-                    beaches = mergeById(_state.value.beaches, discovered) { it.id },
+                    beaches = normalizeBeaches(mergeById(_state.value.beaches, discovered) { it.id }, cid),
                     beachesSyncedAt = nowMillis(),
                 )
             }
@@ -131,7 +133,9 @@ class CarettaRepository {
             val remoteMarkers = cloud.pullMarkers()
             val s = _state.value
             _state.value = s.copy(
-                beaches = mergeById(s.beaches, remoteBeaches) { it.id },
+                // Normalize again: the cloud may still hold ghosts we can't delete via RLS, so keep them
+                // off the map here (remote-wins merge would otherwise reintroduce them).
+                beaches = normalizeBeaches(mergeById(s.beaches, remoteBeaches) { it.id }, cid),
                 nests = mergeNests(s.nests, remoteNests),
                 markers = mergeById(s.markers, remoteMarkers) { it.id },
             )
@@ -141,6 +145,20 @@ class CarettaRepository {
     /** Union by id; remote wins on conflict — safe for append-only entities (beaches, markers). */
     private fun <T> mergeById(local: List<T>, remote: List<T>, id: (T) -> String): List<T> =
         (local.associateBy(id) + remote.associateBy(id)).values.toList()
+
+    /** Remove stale/ghost beaches and reconcile seed beaches to their canonical coordinates.
+     *  Keep a beach only if it's a current seed beach OR an OSM beach WITH a polygon outline. This
+     *  drops the leftovers the old append-only merge kept forever: earlier point-only seed dups
+     *  (old inland "bidibidi", "selinus") and centroid-less OSM relation duplicates (e.g. a "Koru
+     *  Plaj" relation shadowing the real "Koru Plajı" way). Runs on start and after every pull so
+     *  neither the local cache nor the cloud can reintroduce a ghost. */
+    private fun normalizeBeaches(beaches: List<Beach>, communityId: String): List<Beach> {
+        val seeds = seedBeaches(communityId).associateBy { it.id }
+        return beaches
+            .filter { it.id in seeds.keys || (it.id.startsWith("osm-") && it.polygon.isNotEmpty()) }
+            .map { seeds[it.id] ?: it }          // reconcile seed beaches to canonical coord/protected
+            .distinctBy { it.id }
+    }
 
     /** Nest merge: scalars last-write-wins by updatedAtMillis, timeline UNIONed by update id.
      *  This is the fix for the old "remote clobbers local" bug — two volunteers adding observations
@@ -307,6 +325,13 @@ class CarettaRepository {
     }
 }
 
+/** Canonical seeded beaches (the offline FK fallback). Bıdı Bıdı at its real coastal cove; every
+ *  other beach is auto-discovered from OSM. This is the source of truth used to reconcile stale
+ *  cached copies (e.g. an earlier inland "bidibidi") back to the correct coordinate. */
+internal fun seedBeaches(communityId: String): List<Beach> = listOf(
+    Beach("bidibidi", communityId, "Bıdı Bıdı", "Gazipaşa", GeoPoint(36.2529, 32.2869), protected = true),
+)
+
 // Clean first-run state: real reference data (community + beaches + facts + guide) but NO demo
 // activity — nests/markers/patrols start empty and are filled by real volunteers. Profile is a
 // fresh organiser. (Beach coordinates are approximate placeholders — refine with on-site GPS.)
@@ -321,11 +346,9 @@ private fun seedState(): AppState {
     )
     // Only Bıdı Bıdı is seeded (real OSM coordinate) — every other beach is auto-discovered from
     // OpenStreetMap at runtime (see BeachDiscovery), so no per-city hand-entered lists.
-    val bidibidi = Beach("bidibidi", community.id, "Bıdı Bıdı", "Gazipaşa", GeoPoint(36.2529, 32.2869), protected = true)
-
     return AppState(
         community = community,
-        beaches = listOf(bidibidi),
+        beaches = seedBeaches(community.id),
         nests = emptyList(),
         markers = emptyList(),
         patrols = emptyList(),
