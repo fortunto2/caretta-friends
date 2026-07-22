@@ -40,11 +40,12 @@ fun ExcavationScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit) {
     val c = caretta
     val seed = nest.excavation
 
-    var shells by remember { mutableStateOf(seed?.shells ?: 47) }
-    var unhatched by remember { mutableStateOf(seed?.unhatched ?: 6) }
-    var pipped by remember { mutableStateOf(seed?.pipped ?: 2) }
-    var inNest by remember { mutableStateOf(seed?.inNest ?: 1) }
-    var helpedOut by remember { mutableStateOf(seed?.helpedOut ?: 3) }
+    // Start at 0 — volunteers count up what they actually find (no demo pre-fill).
+    var shells by remember { mutableStateOf(seed?.shells ?: 0) }
+    var unhatched by remember { mutableStateOf(seed?.unhatched ?: 0) }
+    var pipped by remember { mutableStateOf(seed?.pipped ?: 0) }
+    var inNest by remember { mutableStateOf(seed?.inNest ?: 0) }
+    var helpedOut by remember { mutableStateOf(seed?.helpedOut ?: 0) }
 
     val exc = Excavation(
         shells = shells,

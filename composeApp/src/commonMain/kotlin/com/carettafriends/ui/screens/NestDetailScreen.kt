@@ -165,7 +165,7 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         ConditionChip("${exposureEmoji(n.exposure)} ${exposureLabel(n.exposure)}")
                         n.airTempC?.let { ConditionChip("🌡️ ${it.toInt()}° air") }
-                        ConditionChip("🌧️ rain 7d · ${n.rainMm7d?.toInt() ?: 0}mm")
+                        n.rainMm7d?.let { ConditionChip("🌧️ rain 7d · ${it.toInt()}mm") }
                     }
                 }
             }

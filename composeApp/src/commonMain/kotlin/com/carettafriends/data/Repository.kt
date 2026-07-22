@@ -25,7 +25,6 @@ import com.carettafriends.domain.Profile
 import com.carettafriends.domain.ProtectionLevel
 import com.carettafriends.domain.SimpleMarker
 import com.carettafriends.domain.SunExposure
-import com.carettafriends.domain.TemperatureReading
 import com.carettafriends.domain.UpdateKind
 import com.carettafriends.domain.Visibility
 import kotlinx.coroutines.CoroutineScope
@@ -227,7 +226,7 @@ class CarettaRepository {
         val (fLow, fHigh, inc) = predictTsd(exposure)
         val confirmed = hasPhoto && (locationSource == LocationSource.PHOTO_EXIF || locationSource == LocationSource.DEVICE_GPS)
         val id = nextId("nest")
-        val code = "GZP-${s.nests.size + 25}"
+        val code = "GZP-${s.nests.size + 1}"
         val photos = if (hasPhoto) listOf(PhotoRef(nextId("ph"), PhotoSource.CAMERA, localUri = photoPath)) else emptyList()
         val nest = Nest(
             id = id,
@@ -246,13 +245,15 @@ class CarettaRepository {
             status = if (isNest) NestStatus.INCUBATING else NestStatus.FALSE_CRAWL,
             predictedFemaleLow = if (isNest) fLow else null,
             predictedFemaleHigh = if (isNest) fHigh else null,
-            airTempC = 31.0,
-            rainMm7d = 0.0,
+            // No hardcoded weather — air temp / rain stay null until a real weather fetch (Open-Meteo)
+            // is wired; the nest card hides those chips when unset (no fake "31° / 0mm").
+            airTempC = null,
+            rainMm7d = null,
             photos = photos,
             updates = listOf(
                 NestUpdate(nextId("u"), UpdateKind.FOUND, body = if (isNest) "Nest found" else "False crawl logged", dateLabel = "Today"),
             ),
-            temps = listOf(TemperatureReading("Today", "weather_api", 31.0)),
+            temps = emptyList(),
             updatedAtMillis = nowMillis(),
         )
         _state.value = s.copy(nests = s.nests + nest)
