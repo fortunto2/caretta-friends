@@ -40,9 +40,11 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
+import kotlinx.datetime.minus
 import kotlinx.datetime.todayIn
 
 /** A photo captured/picked by the native camera, waiting to be attached to a new nest. */
@@ -57,6 +59,9 @@ fun predictTsd(exposure: SunExposure?): Triple<Int, Int, Int> = when (exposure) 
 }
 
 fun today(): LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
+
+/** How far back a nest/update date may be set (word-of-mouth back-dating; guards against bogus far-past dates). */
+const val MAX_BACKDATE_DAYS = 31
 
 /** Days elapsed since the nest was found (incubation day). */
 fun nestDay(nest: Nest, today: LocalDate = today()): Int =
@@ -313,10 +318,41 @@ class CarettaRepository {
         scope.launch { auth.ensureSession(); runCatching { cloud.pushMarker(marker, auth.currentUserId()) } }
     }
 
-    fun addUpdate(nestId: String, kind: UpdateKind, body: String, condition: ObsCondition? = null) {
+    /** Append a timeline entry. [obsDate] back-dates it (word-of-mouth / gallery-EXIF photo from the past);
+     *  when it equals today it stays a live "Today" entry. [photoPath] attaches a photo, which also joins the
+     *  nest's photo history. */
+    fun addUpdate(
+        nestId: String,
+        kind: UpdateKind,
+        body: String,
+        condition: ObsCondition? = null,
+        obsDate: LocalDate? = null,
+        photoPath: String? = null,
+    ) {
+        val backDate = obsDate?.takeIf { it != today() }
+        val photo = photoPath?.let { PhotoRef(nextId("ph"), PhotoSource.GALLERY, localUri = it) }
         update(nestId) { n ->
-            n.copy(updates = n.updates + NestUpdate(nextId("u"), kind, condition = condition, body = body, dateLabel = "Today"))
+            n.copy(
+                updates = n.updates + NestUpdate(
+                    id = nextId("u"),
+                    kind = kind,
+                    condition = condition,
+                    body = body,
+                    createdEpochMillis = nowMillis(),
+                    dateLabel = "Today",
+                    obsDate = backDate,
+                    photo = photo,
+                ),
+                photos = if (photo != null) n.photos + photo else n.photos,
+            )
         }
+    }
+
+    /** Back-date a nest's found date — admin knows from word-of-mouth it was found earlier ("3 days ago")
+     *  but the photo only arrived now. Clamped to [today-[MAX_BACKDATE_DAYS], today] to block bogus far-past dates. */
+    fun setFoundDate(nestId: String, date: LocalDate) {
+        val clamped = date.coerceIn(today().minus(DatePeriod(days = MAX_BACKDATE_DAYS)), today())
+        update(nestId) { it.copy(foundDate = clamped) }
     }
 
     fun setStatus(nestId: String, status: NestStatus, comment: String = "") {

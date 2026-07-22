@@ -105,6 +105,11 @@ data class NestUpdate(
     val author: String = "you",
     val createdEpochMillis: Long = 0L,
     val dateLabel: String = "",
+    /** The real date this update REFERS to (back-datable — "found 3 days ago, photo arrived today").
+     *  null → a live update, shown as [dateLabel]. When set, the timeline shows this date. */
+    val obsDate: LocalDate? = null,
+    /** A photo attached to this timeline entry — builds the nest's photo history over time. */
+    val photo: PhotoRef? = null,
 )
 
 /** FWC excavation counts → auto hatch / emergence success. */

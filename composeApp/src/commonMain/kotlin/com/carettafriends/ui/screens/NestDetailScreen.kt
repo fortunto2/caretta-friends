@@ -3,6 +3,7 @@ package com.carettafriends.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +17,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -32,8 +36,11 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.carettafriends.data.CarettaRepository
+import com.carettafriends.data.MAX_BACKDATE_DAYS
 import com.carettafriends.data.nestDay
+import com.carettafriends.data.today
 import com.carettafriends.domain.Nest
 import com.carettafriends.domain.NestConfidence
 import com.carettafriends.domain.NestStatus
@@ -54,6 +61,8 @@ import com.carettafriends.ui.components.TopBar
 import com.carettafriends.ui.theme.caretta
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.daysUntil
+import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
 @Composable
@@ -64,6 +73,7 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
     val n = state.nest(nest.id) ?: nest
     val beach = state.beach(n.beachId)
     var watching by remember { mutableStateOf(false) }
+    var sheet by remember { mutableStateOf(DetailSheet.NONE) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         TopBar(n.code, onBack = onBack)
@@ -108,10 +118,14 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                 Column(Modifier.weight(1f)) {
                     Text(n.code, color = c.deep, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
                     Text(
-                        "${beach?.name ?: "Beach"} · found ${fmtDate(n.foundDate)}",
+                        "${beach?.name ?: "Beach"} · found ${fmtDate(n.foundDate)}  ✎",
                         color = c.muted,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { sheet = DetailSheet.DATE }
+                            .padding(vertical = 2.dp),
                     )
                 }
                 StatusPill(n.status)
@@ -178,14 +192,24 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
 
             // Add update / Comment.
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                GhostButton(
-                    "＋ Add update",
-                    modifier = Modifier.weight(1f),
-                ) { repo.addUpdate(n.id, UpdateKind.OBSERVATION, "Patrol — all OK", ObsCondition.OK) }
-                GhostButton(
-                    "💬 Comment",
-                    modifier = Modifier.weight(1f),
-                ) { repo.addUpdate(n.id, UpdateKind.COMMENT, "Looks good today") }
+                GhostButton("＋ Add update", modifier = Modifier.weight(1f)) { sheet = DetailSheet.UPDATE }
+                GhostButton("💬 Comment", modifier = Modifier.weight(1f)) { sheet = DetailSheet.COMMENT }
+            }
+
+            when (sheet) {
+                DetailSheet.UPDATE -> AddUpdateDialog(comment = false, onDismiss = { sheet = DetailSheet.NONE }) { body, cond, date ->
+                    repo.addUpdate(n.id, UpdateKind.OBSERVATION, body, cond, obsDate = date)
+                    sheet = DetailSheet.NONE
+                }
+                DetailSheet.COMMENT -> AddUpdateDialog(comment = true, onDismiss = { sheet = DetailSheet.NONE }) { body, _, date ->
+                    repo.addUpdate(n.id, UpdateKind.COMMENT, body, obsDate = date)
+                    sheet = DetailSheet.NONE
+                }
+                DetailSheet.DATE -> EditFoundDateDialog(n.foundDate, onDismiss = { sheet = DetailSheet.NONE }) { d ->
+                    repo.setFoundDate(n.id, d)
+                    sheet = DetailSheet.NONE
+                }
+                DetailSheet.NONE -> {}
             }
 
             // Excavation payoff — delicate work, gated to experienced volunteers & beach leaders.
@@ -230,6 +254,8 @@ private fun TimelineRow(u: NestUpdate) {
     val c = caretta
     val dot = dotColor(u)
     val isComment = u.kind == UpdateKind.COMMENT
+    val dateStr = u.obsDate?.let { fmtDate(it) } ?: u.dateLabel.ifBlank { "Today" }
+    val meta = "${u.author} · $dateStr${conditionSuffix(u)}"
     Row(
         Modifier.fillMaxWidth().padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -239,33 +265,48 @@ private fun TimelineRow(u: NestUpdate) {
             Box(Modifier.size(4.dp))
             Box(Modifier.size(11.dp).clip(CircleShape).background(dot).border(2.dp, c.surface, CircleShape))
         }
-        if (isComment) {
-            // Italic comment bubble.
-            Box(
-                Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(13.dp))
-                    .background(c.sand)
-                    .border(1.dp, c.line, RoundedCornerShape(13.dp))
-                    .padding(horizontal = 12.dp, vertical = 9.dp),
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        "“${u.body}”",
-                        color = c.ink,
-                        fontSize = 13.sp,
-                        fontStyle = FontStyle.Italic,
-                    )
-                    Text("${u.author} · ${u.dateLabel}", color = c.muted, fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
-                }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            // Attached photo (builds the nest's photo history over time).
+            u.photo?.localUri?.let { uri ->
+                LocalPhoto(uri, Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(13.dp)))
             }
-        } else {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(u.body, color = c.ink, fontSize = 13.5.sp, fontWeight = FontWeight.Bold)
-                Text("${u.author} · ${u.dateLabel}", color = c.muted, fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+            if (isComment) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(13.dp))
+                        .background(c.sand)
+                        .border(1.dp, c.line, RoundedCornerShape(13.dp))
+                        .padding(horizontal = 12.dp, vertical = 9.dp),
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("“${u.body}”", color = c.ink, fontSize = 13.sp, fontStyle = FontStyle.Italic)
+                        Text(meta, color = c.muted, fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    if (u.body.isNotBlank()) {
+                        Text(u.body, color = c.ink, fontSize = 13.5.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Text(meta, color = c.muted, fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }
+}
+
+/** " · ⚠ predated" style suffix for notable observation conditions (OK stays clean). */
+private fun conditionSuffix(u: NestUpdate): String = when (u.condition) {
+    null, ObsCondition.OK -> ""
+    ObsCondition.HATCHING -> " · 🐣 hatching"
+    ObsCondition.HATCHED -> " · 🐢 hatched"
+    ObsCondition.DISTURBED -> " · ⚠ disturbed"
+    ObsCondition.PREDATED -> " · ⚠ predated"
+    ObsCondition.WASHED_OVER -> " · 🌊 washed over"
+    ObsCondition.POACHED -> " · ⚠ poached"
+    ObsCondition.RELOCATED -> " · ➡ relocated"
+    ObsCondition.OTHER -> ""
 }
 
 // --- helpers -------------------------------------------------------------
@@ -324,4 +365,143 @@ private fun statusColor(status: NestStatus?, fallback: Color): Color {
         NestStatus.LOST, NestStatus.FALSE_CRAWL -> c.muted
         else -> fallback
     }
+}
+
+// --- add-update / back-date dialogs --------------------------------------
+
+/** Which bottom dialog is open on the nest detail (none / add update / comment / edit found-date). */
+private enum class DetailSheet { NONE, UPDATE, COMMENT, DATE }
+
+@Composable
+private fun AddUpdateDialog(
+    comment: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (body: String, condition: ObsCondition?, obsDate: LocalDate) -> Unit,
+) {
+    val c = caretta
+    var body by remember { mutableStateOf("") }
+    var condition by remember { mutableStateOf(ObsCondition.OK) }
+    var date by remember { mutableStateOf(today()) }
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = RoundedCornerShape(20.dp), color = c.surface) {
+            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text(
+                    if (comment) "💬 Comment" else "＋ Add update",
+                    color = c.deep, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold,
+                )
+                OutlinedTextField(
+                    value = body,
+                    onValueChange = { body = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(if (comment) "Write a comment…" else "What did you observe?") },
+                    minLines = 2,
+                )
+                if (!comment) {
+                    SectionLabel("Condition")
+                    ConditionPicker(condition) { condition = it }
+                }
+                SectionLabel("Date")
+                DateStepper(date) { date = it }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel", color = c.muted) }
+                    PrimaryButton("Save", modifier = Modifier.weight(1f), enabled = body.isNotBlank()) {
+                        onSave(body.trim(), if (comment) null else condition, date)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditFoundDateDialog(initial: LocalDate, onDismiss: () -> Unit, onSave: (LocalDate) -> Unit) {
+    val c = caretta
+    var date by remember { mutableStateOf(initial) }
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = RoundedCornerShape(20.dp), color = c.surface) {
+            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text("Nest found date", color = c.deep, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
+                Text(
+                    "Word-of-mouth it was found earlier but the photo arrived now? Set the real day — up to a " +
+                        "month back. The incubation day & hatch forecast recompute automatically.",
+                    color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                )
+                DateStepper(date) { date = it }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel", color = c.muted) }
+                    PrimaryButton("Save", modifier = Modifier.weight(1f)) { onSave(date) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConditionPicker(selected: ObsCondition, onSelect: (ObsCondition) -> Unit) {
+    val opts = listOf(
+        ObsCondition.OK to "OK",
+        ObsCondition.HATCHING to "Hatching",
+        ObsCondition.HATCHED to "Hatched",
+        ObsCondition.DISTURBED to "Disturbed",
+        ObsCondition.PREDATED to "Predated",
+        ObsCondition.WASHED_OVER to "Washed over",
+    )
+    Row(
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        opts.forEach { (cond, label) -> SelectableChip(label, selected == cond) { onSelect(cond) } }
+    }
+}
+
+@Composable
+private fun SelectableChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    val c = caretta
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(11.dp))
+            .background(if (selected) c.sea else c.sand)
+            .border(1.dp, if (selected) c.sea else c.line, RoundedCornerShape(11.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 7.dp),
+    ) {
+        Text(label, color = if (selected) Color.White else c.ink, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+/** Date picker with no platform dialog: −/+ day steppers clamped to [today-[MAX_BACKDATE_DAYS], today].
+ *  "3 days ago" is three taps on −. Identical on iOS & Android. */
+@Composable
+private fun DateStepper(date: LocalDate, onChange: (LocalDate) -> Unit) {
+    val minDate = today().minus(DatePeriod(days = MAX_BACKDATE_DAYS))
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        StepButton("−", date > minDate) { onChange(date.minus(DatePeriod(days = 1))) }
+        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(fmtDate(date), color = caretta.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
+            Text(dayAgoLabel(date), color = caretta.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        }
+        StepButton("+", date < today()) { onChange(date.plus(DatePeriod(days = 1))) }
+    }
+}
+
+@Composable
+private fun StepButton(symbol: String, enabled: Boolean, onClick: () -> Unit) {
+    val c = caretta
+    Box(
+        Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(if (enabled) c.sand else c.sand.copy(alpha = 0.5f))
+            .border(1.dp, c.line, CircleShape)
+            .clickable(enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(symbol, color = if (enabled) c.deep else c.muted, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+    }
+}
+
+private fun dayAgoLabel(date: LocalDate): String = when (val d = date.daysUntil(today())) {
+    0 -> "today"
+    1 -> "yesterday"
+    else -> "$d days ago"
 }
