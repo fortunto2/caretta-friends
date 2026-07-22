@@ -39,7 +39,7 @@ import com.carettafriends.ui.components.TopBar
 import com.carettafriends.ui.theme.caretta
 
 @Composable
-fun BeachesScreen(state: AppState, onOpenNest: (String) -> Unit) {
+fun BeachesScreen(state: AppState, onOpenNest: (String) -> Unit, onOpenBeach: (String) -> Unit = {}) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         TopBar("Beaches")
         Column(
@@ -62,6 +62,7 @@ fun BeachesScreen(state: AppState, onOpenNest: (String) -> Unit) {
                         patrolled = state.patrols.any { it.beachId == beach.id },
                         distanceAway = me?.let { distanceLabel(distanceMeters(it, beach.center)) },
                         onOpenNest = onOpenNest,
+                        onOpenBeach = onOpenBeach,
                     )
                 }
             }
@@ -78,11 +79,12 @@ private fun BeachGroup(
     patrolled: Boolean,
     distanceAway: String?,
     onOpenNest: (String) -> Unit,
+    onOpenBeach: (String) -> Unit,
 ) {
     val c = caretta
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // beach header card
-        CarettaCard {
+        // beach header card — tap to open the beach detail (stats + feed)
+        CarettaCard(modifier = Modifier.clickable { onOpenBeach(beach.id) }) {
             Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Box(

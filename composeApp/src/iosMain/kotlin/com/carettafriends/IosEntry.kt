@@ -10,6 +10,7 @@ import com.carettafriends.domain.GeoPoint
 import com.carettafriends.domain.nearestBeach
 import com.carettafriends.ui.components.EmptyHint
 import com.carettafriends.ui.screens.AddNestScreen
+import com.carettafriends.ui.screens.BeachDetailScreen
 import com.carettafriends.ui.screens.BeachesScreen
 import com.carettafriends.ui.screens.CameraScreen
 import com.carettafriends.ui.screens.CommunityScreen
@@ -92,9 +93,15 @@ fun MapVC(onOpenNest: (String) -> Unit, onAdd: () -> Unit): UIViewController = h
     MapScreen(state, onAdd, onOpenNest)
 }
 
-fun BeachesVC(onOpenNest: (String) -> Unit): UIViewController = host {
+fun BeachesVC(onOpenNest: (String) -> Unit, onOpenBeach: (String) -> Unit): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
-    BeachesScreen(state, onOpenNest)
+    BeachesScreen(state, onOpenNest, onOpenBeach)
+}
+
+fun BeachDetailVC(beachId: String, onBack: () -> Unit, onOpenNest: (String) -> Unit): UIViewController = host {
+    val state by SharedRepo.repo.state.collectAsState()
+    val b = state.beach(beachId)
+    if (b != null) BeachDetailScreen(b, state, onBack, onOpenNest) else EmptyHint("🏖️", "Beach not found")
 }
 
 fun LearnVC(): UIViewController = host {

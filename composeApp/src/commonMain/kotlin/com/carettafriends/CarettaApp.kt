@@ -20,6 +20,7 @@ import com.carettafriends.ui.components.EmptyHint
 import com.carettafriends.ui.components.NavItem
 import com.carettafriends.ui.isTab
 import com.carettafriends.ui.screens.AddNestScreen
+import com.carettafriends.ui.screens.BeachDetailScreen
 import com.carettafriends.ui.screens.BeachesScreen
 import com.carettafriends.ui.screens.CameraScreen
 import com.carettafriends.ui.screens.CommunityScreen
@@ -67,7 +68,11 @@ fun CarettaApp() {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     when (current) {
                         is Screen.Map -> MapScreen(state, { nav.go(Screen.AddNest) }, { nav.go(Screen.NestDetail(it)) })
-                        is Screen.Beaches -> BeachesScreen(state) { nav.go(Screen.NestDetail(it)) }
+                        is Screen.Beaches -> BeachesScreen(
+                            state,
+                            onOpenNest = { nav.go(Screen.NestDetail(it)) },
+                            onOpenBeach = { nav.go(Screen.BeachDetail(it)) },
+                        )
                         is Screen.Learn -> LearnScreen(state, repo)
                         is Screen.Profile -> ProfileScreen(repo, state) { nav.go(Screen.Community) }
                         is Screen.AddNest -> AddNestScreen(repo, state, { nav.back() }, { nav.go(Screen.Camera) })
@@ -84,6 +89,14 @@ fun CarettaApp() {
                         is Screen.Excavation -> {
                             val n = state.nest(current.nestId)
                             if (n != null) ExcavationScreen(n, repo) { nav.back() } else EmptyHint("🐢", "Nest not found")
+                        }
+                        is Screen.BeachDetail -> {
+                            val b = state.beach(current.beachId)
+                            if (b != null) {
+                                BeachDetailScreen(b, state, { nav.back() }, { nav.go(Screen.NestDetail(it)) })
+                            } else {
+                                EmptyHint("🏖️", "Beach not found")
+                            }
                         }
                     }
                 }

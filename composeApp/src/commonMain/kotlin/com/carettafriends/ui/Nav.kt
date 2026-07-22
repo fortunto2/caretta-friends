@@ -14,6 +14,7 @@ sealed interface Screen {
     data object Community : Screen
     data class NestDetail(val nestId: String) : Screen
     data class Excavation(val nestId: String) : Screen
+    data class BeachDetail(val beachId: String) : Screen
 }
 
 fun Screen.isTab(): Boolean =

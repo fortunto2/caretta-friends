@@ -16,6 +16,7 @@ enum Route: Hashable {
     case addNest
     case camera
     case community
+    case beach(String)
 }
 
 /// A pushed Compose screen: native swipe-back, no tab bar, hidden nav bar.
@@ -78,6 +79,16 @@ private func destinationView(_ route: Route, path: Binding<NavigationPath>) -> s
     case .community:
         DetailScreen(fullBleed: false) {
             ComposeHost { IosEntryKt.CommunityVC(onBack: { path.wrappedValue.removeLast() }) }
+        }
+    case .beach(let id):
+        DetailScreen(fullBleed: false) {
+            ComposeHost {
+                IosEntryKt.BeachDetailVC(
+                    beachId: id,
+                    onBack: { path.wrappedValue.removeLast() },
+                    onOpenNest: { nid in path.wrappedValue.append(Route.nest(nid)) }
+                )
+            }
         }
     }
 }
@@ -292,7 +303,10 @@ struct ContentView: View {
 
             TabStack { path in
                 ComposeHost {
-                    IosEntryKt.BeachesVC(onOpenNest: { path.wrappedValue.append(Route.nest($0)) })
+                    IosEntryKt.BeachesVC(
+                        onOpenNest: { path.wrappedValue.append(Route.nest($0)) },
+                        onOpenBeach: { path.wrappedValue.append(Route.beach($0)) }
+                    )
                 }
             }
             .tabItem { Label("Beaches", systemImage: "beach.umbrella.fill") }
