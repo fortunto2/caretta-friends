@@ -201,6 +201,10 @@ data class AppState(
     val badges: List<Badge>,
     val profile: Profile,
     val members: List<Member> = emptyList(),
+    /** Epoch millis of the last successful OSM beach discovery (cache freshness). */
+    val beachesSyncedAt: Long = 0,
+    /** Last known device location (for "beaches near me" distances). Local only. */
+    val deviceLocation: GeoPoint? = null,
 ) {
     fun beach(id: String): Beach? = beaches.firstOrNull { it.id == id }
     fun nest(id: String): Nest? = nests.firstOrNull { it.id == id }

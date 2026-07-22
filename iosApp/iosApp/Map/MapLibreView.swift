@@ -23,6 +23,7 @@ struct MapPoint: Identifiable, Equatable {
 /// (MLNPointAnnotation itself has no id field, only coordinate/title/subtitle).
 final class IdentifiedAnnotation: MLNPointAnnotation {
     var pointID: String = ""
+    var isBeach: Bool = false
 }
 
 // MARK: - UIViewRepresentable
@@ -32,6 +33,7 @@ struct MapLibreView: UIViewRepresentable {
     static let gazipasa = CLLocationCoordinate2D(latitude: 36.2700, longitude: 32.3100)
 
     var points: [MapPoint]
+    var beaches: [MapPoint] = []
     var center: CLLocationCoordinate2D = MapLibreView.gazipasa
     var zoomLevel: Double = 11
     /// When false, tapping a pin fires onSelect but suppresses the title callout bubble.
@@ -50,13 +52,13 @@ struct MapLibreView: UIViewRepresentable {
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         // Keep OSM attribution reachable (required by the tile usage policy).
         mapView.attributionButton.isHidden = false
-        context.coordinator.sync(points, on: mapView)
+        context.coordinator.sync(nests: points, beaches: beaches, on: mapView)
         return mapView
     }
 
     func updateUIView(_ mapView: MLNMapView, context: Context) {
         context.coordinator.parent = self          // keep closure/props fresh across SwiftUI updates
-        context.coordinator.sync(points, on: mapView)
+        context.coordinator.sync(nests: points, beaches: beaches, on: mapView)
         context.coordinator.syncTrack(track, on: mapView)
     }
 
@@ -89,40 +91,63 @@ struct MapLibreView: UIViewRepresentable {
 
         func mapView(_ mapView: MLNMapView, lineWidthForPolylineAnnotation annotation: MLNPolyline) -> CGFloat { 4 }
 
-        /// Rebuild annotations only when the id set changes (fine for small counts).
-        func sync(_ points: [MapPoint], on mapView: MLNMapView) {
-            let ids = Set(points.map(\.id))
+        /// Rebuild point annotations (nests + beaches) when the id set changes; keeps the polyline.
+        func sync(nests: [MapPoint], beaches: [MapPoint], on mapView: MLNMapView) {
+            let ids = Set(nests.map(\.id) + beaches.map(\.id))
             guard ids != currentIDs else { return }
             currentIDs = ids
-            if let existing = mapView.annotations { mapView.removeAnnotations(existing) }
-            let annotations = points.map { p -> IdentifiedAnnotation in
+            let toRemove = (mapView.annotations ?? []).filter { $0 is IdentifiedAnnotation }
+            mapView.removeAnnotations(toRemove)
+            var anns: [IdentifiedAnnotation] = []
+            for p in nests {
                 let a = IdentifiedAnnotation()
-                a.pointID = p.id
-                a.coordinate = p.coordinate
-                a.title = p.title
-                a.subtitle = p.subtitle
-                return a
+                a.pointID = p.id; a.isBeach = false
+                a.coordinate = p.coordinate; a.title = p.title; a.subtitle = p.subtitle
+                anns.append(a)
             }
-            mapView.addAnnotations(annotations)
+            for b in beaches {
+                let a = IdentifiedAnnotation()
+                a.pointID = b.id; a.isBeach = true
+                a.coordinate = b.coordinate; a.title = b.title
+                anns.append(a)
+            }
+            mapView.addAnnotations(anns)
         }
 
-        // Return nil -> MapLibre draws its built-in default marker for MLNPointAnnotation.
+        // Beaches = a teal dot; nests = MapLibre's built-in red pin (return nil).
         func mapView(_ mapView: MLNMapView, imageFor annotation: MLNAnnotation) -> MLNAnnotationImage? {
-            nil
+            guard let a = annotation as? IdentifiedAnnotation, a.isBeach else { return nil }
+            let id = "beach-dot"
+            if let img = mapView.dequeueReusableAnnotationImage(withIdentifier: id) { return img }
+            return MLNAnnotationImage(image: Coordinator.beachDot(), reuseIdentifier: id)
         }
 
-        // Enables the title/subtitle callout bubble.
+        // Beaches always show their name; nests follow showsCallout.
         func mapView(_ mapView: MLNMapView, annotationCanShowCallout annotation: MLNAnnotation) -> Bool {
-            parent.showsCallout
+            if let a = annotation as? IdentifiedAnnotation, a.isBeach { return true }
+            return parent.showsCallout
         }
 
-        // THE TAP CALLBACK — invoked when the user taps/selects an annotation.
+        // THE TAP CALLBACK — nest tap opens its detail; beach tap just shows the name callout.
         func mapView(_ mapView: MLNMapView, didSelect annotation: MLNAnnotation) {
             guard let a = annotation as? IdentifiedAnnotation else { return }
+            if a.isBeach { return }
             parent.onSelect(a.pointID)
-            // Without a callout, immediately deselect so the SAME pin can fire again next tap.
             if !parent.showsCallout {
                 mapView.deselectAnnotation(annotation, animated: false)
+            }
+        }
+
+        /// A small teal dot for beach markers (distinct from red nest pins).
+        static func beachDot() -> UIImage {
+            let size = CGSize(width: 22, height: 22)
+            return UIGraphicsImageRenderer(size: size).image { ctx in
+                let rect = CGRect(x: 2, y: 2, width: 18, height: 18)
+                UIColor(red: 0.09, green: 0.55, blue: 0.62, alpha: 1.0).setFill()
+                ctx.cgContext.fillEllipse(in: rect)
+                UIColor.white.setStroke()
+                ctx.cgContext.setLineWidth(2.5)
+                ctx.cgContext.strokeEllipse(in: rect)
             }
         }
 

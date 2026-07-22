@@ -38,6 +38,15 @@ fun mapPoints(): List<IosMapPoint> {
     return s.nests.map { IosMapPoint(it.id, it.point.lat, it.point.lng, it.code, it.status.name) }
 }
 
+/** Beach points (name-labelled) for the native map — auto-discovered beaches shown brightly. */
+fun beachPoints(): List<IosMapPoint> {
+    val s = SharedRepo.repo.state.value
+    return s.beaches.map { IosMapPoint(it.id, it.center.lat, it.center.lng, it.name, "beach") }
+}
+
+/** Report the device's current location (one-shot from the native map) for "beaches near me". */
+fun setDeviceLocation(lat: Double, lng: Double) = SharedRepo.repo.setDeviceLocation(lat, lng)
+
 /** Save a recorded patrol from the Swift GPS recorder. trackCsv = "lat,lng;lat,lng;…". Returns the id.
  *  On-device only until [publishPatrol] — the walk is never shared live. */
 fun savePatrol(meters: Int, seconds: Int, trackCsv: String): String {

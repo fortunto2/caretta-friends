@@ -113,13 +113,22 @@ struct MapTab: View {
     @State private var path = NavigationPath()
     @State private var showCamera = false
     @State private var points: [MapPoint] = []
+    @State private var beaches: [MapPoint] = []
     @State private var filter = "all"
     @StateObject private var patrol = PatrolRecorder()
+    @StateObject private var deviceLoc = DeviceLocation()
     @State private var savedPatrolId: String? = nil
     @State private var showPublish = false
 
     private func reload() {
         points = IosEntryKt.mapPoints().map { p in
+            MapPoint(
+                id: p.id,
+                coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng),
+                title: p.title
+            )
+        }
+        beaches = IosEntryKt.beachPoints().map { p in
             MapPoint(
                 id: p.id,
                 coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng),
@@ -133,6 +142,7 @@ struct MapTab: View {
             ZStack(alignment: .top) {
                 MapLibreView(
                     points: points,
+                    beaches: beaches,
                     center: MapLibreView.gazipasa,
                     zoomLevel: 12,
                     showsCallout: false,
@@ -210,7 +220,19 @@ struct MapTab: View {
                 }
             }
         }
-        .onAppear { reload() }
+        .onAppear {
+            reload()
+            deviceLoc.onFix = { lat, lng in IosEntryKt.setDeviceLocation(lat: lat, lng: lng) }
+            deviceLoc.request()
+        }
+        .task {
+            // The native map reads a snapshot, not the Kotlin store — re-pull a few times so
+            // async first-launch data (OSM beaches, synced nests) shows without a manual relaunch.
+            for _ in 0..<6 {
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+                reload()
+            }
+        }
         .onChange(of: path.count) { _ in reload() }
         .fullScreenCover(isPresented: $showCamera) {
             CameraCaptureView(

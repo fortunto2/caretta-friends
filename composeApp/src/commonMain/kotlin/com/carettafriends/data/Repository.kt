@@ -96,12 +96,20 @@ class CarettaRepository {
         auth.ensureSession()
         val cid = _state.value.community.id
         val owner = auth.currentUserId()
-        // Auto-discover nearby beaches from OpenStreetMap (best-effort) so they appear automatically
-        // for any coastal city — no hand-entered lists. Merge into local state; cached offline.
-        val center = _state.value.beaches.firstOrNull()?.center ?: GeoPoint(36.27, 32.30)
-        val discovered = runCatching { beachDiscovery.nearby(center.lat, center.lng, 15_000, cid) }.getOrDefault(emptyList())
-        if (discovered.isNotEmpty()) {
-            _state.value = _state.value.copy(beaches = mergeById(_state.value.beaches, discovered) { it.id })
+        // Auto-discover nearby beaches from OpenStreetMap so they appear automatically for any coastal
+        // city — no hand-entered lists. CACHED: only refetch if we have none yet or the cache is stale
+        // (>30 days), so normal starts are instant + offline (Overpass is slow and has no SLA).
+        val haveOsm = _state.value.beaches.any { it.id.startsWith("osm-") }
+        val stale = nowMillis() - _state.value.beachesSyncedAt > 30L * 24 * 3600 * 1000
+        if (!haveOsm || stale) {
+            val center = _state.value.beaches.firstOrNull()?.center ?: GeoPoint(36.27, 32.30)
+            val discovered = runCatching { beachDiscovery.nearby(center.lat, center.lng, 15_000, cid) }.getOrDefault(emptyList())
+            if (discovered.isNotEmpty()) {
+                _state.value = _state.value.copy(
+                    beaches = mergeById(_state.value.beaches, discovered) { it.id },
+                    beachesSyncedAt = nowMillis(),
+                )
+            }
         }
         // Push local changes first (nothing made offline is lost), then pull & merge the truth.
         val local = _state.value
@@ -168,6 +176,11 @@ class CarettaRepository {
     /** Set (or clear with null) the volunteer's optional home beach. */
     fun setHomeBeach(beachId: String?) {
         _state.value = _state.value.copy(profile = _state.value.profile.copy(homeBeachId = beachId))
+    }
+
+    /** Last known device location, for "beaches near me" distances (set by the native map/GPS). */
+    fun setDeviceLocation(lat: Double, lng: Double) {
+        _state.value = _state.value.copy(deviceLocation = GeoPoint(lat, lng))
     }
 
     fun addNest(

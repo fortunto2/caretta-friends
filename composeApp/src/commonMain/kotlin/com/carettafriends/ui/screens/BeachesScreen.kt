@@ -28,6 +28,8 @@ import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Beach
 import com.carettafriends.domain.Nest
 import com.carettafriends.domain.NestStatus
+import com.carettafriends.domain.distanceLabel
+import com.carettafriends.domain.distanceMeters
 import com.carettafriends.ui.components.CarettaCard
 import com.carettafriends.ui.components.EmptyHint
 import com.carettafriends.ui.components.Pill
@@ -44,11 +46,13 @@ fun BeachesScreen(state: AppState, onOpenNest: (String) -> Unit) {
             Modifier.padding(horizontal = 15.dp).padding(bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            SectionLabel("Your beaches 🏖️")
+            SectionLabel(if (state.deviceLocation != null) "Beaches near you 🏖️" else "Beaches 🏖️")
             if (state.beaches.isEmpty()) {
-                EmptyHint("🏖️", "No beaches assigned yet.\nPick your community to get started.")
+                EmptyHint("🏖️", "Finding beaches near you…\nThey load automatically from the map.")
             } else {
-                state.beaches.forEach { beach ->
+                val me = state.deviceLocation
+                val ordered = if (me != null) state.beaches.sortedBy { distanceMeters(me, it.center) } else state.beaches
+                ordered.forEach { beach ->
                     val nests = state.nests.filter { it.beachId == beach.id }
                     BeachGroup(
                         beach = beach,
@@ -56,6 +60,7 @@ fun BeachesScreen(state: AppState, onOpenNest: (String) -> Unit) {
                         active = nests.count { it.status == NestStatus.INCUBATING || it.status == NestStatus.HATCHING },
                         hatchingSoon = nests.count { it.status == NestStatus.HATCHING },
                         patrolled = state.patrols.any { it.beachId == beach.id },
+                        distanceAway = me?.let { distanceLabel(distanceMeters(it, beach.center)) },
                         onOpenNest = onOpenNest,
                     )
                 }
@@ -71,6 +76,7 @@ private fun BeachGroup(
     active: Int,
     hatchingSoon: Int,
     patrolled: Boolean,
+    distanceAway: String?,
     onOpenNest: (String) -> Unit,
 ) {
     val c = caretta
@@ -86,7 +92,12 @@ private fun BeachGroup(
                     ) { Text("🏖️", fontSize = 24.sp) }
                     Column(Modifier.weight(1f)) {
                         Text(beach.name, color = c.deep, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
-                        Text(beach.city, color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            if (distanceAway != null) "$distanceAway away" else beach.city.ifBlank { "Beach" },
+                            color = c.muted,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
                     }
                     if (patrolled) Pill("✓ Patrolled today", c.good)
                 }
