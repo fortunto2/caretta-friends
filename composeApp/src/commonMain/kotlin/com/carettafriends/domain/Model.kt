@@ -244,6 +244,8 @@ data class AppState(
     val beachesSyncedAt: Long = 0,
     /** Last known device location (for "beaches near me" distances). Local only. */
     val deviceLocation: GeoPoint? = null,
+    /** Current air quality for the community's beach area (Sensor.Community). null = no nearby sensor. */
+    val air: AirStatus? = null,
 ) {
     fun beach(id: String): Beach? = beaches.firstOrNull { it.id == id }
     fun nest(id: String): Nest? = nests.firstOrNull { it.id == id }

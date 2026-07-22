@@ -8,6 +8,7 @@ import com.carettafriends.domain.CommunityKind
 import com.carettafriends.domain.Excavation
 import com.carettafriends.domain.Fact
 import com.carettafriends.domain.GeoPoint
+import com.carettafriends.domain.classifyAir
 import com.carettafriends.domain.GuideArticle
 import com.carettafriends.domain.LocationSource
 import com.carettafriends.domain.MarkerType
@@ -85,6 +86,8 @@ class CarettaRepository {
     private val auth: AuthBackend = SupabaseAuth()
     private val cloud: CloudBackend = SupabaseCloud(auth)
     private val beachDiscovery = BeachDiscovery()
+    private val weather = WeatherService()
+    private val airQuality = AirQualityService()
     private val _state = MutableStateFlow(loadOrSeed(json))
     val state: StateFlow<AppState> = _state.asStateFlow()
 
@@ -95,6 +98,8 @@ class CarettaRepository {
         scope.launch { _state.value = _state.value.copy(protectedAreas = loadProtectedAreas()) }
         // Load baked STUB communities (local groups near other beaches, no admin yet) → state.
         scope.launch { _state.value = _state.value.copy(communities = loadStubCommunities()) }
+        // Pull current air quality for the beach area (Sensor.Community) — supplementary dust layer.
+        scope.launch { refreshAir() }
         // Best-effort cloud sync (no-op when offline).
         scope.launch { syncOnStart() }
     }
@@ -208,6 +213,17 @@ class CarettaRepository {
     /** Last known device location, for "beaches near me" distances (set by the native map/GPS). */
     fun setDeviceLocation(lat: Double, lng: Double) {
         _state.value = _state.value.copy(deviceLocation = GeoPoint(lat, lng))
+        scope.launch { refreshAir() }   // refresh air for where the volunteer actually is
+    }
+
+    /** Pull current air quality (Sensor.Community) for the volunteer's location or the community beach. */
+    suspend fun refreshAir() {
+        val s = _state.value
+        val p = s.deviceLocation ?: s.community.center
+        val sample = airQuality.near(p.lat, p.lng)
+        _state.value = _state.value.copy(
+            air = sample?.let { classifyAir(it.pm25, it.pm10, it.sensors, nowMillis()) },
+        )
     }
 
     fun addNest(
@@ -258,6 +274,15 @@ class CarettaRepository {
         )
         _state.value = s.copy(nests = s.nests + nest)
         syncNest(nest)
+        // Best-effort: pull REAL weather (Open-Meteo, free) for this point and cache it on the nest.
+        // Offline-safe — the nest already exists; this just enriches it when online.
+        if (isNest) {
+            scope.launch {
+                weather.fetch(point.lat, point.lng)?.let { w ->
+                    update(id) { it.copy(airTempC = w.airTempC, rainMm7d = w.rainMm7d, temps = w.daily) }
+                }
+            }
+        }
         return id
     }
 

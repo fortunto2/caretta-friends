@@ -97,14 +97,24 @@ fun MapScreen(
             }
             Spacer(Modifier.height(10.dp))
             CoveragePill(state)
+            state.air?.let {
+                Spacer(Modifier.height(8.dp))
+                AirPill(it)
+            }
         }
 
-        // --- Start patrol pill (visual on Android; the GPS recorder is on iOS for now) ---
+        // --- Start patrol pill (visual on Android; the GPS recorder is on iOS for now).
+        //     Turns to a dust warning when the air layer says patrolling isn't advisable. ---
+        val patrolBlocked = state.air?.patrolAdvisable == false
         Box(
             Modifier.align(Alignment.BottomStart).padding(start = 14.dp, bottom = 24.dp)
-                .clip(CircleShape).background(c.good).padding(horizontal = 14.dp, vertical = 9.dp),
+                .clip(CircleShape).background(if (patrolBlocked) c.coral else c.good)
+                .padding(horizontal = 14.dp, vertical = 9.dp),
         ) {
-            Text("● Start patrol", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+            Text(
+                if (patrolBlocked) "⚠ Dust — patrol not advised" else "● Start patrol",
+                color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
+            )
         }
 
         // --- Coral FAB ---
@@ -215,5 +225,26 @@ private fun CoveragePill(state: AppState) {
             .padding(horizontal = 12.dp, vertical = 7.dp),
     ) {
         Text(label, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+    }
+}
+
+/** Supplementary air-quality pill (Sensor.Community). Shown only where a nearby sensor exists;
+ *  turns red on dust / unhealthy air so volunteers know when patrolling isn't advisable. */
+@Composable
+private fun AirPill(air: com.carettafriends.domain.AirStatus) {
+    val amber = Color(0xFFE0A82E)
+    val red = Color(0xFFE0533D)
+    val green = Color(0xFF2E9E5B)
+    val (bg, emoji, text) = when (air.level) {
+        com.carettafriends.domain.AirLevel.DUST -> Triple(red, "🌫️", "Dust · PM10 ${air.pm10.toInt()} — patrol not advised")
+        com.carettafriends.domain.AirLevel.UNHEALTHY -> Triple(red, "😷", "Unhealthy air · PM2.5 ${air.pm25.toInt()}")
+        com.carettafriends.domain.AirLevel.MODERATE -> Triple(amber, "🌤️", "Moderate air · PM2.5 ${air.pm25.toInt()}")
+        com.carettafriends.domain.AirLevel.GOOD -> Triple(green, "🍃", "Air clean · PM2.5 ${air.pm25.toInt()}")
+    }
+    Box(
+        Modifier.padding(start = 14.dp).clip(CircleShape).background(bg.copy(alpha = 0.94f))
+            .padding(horizontal = 12.dp, vertical = 7.dp),
+    ) {
+        Text("$emoji $text", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
     }
 }
