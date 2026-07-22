@@ -1,6 +1,7 @@
 package com.carettafriends.data
 
 import com.carettafriends.domain.Community
+import com.carettafriends.domain.CommunityKind
 import com.carettafriends.domain.GeoPoint
 import com.carettafriends.resources.Res
 import kotlinx.serialization.Serializable
@@ -14,6 +15,9 @@ private data class StubEntry(
     val id: String,
     val name: String,
     val tagline: String = "",
+    val description: String = "",
+    val kind: String = "COMMUNITY",
+    val affiliation: String = "",
     val website: String = "",
     val instagram: String = "",
     val phone: String = "",
@@ -37,6 +41,7 @@ suspend fun loadStubCommunities(): List<Community> = runCatching {
             id = it.id,
             name = it.name,
             tagline = it.tagline,
+            description = it.description,
             websiteUrl = it.website,
             whatsappUrl = "",
             instagramUrl = it.instagram,
@@ -45,6 +50,8 @@ suspend fun loadStubCommunities(): List<Community> = runCatching {
             email = it.email,
             claimed = false,
             nearArea = it.nearArea,
+            kind = runCatching { CommunityKind.valueOf(it.kind.uppercase()) }.getOrDefault(CommunityKind.COMMUNITY),
+            affiliation = it.affiliation,
         )
     }
 }.getOrDefault(emptyList())

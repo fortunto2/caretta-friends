@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Community
+import com.carettafriends.domain.CommunityKind
 import com.carettafriends.domain.Member
 import com.carettafriends.domain.MemberRole
 import com.carettafriends.ui.components.Pill
@@ -63,6 +64,18 @@ fun CommunityScreen(community: Community, state: AppState, onBack: () -> Unit) {
             Modifier.padding(horizontal = 15.dp).padding(top = 14.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            // Type badge (community / NGO / university / official) + who they're affiliated with.
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Pill(kindLabel(community.kind), kindColor(community.kind))
+                if (community.affiliation.isNotBlank()) {
+                    Text(community.affiliation, color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            // Short human summary (who they are, what they do, how long).
+            if (community.description.isNotBlank()) {
+                Text(community.description, color = c.deep, fontSize = 13.sp, lineHeight = 18.sp)
+            }
+
             if (community.claimed) {
                 // Join = message the org on WhatsApp (an admin adds you). No public self-join.
                 PrimaryButton("💬 Join — message us on WhatsApp") { uri.openUri(community.whatsappUrl) }
@@ -96,22 +109,23 @@ fun CommunityScreen(community: Community, state: AppState, onBack: () -> Unit) {
                 PrimaryButton("🙋 We run this group — give us access") { uri.openUri(state.community.whatsappUrl) }
             }
 
-            // ── Reach them (tappable, from the community's own public contacts) ──
+            // ── Reach them (tappable) — WhatsApp / call first, then the rest ──
             SectionLabel("Reach them")
-            if (community.websiteUrl.isNotBlank()) {
-                LinkRow("🌐", "Website", linkHost(community.websiteUrl), c.sea) { uri.openUri(community.websiteUrl) }
+            val digits = community.phone.filter { ch -> ch.isDigit() || ch == '+' }
+            if (community.whatsappUrl.isNotBlank()) {
+                LinkRow("💬", "Message on WhatsApp", linkHost(community.whatsappUrl), c.good) { uri.openUri(community.whatsappUrl) }
+            }
+            if (community.phone.isNotBlank()) {
+                LinkRow("📞", "Call", community.phone, c.sea) { runCatching { uri.openUri("tel:$digits") } }
+            }
+            if (community.email.isNotBlank()) {
+                LinkRow("✉️", "Email", community.email, c.deep) { runCatching { uri.openUri("mailto:${community.email}") } }
             }
             if (community.instagramUrl.isNotBlank()) {
                 LinkRow("📸", "Instagram", linkHost(community.instagramUrl), c.coral) { uri.openUri(community.instagramUrl) }
             }
-            if (community.whatsappUrl.isNotBlank()) {
-                LinkRow("💬", "WhatsApp", linkHost(community.whatsappUrl), c.good) { uri.openUri(community.whatsappUrl) }
-            }
-            if (community.phone.isNotBlank()) {
-                LinkRow("📞", "Phone", community.phone, c.deep) { runCatching { uri.openUri("tel:${community.phone.filter { ch -> ch.isDigit() || ch == '+' }}") } }
-            }
-            if (community.email.isNotBlank()) {
-                LinkRow("✉️", "Email", community.email, c.deep) { runCatching { uri.openUri("mailto:${community.email}") } }
+            if (community.websiteUrl.isNotBlank()) {
+                LinkRow("🌐", "Website", linkHost(community.websiteUrl), c.sea) { uri.openUri(community.websiteUrl) }
             }
             if (community.adminContact.isNotBlank()) {
                 LinkRow("📇", "Contact", community.adminContact, c.deep) {
@@ -143,6 +157,20 @@ fun CommunityScreen(community: Community, state: AppState, onBack: () -> Unit) {
 }
 
 private data class Ranked(val name: String, val nests: Int, val hatchlings: Int)
+
+private fun kindLabel(k: CommunityKind): String = when (k) {
+    CommunityKind.COMMUNITY -> "🐢 Volunteer group"
+    CommunityKind.NGO -> "🌍 NGO"
+    CommunityKind.UNIVERSITY -> "🎓 University"
+    CommunityKind.OFFICIAL -> "🏛️ Official"
+}
+
+private fun kindColor(k: CommunityKind): Color = when (k) {
+    CommunityKind.COMMUNITY -> Color(0xFF2E9E5B)
+    CommunityKind.NGO -> Color(0xFF0F7A82)
+    CommunityKind.UNIVERSITY -> Color(0xFFF97316)
+    CommunityKind.OFFICIAL -> Color(0xFF123B40)
+}
 
 private fun roleLabel(role: MemberRole): String = when (role) {
     MemberRole.ADMIN -> "Admin"

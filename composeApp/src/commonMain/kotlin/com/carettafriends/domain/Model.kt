@@ -16,6 +16,10 @@ enum class SunExposure { FULL_SUN, PARTIAL, SHADE }
 enum class PhotoSource { CAMERA, GALLERY }
 enum class MemberRole { ADMIN, BEACH_LEADER, VOLUNTEER }
 
+/** What kind of group a community is — shown as a badge to tell volunteer-run groups from
+ *  university centers, NGOs and official bodies. */
+enum class CommunityKind { COMMUNITY, NGO, UNIVERSITY, OFFICIAL }
+
 /** How a nest is physically protected. Reed-fence OR cage is a CHOICE — both count as "protected".
  *  NONE = just found · MARKED = stakes + reed/cane fence + warning tape + sign · CAGED = metal cage. */
 enum class ProtectionLevel { NONE, MARKED, CAGED }
@@ -28,6 +32,9 @@ data class Community(
     val id: String,
     val name: String,
     val tagline: String,
+    /** A short human summary: who they are, what they do, how long, general contribution. Shown on
+     *  the community card. Keep it general (metrics change). */
+    val description: String = "",
     val websiteUrl: String,
     val whatsappUrl: String,
     val instagramUrl: String,
@@ -45,6 +52,10 @@ data class Community(
     val claimed: Boolean = true,
     /** The protected nesting area this group works around (links a stub to its beach). */
     val nearArea: String = "",
+    /** Group type (volunteer community / NGO / university / official) — shown as a badge. */
+    val kind: CommunityKind = CommunityKind.COMMUNITY,
+    /** Who they're affiliated with (parent university, ministry, network) — "" if independent. */
+    val affiliation: String = "",
 )
 
 @Serializable

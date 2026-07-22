@@ -4,6 +4,7 @@ import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Badge
 import com.carettafriends.domain.Beach
 import com.carettafriends.domain.Community
+import com.carettafriends.domain.CommunityKind
 import com.carettafriends.domain.Excavation
 import com.carettafriends.domain.Fact
 import com.carettafriends.domain.GeoPoint
@@ -68,8 +69,12 @@ fun nestDay(nest: Nest, today: LocalDate = today()): Int =
 // Bumped to v2 to drop the old demo-seeded local state (pre-launch, no real data yet) → clean start.
 private const val STATE_FILE = "caretta_state_v2.json"
 
-private fun loadOrSeed(json: Json): AppState =
-    LocalStore.readText(STATE_FILE)?.let { runCatching { json.decodeFromString<AppState>(it) }.getOrNull() } ?: seedState()
+private fun loadOrSeed(json: Json): AppState {
+    val loaded = LocalStore.readText(STATE_FILE)?.let { runCatching { json.decodeFromString<AppState>(it) }.getOrNull() }
+    // Community is static reference data → always refresh from seed so field additions (description,
+    // email, phone, kind…) reach existing installs without wiping the user's local nests/patrols.
+    return (loaded ?: seedState()).copy(community = seedCommunity())
+}
 
 private fun persist(json: Json, s: AppState) {
     runCatching { LocalStore.writeText(STATE_FILE, json.encodeToString(s)) }
@@ -337,16 +342,26 @@ internal fun seedBeaches(communityId: String): List<Beach> = listOf(
 // Clean first-run state: real reference data (community + beaches + facts + guide) but NO demo
 // activity — nests/markers/patrols start empty and are filled by real volunteers. Profile is a
 // fresh organiser. (Beach coordinates are approximate placeholders — refine with on-site GPS.)
+/** Our own (primary) community — static reference data, reconciled onto existing installs at load. */
+internal fun seedCommunity(): Community = Community(
+    id = "gazipasa-caretta",
+    name = "Gazipaşa Caretta",
+    tagline = "Protecting loggerheads & sand lilies",
+    description = "Local volunteers protecting loggerhead (Caretta caretta) nests along Gazipaşa's " +
+        "beaches — finding and marking nests, watching the ~50-day incubation, guarding hatchling " +
+        "emergences and recording excavation counts, plus beach clean-ups and awareness. " +
+        "Community-run, working to Türkiye's national monitoring standards.",
+    websiteUrl = "https://carettafriends.com",
+    whatsappUrl = "https://wa.me/905013794326",
+    instagramUrl = "https://www.instagram.com/gazipasa_caretta_ve_kumzambagi",
+    center = GeoPoint(36.268, 32.319),   // registered in Gazipaşa town (orange hub square)
+    phone = "+90 501 379 4326",
+    email = "info@carettafriends.com",
+    kind = CommunityKind.COMMUNITY,
+)
+
 private fun seedState(): AppState {
-    val community = Community(
-        id = "gazipasa-caretta",
-        name = "Gazipaşa Caretta",
-        tagline = "Protecting loggerheads & sand lilies",
-        websiteUrl = "https://carettafriends.com",
-        whatsappUrl = "https://wa.me/905013794326",
-        instagramUrl = "https://www.instagram.com/gazipasa_caretta_ve_kumzambagi",
-        center = GeoPoint(36.268, 32.319),   // registered in Gazipaşa town (orange hub dot)
-    )
+    val community = seedCommunity()
     // Only Bıdı Bıdı is seeded (real OSM coordinate) — every other beach is auto-discovered from
     // OpenStreetMap at runtime (see BeachDiscovery), so no per-city hand-entered lists.
     return AppState(
