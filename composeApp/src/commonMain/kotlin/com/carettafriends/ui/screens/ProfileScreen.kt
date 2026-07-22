@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.carettafriends.data.CarettaRepository
@@ -56,6 +57,7 @@ fun ProfileScreen(
     val p = state.profile
     var editingName by remember { mutableStateOf(false) }
     var pickingBeach by remember { mutableStateOf(false) }
+    var showAuth by remember { mutableStateOf(false) }
 
     // "Beaches you've been to" — where this volunteer has patrolled or logged a nest.
     val visitedIds = (state.patrols.map { it.beachId } + state.nests.filter { it.foundBy == p.displayName }.map { it.beachId }).toSet()
@@ -117,6 +119,16 @@ fun ProfileScreen(
                         TextButton(onClick = { editingName = false }) { Text("Cancel") }
                     },
                 )
+            }
+
+            // account — anonymous volunteers get a nudge to save their work under an email.
+            if (state.accountEmail == null) {
+                AccountCta { showAuth = true }
+            } else {
+                SignedInRow(state.accountEmail!!)
+            }
+            if (showAuth) {
+                EmailAuthDialog(repo, onDismiss = { showAuth = false })
             }
 
             // impact tile
@@ -301,6 +313,99 @@ private fun StatTile(value: String, label: String, modifier: Modifier = Modifier
             Text(label, color = c.muted, fontSize = 9.5.sp, fontWeight = FontWeight.Bold)
         }
     }
+}
+
+@Composable
+private fun AccountCta(onClick: () -> Unit) {
+    val c = caretta
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+            .background(c.sunlit.copy(alpha = 0.18f)).border(1.dp, c.sunlit, RoundedCornerShape(14.dp))
+            .clickable { onClick() }.padding(13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text("🔒", fontSize = 20.sp)
+        Column(Modifier.weight(1f)) {
+            Text("Save your account", color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+            Text("Add an email so your work isn't lost if you change phone.", color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+        }
+        Text("›", color = c.muted, fontSize = 18.sp)
+    }
+}
+
+@Composable
+private fun SignedInRow(email: String) {
+    val c = caretta
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+            .background(c.good.copy(alpha = 0.14f)).border(1.dp, c.good.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+            .padding(13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text("✓", color = c.good, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+        Column(Modifier.weight(1f)) {
+            Text("Signed in", color = c.deep, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+            Text(email, color = c.muted, fontSize = 11.5.sp, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@Composable
+private fun EmailAuthDialog(repo: CarettaRepository, onDismiss: () -> Unit) {
+    val c = caretta
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var signIn by remember { mutableStateOf(false) } // false = create/save, true = sign in
+    val valid = email.contains("@") && email.contains(".") && password.length >= 6
+
+    AlertDialog(
+        onDismissRequest = { if (!busy) onDismiss() },
+        title = { Text(if (signIn) "Sign in" else "Save your account") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    if (signIn) "Welcome back — sign in to load your nests & impact." else "Add an email + password so your work syncs and isn't lost if you change phone.",
+                    color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                )
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it.trim(); error = null },
+                    singleLine = true,
+                    label = { Text("Email") },
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it; error = null },
+                    singleLine = true,
+                    label = { Text("Password (6+ chars)") },
+                    visualTransformation = PasswordVisualTransformation(),
+                )
+                error?.let { Text(it, color = c.coral, fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                Text(
+                    if (signIn) "New here? Create an account" else "Already have an account? Sign in",
+                    color = c.sea,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    modifier = Modifier.clickable(enabled = !busy) { signIn = !signIn; error = null },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !busy && valid,
+                onClick = {
+                    busy = true; error = null
+                    val cb: (String?) -> Unit = { err -> busy = false; if (err == null) onDismiss() else error = err }
+                    if (signIn) repo.signInEmail(email, password, cb) else repo.linkEmail(email, password, cb)
+                },
+            ) { Text(if (busy) "…" else if (signIn) "Sign in" else "Save") }
+        },
+        dismissButton = { TextButton(enabled = !busy, onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 @Composable

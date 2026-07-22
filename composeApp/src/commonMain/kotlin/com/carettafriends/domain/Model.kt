@@ -253,6 +253,8 @@ data class AppState(
     val deviceLocation: GeoPoint? = null,
     /** Current air quality for the community's beach area (Sensor.Community). null = no nearby sensor. */
     val air: AirStatus? = null,
+    /** Signed-in email, or null while still an anonymous volunteer (drives the profile sign-in CTA). */
+    val accountEmail: String? = null,
 ) {
     fun beach(id: String): Beach? = beaches.firstOrNull { it.id == id }
     fun nest(id: String): Nest? = nests.firstOrNull { it.id == id }

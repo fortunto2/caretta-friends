@@ -112,6 +112,7 @@ class CarettaRepository {
     private suspend fun syncOnStart() {
         // Anonymous sign-in on first run → stable owner_id + RLS-scoped, attributable writes.
         auth.ensureSession()
+        _state.value = _state.value.copy(accountEmail = auth.currentEmail())
         val cid = _state.value.community.id
         val owner = auth.currentUserId()
         // Purge any stale/ghost beaches left in the local cache before we push them back to the cloud.
@@ -216,6 +217,28 @@ class CarettaRepository {
 
     fun setLanguage(lang: String) {
         _state.value = _state.value.copy(profile = _state.value.profile.copy(language = lang))
+    }
+
+    /** Save the anonymous volunteer's account under an email (same owner_id → their nests & impact are
+     *  kept). [onResult] gets null on success, or a human-readable error. */
+    fun linkEmail(email: String, password: String, onResult: (String?) -> Unit) {
+        scope.launch {
+            val r = auth.linkEmail(email.trim(), password)
+            if (r.ok) _state.value = _state.value.copy(accountEmail = email.trim())
+            onResult(if (r.ok) null else (r.error ?: "Couldn't save your account"))
+        }
+    }
+
+    /** Sign in an existing email account (returning volunteer). Pulls their cloud data afterwards. */
+    fun signInEmail(email: String, password: String, onResult: (String?) -> Unit) {
+        scope.launch {
+            val r = auth.signInEmail(email.trim(), password)
+            if (r.ok) {
+                _state.value = _state.value.copy(accountEmail = email.trim())
+                runCatching { syncOnStart() }   // re-pull their data under the new uid
+            }
+            onResult(if (r.ok) null else (r.error ?: "Invalid email or password"))
+        }
     }
 
     /** Set (or clear with null) the volunteer's optional home beach. */

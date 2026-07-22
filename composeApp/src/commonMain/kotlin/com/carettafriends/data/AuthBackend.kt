@@ -5,9 +5,12 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.datetime.Clock
 import kotlinx.serialization.SerialName
@@ -34,7 +37,20 @@ interface AuthBackend {
 
     /** A fresh access token (refreshes when near expiry); null if no session / cannot refresh offline. */
     suspend fun accessToken(): String?
+
+    /** The signed-in email, or null while still anonymous. */
+    fun currentEmail(): String?
+
+    /** Convert the current anonymous user into a permanent email account — SAME uid, so all the
+     *  volunteer's nests & impact are preserved. (Confirmation email may be required by the project.) */
+    suspend fun linkEmail(email: String, password: String): AuthOutcome
+
+    /** Sign in an existing email account (returning volunteer on a new phone) — switches to their uid. */
+    suspend fun signInEmail(email: String, password: String): AuthOutcome
 }
+
+/** Result of an auth action for the UI (ok, or a human-readable error). */
+data class AuthOutcome(val ok: Boolean, val error: String? = null)
 
 /** Persisted auth session (okio auth.json). */
 @Serializable
@@ -44,6 +60,7 @@ data class AuthSession(
     val expiresAt: Long,      // epoch seconds
     val userId: String,
     val isAnonymous: Boolean = true,
+    val email: String? = null,
 )
 
 // GoTrue wire formats (subset).
@@ -60,6 +77,15 @@ private data class GoTrueSession(
 private data class GoTrueUser(
     val id: String = "",
     @SerialName("is_anonymous") val isAnonymous: Boolean = false,
+    val email: String? = null,
+    @SerialName("new_email") val newEmail: String? = null,
+)
+
+@Serializable
+private data class GoTrueError(
+    val msg: String? = null,
+    @SerialName("error_description") val errorDescription: String? = null,
+    val message: String? = null,
 )
 
 private const val AUTH_FILE = "caretta_auth.json"
@@ -89,10 +115,48 @@ class SupabaseAuth : AuthBackend {
         val uid = user?.id?.takeIf { it.isNotBlank() } ?: return null
         if (accessToken.isBlank() || refreshToken.isBlank()) return null
         val exp = if (expiresAt > 0) expiresAt else nowSec() + expiresIn
-        return AuthSession(accessToken, refreshToken, exp, uid, user.isAnonymous)
+        // Supabase returns email:"" (blank, not null) for anonymous users → treat blank as "no email".
+        val mail = user.email?.takeIf { it.isNotBlank() } ?: user.newEmail?.takeIf { it.isNotBlank() }
+        return AuthSession(accessToken, refreshToken, exp, uid, user.isAnonymous, mail)
+    }
+
+    private fun parseError(body: String, fallback: String = "Something went wrong"): String {
+        val e = runCatching { json.decodeFromString<GoTrueError>(body) }.getOrNull()
+        return (e?.msg ?: e?.errorDescription ?: e?.message ?: fallback).replaceFirstChar { it.uppercase() }
     }
 
     override fun currentUserId(): String? = session?.userId
+
+    override fun currentEmail(): String? = session?.email?.takeIf { it.isNotBlank() }
+
+    override suspend fun linkEmail(email: String, password: String): AuthOutcome {
+        val s = ensureSession() ?: return AuthOutcome(false, "You're offline — try again later")
+        val resp = http.put("$authBase/user") {
+            header("apikey", SupabaseConfig.ANON_KEY)
+            header("Authorization", "Bearer ${s.accessToken}")
+            contentType(ContentType.Application.Json)
+            setBody(buildJsonObject { put("email", email); put("password", password) })
+        }
+        val text = resp.bodyAsText()
+        if (!resp.status.isSuccess()) return AuthOutcome(false, parseError(text, "Couldn't save your account"))
+        // Same uid & token stay valid — just mark the session as a linked email account.
+        saveSession(s.copy(isAnonymous = false, email = email))
+        return AuthOutcome(true)
+    }
+
+    override suspend fun signInEmail(email: String, password: String): AuthOutcome {
+        val resp = http.post("$authBase/token?grant_type=password") {
+            header("apikey", SupabaseConfig.ANON_KEY)
+            contentType(ContentType.Application.Json)
+            setBody(buildJsonObject { put("email", email); put("password", password) })
+        }
+        val text = resp.bodyAsText()
+        if (!resp.status.isSuccess()) return AuthOutcome(false, parseError(text, "Invalid email or password"))
+        val sess = runCatching { json.decodeFromString<GoTrueSession>(text) }.getOrNull()?.toSession()
+            ?: return AuthOutcome(false, "Invalid email or password")
+        saveSession(sess)
+        return AuthOutcome(true)
+    }
 
     override suspend fun ensureSession(): AuthSession? {
         session?.let { if (it.expiresAt - nowSec() > REFRESH_SKEW_SEC) return it }
