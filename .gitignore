@@ -35,3 +35,7 @@ supabase/.temp/
 
 # iOS device-build derivedData
 iosApp/build-dev/
+
+# iOS device build output (custom derivedDataPath)
+iosApp/build-device/
+iosApp/build/
