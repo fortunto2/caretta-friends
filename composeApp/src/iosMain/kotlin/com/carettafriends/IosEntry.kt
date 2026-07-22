@@ -44,6 +44,16 @@ fun beachPoints(): List<IosMapPoint> {
     return s.beaches.map { IosMapPoint(it.id, it.center.lat, it.center.lng, it.name, "beach") }
 }
 
+/** A beach's OSM sand outline for the native map. [polygonCsv] = "lat,lng;lat,lng;…" (empty = no outline). */
+data class IosBeachShape(val id: String, val name: String, val isProtected: Boolean, val polygonCsv: String)
+
+fun beachShapes(): List<IosBeachShape> {
+    val s = SharedRepo.repo.state.value
+    return s.beaches.map { b ->
+        IosBeachShape(b.id, b.name, b.protected, b.polygon.joinToString(";") { "${it.lat},${it.lng}" })
+    }
+}
+
 /** Report the device's current location (one-shot from the native map) for "beaches near me". */
 fun setDeviceLocation(lat: Double, lng: Double) = SharedRepo.repo.setDeviceLocation(lat, lng)
 

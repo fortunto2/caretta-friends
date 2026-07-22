@@ -42,6 +42,8 @@ struct MapLibreView: UIViewRepresentable {
     var onSelect: (String) -> Void = { _ in }
     /// Live patrol track (breadcrumb coordinates) drawn as a polyline.
     var track: [CLLocationCoordinate2D] = []
+    /// Beach sand outlines (OSM polygons) drawn as translucent teal highlights.
+    var beachPolygons: [[CLLocationCoordinate2D]] = []
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -60,6 +62,7 @@ struct MapLibreView: UIViewRepresentable {
         context.coordinator.parent = self          // keep closure/props fresh across SwiftUI updates
         context.coordinator.sync(nests: points, beaches: beaches, on: mapView)
         context.coordinator.syncTrack(track, on: mapView)
+        context.coordinator.syncBeachPolygons(beachPolygons, on: mapView)
     }
 
     // MARK: Coordinator = MLNMapViewDelegate
@@ -69,6 +72,8 @@ struct MapLibreView: UIViewRepresentable {
         private var currentIDs: Set<String> = []
         private var polyline: MLNPolyline?
         private var trackCount = -1
+        private var beachPolys: [MLNPolygon] = []
+        private var beachPolyCount = -1
 
         init(_ parent: MapLibreView) { self.parent = parent }
 
@@ -84,9 +89,31 @@ struct MapLibreView: UIViewRepresentable {
             polyline = line
         }
 
-        // Patrol track styling (coral, matches the FAB).
+        // Beach sand outlines (OSM polygons) drawn as translucent teal highlights.
+        func syncBeachPolygons(_ polys: [[CLLocationCoordinate2D]], on mapView: MLNMapView) {
+            guard polys.count != beachPolyCount else { return }
+            beachPolyCount = polys.count
+            if !beachPolys.isEmpty { mapView.removeAnnotations(beachPolys); beachPolys = [] }
+            for coords in polys where coords.count >= 3 {
+                var c = coords
+                let poly = MLNPolygon(coordinates: &c, count: UInt(c.count))
+                mapView.addAnnotation(poly)
+                beachPolys.append(poly)
+            }
+        }
+
+        private let teal = UIColor(red: 0.09, green: 0.55, blue: 0.62, alpha: 1.0)
+        private let coral = UIColor(red: 0.98, green: 0.45, blue: 0.36, alpha: 1.0)
+
+        // Beach polygons = teal, patrol track = coral.
         func mapView(_ mapView: MLNMapView, strokeColorForShapeAnnotation annotation: MLNShape) -> UIColor {
-            UIColor(red: 0.98, green: 0.45, blue: 0.36, alpha: 1.0)
+            annotation is MLNPolygon ? teal : coral
+        }
+
+        func mapView(_ mapView: MLNMapView, fillColorForPolygonAnnotation annotation: MLNPolygon) -> UIColor { teal }
+
+        func mapView(_ mapView: MLNMapView, alphaForShapeAnnotation annotation: MLNShape) -> CGFloat {
+            annotation is MLNPolygon ? 0.28 : 0.9
         }
 
         func mapView(_ mapView: MLNMapView, lineWidthForPolylineAnnotation annotation: MLNPolyline) -> CGFloat { 4 }

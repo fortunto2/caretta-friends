@@ -114,6 +114,7 @@ struct MapTab: View {
     @State private var showCamera = false
     @State private var points: [MapPoint] = []
     @State private var beaches: [MapPoint] = []
+    @State private var beachPolygons: [[CLLocationCoordinate2D]] = []
     @State private var filter = "all"
     @StateObject private var patrol = PatrolRecorder()
     @StateObject private var deviceLoc = DeviceLocation()
@@ -128,12 +129,22 @@ struct MapTab: View {
                 title: p.title
             )
         }
-        beaches = IosEntryKt.beachPoints().map { p in
+        let shapes = IosEntryKt.beachShapes()
+        let polyIds = Set(shapes.filter { !$0.polygonCsv.isEmpty }.map { $0.id })
+        // Dots only for beaches without an OSM outline; the rest are highlighted as polygons.
+        beaches = IosEntryKt.beachPoints().filter { !polyIds.contains($0.id) }.map { p in
             MapPoint(
                 id: p.id,
                 coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng),
                 title: p.title
             )
+        }
+        beachPolygons = shapes.filter { !$0.polygonCsv.isEmpty }.map { s in
+            s.polygonCsv.split(separator: ";").compactMap { pair -> CLLocationCoordinate2D? in
+                let xy = pair.split(separator: ",")
+                guard xy.count == 2, let lat = Double(xy[0]), let lng = Double(xy[1]) else { return nil }
+                return CLLocationCoordinate2D(latitude: lat, longitude: lng)
+            }
         }
     }
 
@@ -147,7 +158,8 @@ struct MapTab: View {
                     zoomLevel: 12,
                     showsCallout: false,
                     onSelect: { id in path.append(Route.nest(id)) },
-                    track: patrol.coords
+                    track: patrol.coords,
+                    beachPolygons: beachPolygons
                 )
                 .ignoresSafeArea()
 
