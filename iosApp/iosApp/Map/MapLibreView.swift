@@ -25,15 +25,26 @@ struct MapPoint: Identifiable, Equatable {
     }
 }
 
-/// A beach sand outline for the map, carrying its id (for tap → detail) and protected flag (for colour).
+/// A beach sand outline for the map, carrying its id (for tap → detail), name and protected flag.
 struct BeachPolygon: Equatable {
     let id: String
+    let name: String
     let coords: [CLLocationCoordinate2D]
     let isProtected: Bool
 
     static func == (l: BeachPolygon, r: BeachPolygon) -> Bool {
-        l.id == r.id && l.isProtected == r.isProtected && l.coords.count == r.coords.count
+        l.id == r.id && l.name == r.name && l.isProtected == r.isProtected && l.coords.count == r.coords.count
     }
+}
+
+/// A beach/area the user tapped on the map → drives the tooltip badge (name + status) and, for
+/// community beaches, the "Open ›" action into the full beach card. `openable` is false for the
+/// baked overview areas (which have no detail page — badge only).
+struct TappedBeach: Identifiable, Equatable {
+    let id: String
+    let name: String
+    let isProtected: Bool
+    let openable: Bool
 }
 
 /// MLNPointAnnotation subclass that carries our stable id through delegate callbacks
@@ -61,8 +72,8 @@ struct MapLibreView: UIViewRepresentable {
     var showsCallout: Bool = true
     /// Fires with the tapped nest's id.
     var onSelect: (String) -> Void = { _ in }
-    /// Fires with the tapped community beach's id (dot or polygon) → opens the beach card.
-    var onSelectBeach: (String) -> Void = { _ in }
+    /// Fires with the tapped beach/area (dot or polygon) → the caller shows a tooltip badge first.
+    var onTapBeach: (TappedBeach) -> Void = { _ in }
     /// Community hubs (registered city) — orange dots; tap fires onSelectCommunity.
     var communities: [MapPoint] = []
     /// Fires with the tapped community's id → opens the community screen.
@@ -172,7 +183,7 @@ struct MapLibreView: UIViewRepresentable {
             let features: [MLNPolygonFeature] = polys.filter { $0.coords.count >= 3 }.map { poly in
                 var c = poly.coords
                 let f = MLNPolygonFeature(coordinates: &c, count: UInt(c.count))
-                f.attributes = ["id": poly.id, "protected": poly.isProtected]
+                f.attributes = ["id": poly.id, "name": poly.name, "protected": poly.isProtected, "openable": true]
                 return f
             }
             src.shape = MLNShapeCollectionFeature(shapes: features)
@@ -187,6 +198,7 @@ struct MapLibreView: UIViewRepresentable {
                 f.coordinate = d.coordinate
                 f.attributes = [
                     "id": d.id,
+                    "name": d.title ?? "",
                     "protected": d.protectedBeach ?? true,
                     "openable": d.openable,
                 ]
@@ -226,11 +238,12 @@ struct MapLibreView: UIViewRepresentable {
             }
             let feats = mapView.visibleFeatures(in: rect, styleLayerIdentifiers: ["cf-beach-dots", "cf-beaches-fill"])
             for f in feats {
+                guard let id = f.attribute(forKey: "id") as? String else { continue }
+                let name = (f.attribute(forKey: "name") as? String) ?? ""
+                let prot = (f.attribute(forKey: "protected") as? NSNumber)?.boolValue ?? false
                 let openable = (f.attribute(forKey: "openable") as? NSNumber)?.boolValue ?? true
-                if openable, let id = f.attribute(forKey: "id") as? String {
-                    parent.onSelectBeach(id)
-                    return
-                }
+                parent.onTapBeach(TappedBeach(id: id, name: name, isProtected: prot, openable: openable))
+                return
             }
         }
 

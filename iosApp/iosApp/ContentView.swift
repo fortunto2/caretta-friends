@@ -115,6 +115,7 @@ extension Color {
     static let cfSea = Color(red: 0.059, green: 0.478, blue: 0.510)
     static let cfGood = Color(red: 0.31, green: 0.66, blue: 0.42)
     static let cfDeep = Color(red: 0.043, green: 0.231, blue: 0.247)
+    static let cfAmber = Color(red: 0.878, green: 0.659, blue: 0.18)
 }
 
 /// Map tab: a NATIVE MapLibre + OSM map with SwiftUI overlays. The "+" opens the native camera;
@@ -132,6 +133,7 @@ struct MapTab: View {
     @StateObject private var deviceLoc = DeviceLocation()
     @State private var savedPatrolId: String? = nil
     @State private var showPublish = false
+    @State private var tappedBeach: TappedBeach? = nil
 
     private func reload() {
         points = IosEntryKt.mapPoints().map { p in
@@ -150,7 +152,7 @@ struct MapTab: View {
                 guard xy.count == 2, let lat = Double(xy[0]), let lng = Double(xy[1]) else { return nil }
                 return CLLocationCoordinate2D(latitude: lat, longitude: lng)
             }
-            return BeachPolygon(id: s.id, coords: coords, isProtected: s.isProtected)
+            return BeachPolygon(id: s.id, name: s.name, coords: coords, isProtected: s.isProtected)
         }
         // Community beach dots (only those without an outline) — coloured + openable → beach card.
         let communityDots = IosEntryKt.beachPoints().filter { !polyIds.contains($0.id) }.map { p in
@@ -193,7 +195,7 @@ struct MapTab: View {
                     zoomLevel: 12,
                     showsCallout: false,
                     onSelect: { id in path.append(Route.nest(id)) },
-                    onSelectBeach: { id in path.append(Route.beach(id)) },
+                    onTapBeach: { tb in withAnimation(.easeInOut(duration: 0.2)) { tappedBeach = tb } },
                     communities: communities,
                     onSelectCommunity: { _ in path.append(Route.community) },
                     track: patrol.coords,
@@ -222,9 +224,15 @@ struct MapTab: View {
                 }
                 .padding(.top, 8)
 
-                // bottom overlays: start patrol + FAB
+                // bottom overlays: beach tooltip badge + start patrol + FAB
                 VStack {
                     Spacer()
+                    if let tb = tappedBeach {
+                        beachTooltip(tb)
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 8)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
                     HStack(alignment: .bottom) {
                         Button {
                             if patrol.isRecording {
@@ -306,6 +314,45 @@ struct MapTab: View {
         } message: {
             Text("Your walk is saved on your phone. Publish to share the route with your community — your live location is never shared.")
         }
+    }
+
+    /// Small tooltip badge shown when a beach/area is tapped — name + protection status, and (for
+    /// community beaches) an "Open ›" into the full card. Baked overview areas show the badge only.
+    @ViewBuilder
+    private func beachTooltip(_ tb: TappedBeach) -> some View {
+        HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 5)
+                .fill(tb.isProtected ? Color.cfGood : Color.cfAmber)
+                .frame(width: 14, height: 14)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(tb.name.isEmpty ? "Beach" : tb.name)
+                    .font(.subheadline.weight(.bold)).foregroundColor(.cfDeep)
+                Text(tb.isProtected ? "🛡️ Protected nesting beach" : "Beach")
+                    .font(.caption).foregroundColor(.secondary)
+            }
+            Spacer()
+            if tb.openable {
+                Button {
+                    let id = tb.id
+                    tappedBeach = nil
+                    path.append(Route.beach(id))
+                } label: {
+                    Text("Open ›").font(.subheadline.weight(.bold)).foregroundColor(.white)
+                        .padding(.horizontal, 12).padding(.vertical, 7)
+                        .background(Color.cfSea).clipShape(Capsule())
+                }
+            }
+            Button { withAnimation(.easeInOut(duration: 0.2)) { tappedBeach = nil } } label: {
+                Image(systemName: "xmark")
+                    .font(.caption.weight(.bold)).foregroundColor(.secondary)
+                    .frame(width: 30, height: 30)
+                    .background(Color.black.opacity(0.06)).clipShape(Circle())
+            }
+        }
+        .padding(12)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
     }
 
     @ViewBuilder
