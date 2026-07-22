@@ -37,7 +37,9 @@ import com.carettafriends.content.GuideContent
 import com.carettafriends.content.GuideMeta
 import com.carettafriends.content.L10n
 import com.carettafriends.data.CarettaRepository
+import androidx.compose.ui.text.TextStyle
 import com.mikepenz.markdown.m3.Markdown
+import com.mikepenz.markdown.m3.markdownTypography
 import com.carettafriends.domain.AppState
 import com.carettafriends.ui.components.CarettaCard
 import com.carettafriends.ui.components.SectionLabel
@@ -144,7 +146,16 @@ private fun ArticleCard(meta: GuideMeta, lang: String, expanded: Boolean, onTogg
                 if (text == null) {
                     Text("…", color = c.muted, fontSize = 13.sp, modifier = Modifier.padding(top = 10.dp))
                 } else {
-                    Markdown(content = text, modifier = Modifier.padding(top = 8.dp))
+                    Markdown(
+                        content = text,
+                        typography = markdownTypography(
+                            h1 = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 23.sp, color = c.deep),
+                            h2 = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 20.sp, color = c.sea),
+                            h3 = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, lineHeight = 19.sp, color = c.deep),
+                            h4 = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, lineHeight = 18.sp, color = c.deep),
+                        ),
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
                 }
             }
         }

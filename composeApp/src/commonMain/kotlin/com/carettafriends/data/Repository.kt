@@ -229,7 +229,10 @@ class CarettaRepository {
             _state.value.copy(air = null)
         } else {
             _state.value.copy(
-                air = classifyAir(pm25, sample?.pm10 ?: pm25, sample?.sensors ?: 0, nowMillis(), comfort?.comfort),
+                air = classifyAir(
+                    pm25, sample?.pm10 ?: pm25, sample?.sensors ?: 0, nowMillis(),
+                    comfort?.comfort, comfort?.signals ?: emptyList(),
+                ),
             )
         }
     }

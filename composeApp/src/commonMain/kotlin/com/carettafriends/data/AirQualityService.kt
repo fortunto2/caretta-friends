@@ -11,8 +11,9 @@ import kotlinx.serialization.json.Json
 /** Median PM2.5 / PM10 (µg/m³) for an area, plus how many sensors contributed. */
 data class AirSample(val pm25: Double, val pm10: Double, val sensors: Int)
 
-/** The user's Air Signal comfort read: merged PM2.5 (sensors + model fallback) + a 0–100 index. */
-data class ComfortSample(val pm25: Double?, val comfort: Int)
+/** The user's Air Signal comfort read: merged PM2.5 (sensors + model fallback) + a 0–100 index +
+ *  extra environmental signals (waves / fire / UV / wind / temp) for the tap-to-expand panel. */
+data class ComfortSample(val pm25: Double?, val comfort: Int, val signals: List<com.carettafriends.domain.AirSignal>)
 
 /**
  * Pulls open citizen air-quality data from **Sensor.Community** (the same free source the user's Air
@@ -38,10 +39,18 @@ class AirQualityService {
         val body = http.get(url) { header("User-Agent", "caretta-app/1.0") }.bodyAsText()
         val resp = json.decodeFromString<ComfortResp>(body)
         val total = resp.total ?: return@runCatching null
-        val pm = resp.scores?.air?.value
+        val sc = resp.scores
+        val pm = sc?.air?.value
             ?.substringAfter("PM2.5:", "")?.trim()
             ?.takeWhile { it.isDigit() || it == '.' }?.toDoubleOrNull()
-        ComfortSample(pm25 = pm, comfort = total)
+        val signals = buildList {
+            sc?.temperature?.value?.let { add(com.carettafriends.domain.AirSignal("🌡️", "Temperature", it)) }
+            sc?.sea?.value?.let { add(com.carettafriends.domain.AirSignal("🌊", "Sea", it)) }
+            sc?.wind?.value?.let { add(com.carettafriends.domain.AirSignal("💨", "Wind", it)) }
+            sc?.uv?.value?.let { add(com.carettafriends.domain.AirSignal("☀️", "UV", it)) }
+            sc?.fire?.value?.let { add(com.carettafriends.domain.AirSignal("🔥", "Fire", it)) }
+        }
+        ComfortSample(pm25 = pm, comfort = total, signals = signals)
     }.getOrNull()
 
     /** Nearest sensors within [radiusKm] of (lat,lng), aggregated to a median reading. */
@@ -92,7 +101,14 @@ private data class ScValue(val value_type: String = "", val value: String = "")
 private data class ComfortResp(val total: Int? = null, val scores: ComfortScores? = null)
 
 @Serializable
-private data class ComfortScores(val air: ComfortMetric? = null)
+private data class ComfortScores(
+    val air: ComfortMetric? = null,
+    val temperature: ComfortMetric? = null,
+    val wind: ComfortMetric? = null,
+    val uv: ComfortMetric? = null,
+    val sea: ComfortMetric? = null,
+    val fire: ComfortMetric? = null,
+)
 
 @Serializable
 private data class ComfortMetric(val score: Int? = null, val value: String = "")

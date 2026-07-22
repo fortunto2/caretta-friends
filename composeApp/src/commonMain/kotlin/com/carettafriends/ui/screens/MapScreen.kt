@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -54,6 +55,7 @@ fun MapScreen(
     val c = caretta
     var filter by remember { mutableStateOf("all") }
     var tappedBeach by remember { mutableStateOf<String?>(null) }
+    var airExpanded by remember { mutableStateOf(false) }
 
     val markers = buildList {
         state.nests.filter { showNest(filter, it) }
@@ -97,9 +99,13 @@ fun MapScreen(
             }
             Spacer(Modifier.height(10.dp))
             CoveragePill(state)
-            state.air?.let {
+            state.air?.let { air ->
                 Spacer(Modifier.height(8.dp))
-                AirPill(it)
+                AirPill(air) { airExpanded = !airExpanded }
+                if (airExpanded) {
+                    Spacer(Modifier.height(6.dp))
+                    AirDetail(air)
+                }
             }
         }
 
@@ -228,10 +234,11 @@ private fun CoveragePill(state: AppState) {
     }
 }
 
-/** Supplementary air-quality pill (Sensor.Community). Shown only where a nearby sensor exists;
- *  turns red on dust / unhealthy air so volunteers know when patrolling isn't advisable. */
+/** Supplementary air-quality pill (Air Signal + Sensor.Community). Shown only where a sensor/model
+ *  reading exists; turns red on dust / unhealthy so volunteers know when patrolling isn't advisable.
+ *  Tap to expand the extra signals (waves / fire / UV / …). */
 @Composable
-private fun AirPill(air: com.carettafriends.domain.AirStatus) {
+private fun AirPill(air: com.carettafriends.domain.AirStatus, onClick: () -> Unit) {
     val amber = Color(0xFFE0A82E)
     val red = Color(0xFFE0533D)
     val green = Color(0xFF2E9E5B)
@@ -242,10 +249,33 @@ private fun AirPill(air: com.carettafriends.domain.AirStatus) {
         com.carettafriends.domain.AirLevel.GOOD -> Triple(green, "🍃", "Air clean · PM2.5 ${air.pm25.toInt()}")
     }
     val comfortSuffix = air.comfort?.let { " · ☺ $it" } ?: ""
+    val more = if (air.signals.isNotEmpty()) "  ›" else ""
     Box(
         Modifier.padding(start = 14.dp).clip(CircleShape).background(bg.copy(alpha = 0.94f))
+            .clickable(enabled = air.signals.isNotEmpty()) { onClick() }
             .padding(horizontal = 12.dp, vertical = 7.dp),
     ) {
-        Text("$emoji $text$comfortSuffix", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+        Text("$emoji $text$comfortSuffix$more", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+    }
+}
+
+/** Expanded air panel (tap the pill): the safety advice + the extra environmental signals. */
+@Composable
+private fun AirDetail(air: com.carettafriends.domain.AirStatus) {
+    val c = caretta
+    Box(
+        Modifier.padding(start = 14.dp, end = 14.dp).clip(RoundedCornerShape(14.dp))
+            .background(Color.White.copy(alpha = 0.96f)).padding(12.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(air.advice, color = c.deep, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            air.signals.forEach { s ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(s.emoji, fontSize = 13.sp)
+                    Text(s.label, color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(88.dp))
+                    Text(s.value, color = c.deep, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+        }
     }
 }

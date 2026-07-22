@@ -135,6 +135,7 @@ struct MapTab: View {
     @State private var showPublish = false
     @State private var tappedBeach: TappedBeach? = nil
     @State private var air: IosAir? = nil
+    @State private var airExpanded = false
 
     private func reload() {
         points = IosEntryKt.mapPoints().map { p in
@@ -219,11 +220,17 @@ struct MapTab: View {
                         .padding(.horizontal, 14)
                     }
                     if let a = air {
-                        Text("\(airEmoji(a)) \(airText(a))")
+                        let hasMore = !a.signals.isEmpty
+                        Text("\(airEmoji(a)) \(airText(a))\(hasMore ? "  ›" : "")")
                             .font(.caption.weight(.bold)).foregroundColor(.white)
                             .padding(.horizontal, 12).padding(.vertical, 7)
                             .background(airColor(a).opacity(0.94)).clipShape(Capsule())
                             .padding(.leading, 14)
+                            .onTapGesture { if hasMore { withAnimation(.easeInOut(duration: 0.2)) { airExpanded.toggle() } } }
+                        if airExpanded {
+                            airDetail(a).padding(.leading, 14).padding(.trailing, 14)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
                     }
                     if patrol.isRecording {
                         Text("● Recording · \(patrol.timeLabel) · \(patrol.kmLabel)")
@@ -354,6 +361,26 @@ struct MapTab: View {
         case "MODERATE": return .cfAmber
         default: return .cfGood
         }
+    }
+
+    /// Tap-to-expand air panel: the safety advice + extra signals (waves / fire / UV / …).
+    @ViewBuilder
+    private func airDetail(_ a: IosAir) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(a.advice).font(.caption.weight(.bold)).foregroundColor(.cfDeep)
+            ForEach(Array(a.signals.enumerated()), id: \.offset) { _, s in
+                HStack(spacing: 8) {
+                    Text(s.emoji).font(.caption)
+                    Text(s.label).font(.caption2.weight(.bold)).foregroundColor(.secondary)
+                        .frame(width: 84, alignment: .leading)
+                    Text(s.value).font(.caption).foregroundColor(.cfDeep)
+                }
+            }
+        }
+        .padding(12)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .shadow(color: .black.opacity(0.12), radius: 8, y: 3)
     }
 
     /// Small tooltip badge shown when a beach/area is tapped — name + protection status, and (for

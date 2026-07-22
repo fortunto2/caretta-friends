@@ -75,6 +75,8 @@ fun beachShapes(): List<IosBeachShape> {
 fun primaryCommunityId(): String = SharedRepo.repo.state.value.community.id
 
 /** Current air quality for the native map's pill. level = GOOD/MODERATE/UNHEALTHY/DUST. null = no sensor. */
+data class IosAirSignal(val emoji: String, val label: String, val value: String)
+
 data class IosAir(
     val level: String,
     val pm25: Int,
@@ -82,11 +84,15 @@ data class IosAir(
     val patrolAdvisable: Boolean,
     val advice: String,
     val comfort: Int, // -1 = none
+    val signals: List<IosAirSignal>,
 )
 
 fun airStatus(): IosAir? {
     val a = SharedRepo.repo.state.value.air ?: return null
-    return IosAir(a.level.name, a.pm25.toInt(), a.pm10.toInt(), a.patrolAdvisable, a.advice, a.comfort ?: -1)
+    return IosAir(
+        a.level.name, a.pm25.toInt(), a.pm10.toInt(), a.patrolAdvisable, a.advice, a.comfort ?: -1,
+        a.signals.map { IosAirSignal(it.emoji, it.label, it.value) },
+    )
 }
 
 /** Report the device's current location (one-shot from the native map) for "beaches near me". */
