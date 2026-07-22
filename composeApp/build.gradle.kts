@@ -28,6 +28,10 @@ kotlin {
             implementation(libs.androidx.core.ktx)
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.ktor.client.okhttp)
+            // Native MapLibre + OSM map (Android only; iOS uses native SwiftUI MapLibreView).
+            implementation(libs.maplibre.android)
+            implementation(libs.maplibre.annotation)
+            implementation(libs.androidx.lifecycle.runtime.compose)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

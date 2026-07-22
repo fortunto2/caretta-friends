@@ -8,7 +8,11 @@ coroutines = "1.9.0"
 datetime = "0.6.1"
 serialization = "1.7.3"
 sqldelight = "2.0.2"
+# 11.x is OpenGL-ES by default (works on swiftshader emulators + all devices). 12/13 default to
+# Vulkan, which crashes on the emulator's MESA (Failed to open rendernode).
 maplibre = "11.5.2"
+maplibreAnnotation = "3.0.2"
+lifecycleRuntimeCompose = "2.8.7"
 playServicesLocation = "21.3.0"
 coil = "3.0.4"
 # 0.38.1 is the newest build on Kotlin 2.2.x (2.2.21). 0.39.0+ jump to Kotlin 2.3 → iOS klib
@@ -28,6 +32,8 @@ sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver", ver
 sqldelight-native-driver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
 sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
 maplibre-android = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
+maplibre-annotation = { module = "org.maplibre.gl:android-plugin-annotation-v9", version.ref = "maplibreAnnotation" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleRuntimeCompose" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
