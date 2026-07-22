@@ -43,7 +43,12 @@ import com.carettafriends.ui.components.TopBar
 import com.carettafriends.ui.theme.caretta
 
 @Composable
-fun ProfileScreen(repo: CarettaRepository, state: AppState, onOpenCommunity: () -> Unit) {
+fun ProfileScreen(
+    repo: CarettaRepository,
+    state: AppState,
+    onOpenCommunity: () -> Unit,
+    onOpenStats: () -> Unit = {},
+) {
     val c = caretta
     val p = state.profile
     var editingName by remember { mutableStateOf(false) }
@@ -129,16 +134,23 @@ fun ProfileScreen(repo: CarettaRepository, state: AppState, onOpenCommunity: () 
                 }
             }
             // community
-            Box(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(c.surface)
-                    .border(1.dp, c.line, RoundedCornerShape(13.dp)).clickable { onOpenCommunity() }
-                    .padding(14.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🐢  Community", color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
-                    Text("›", color = c.muted, fontSize = 18.sp)
-                }
-            }
+            ProfileNavRow("🐢  Community", onOpenCommunity)
+            // trends / charts
+            ProfileNavRow("📊  Trends & charts", onOpenStats)
+        }
+    }
+}
+
+@Composable
+private fun ProfileNavRow(label: String, onClick: () -> Unit) {
+    val c = caretta
+    Box(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(c.surface)
+            .border(1.dp, c.line, RoundedCornerShape(13.dp)).clickable { onClick() }.padding(14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(label, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
+            Text("›", color = c.muted, fontSize = 18.sp)
         }
     }
 }

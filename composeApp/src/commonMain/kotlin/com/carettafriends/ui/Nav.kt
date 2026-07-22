@@ -9,6 +9,7 @@ sealed interface Screen {
     data object Beaches : Screen
     data object Learn : Screen
     data object Profile : Screen
+    data object Stats : Screen
     data object AddNest : Screen
     data object Camera : Screen
     data class Community(val communityId: String) : Screen

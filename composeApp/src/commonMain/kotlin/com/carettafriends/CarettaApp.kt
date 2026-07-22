@@ -28,6 +28,7 @@ import com.carettafriends.ui.screens.LearnScreen
 import com.carettafriends.ui.screens.MapScreen
 import com.carettafriends.ui.screens.NestDetailScreen
 import com.carettafriends.ui.screens.ProfileScreen
+import com.carettafriends.ui.screens.StatsScreen
 import com.carettafriends.ui.theme.CarettaTheme
 import com.carettafriends.ui.theme.caretta
 
@@ -80,7 +81,12 @@ fun CarettaApp() {
                             onOpenBeach = { nav.go(Screen.BeachDetail(it)) },
                         )
                         is Screen.Learn -> LearnScreen(state, repo)
-                        is Screen.Profile -> ProfileScreen(repo, state) { nav.go(Screen.Community(state.community.id)) }
+                        is Screen.Profile -> ProfileScreen(
+                            repo, state,
+                            onOpenCommunity = { nav.go(Screen.Community(state.community.id)) },
+                            onOpenStats = { nav.go(Screen.Stats) },
+                        )
+                        is Screen.Stats -> StatsScreen(state) { nav.back() }
                         is Screen.AddNest -> AddNestScreen(repo, state, { nav.back() }, { nav.go(Screen.Camera) })
                         is Screen.Camera -> CameraScreen({ nav.back() }, { nav.back() })
                         is Screen.Community -> CommunityScreen(state.communityOrPrimary(current.communityId), state) { nav.back() }
