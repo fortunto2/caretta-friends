@@ -201,6 +201,14 @@ class CarettaRepository {
     var pendingPhoto: PendingPhoto? = null
     fun takePendingPhoto(): PendingPhoto? = pendingPhoto.also { pendingPhoto = null }
 
+    /** Set the volunteer's display name (offline, no login needed — used as the nest/patrol author). */
+    fun setDisplayName(name: String) {
+        val clean = name.trim().take(40)
+        if (clean.isNotBlank()) {
+            _state.value = _state.value.copy(profile = _state.value.profile.copy(displayName = clean))
+        }
+    }
+
     fun setLanguage(lang: String) {
         _state.value = _state.value.copy(profile = _state.value.profile.copy(language = lang))
     }
@@ -281,6 +289,7 @@ class CarettaRepository {
                 NestUpdate(nextId("u"), UpdateKind.FOUND, body = if (isNest) "Nest found" else "False crawl logged", dateLabel = "Today"),
             ),
             temps = emptyList(),
+            foundBy = s.profile.displayName,
             updatedAtMillis = nowMillis(),
         )
         _state.value = s.copy(nests = s.nests + nest)

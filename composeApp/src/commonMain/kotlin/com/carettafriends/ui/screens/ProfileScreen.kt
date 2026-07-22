@@ -16,8 +16,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,21 +46,51 @@ import com.carettafriends.ui.theme.caretta
 fun ProfileScreen(repo: CarettaRepository, state: AppState, onOpenCommunity: () -> Unit) {
     val c = caretta
     val p = state.profile
+    var editingName by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         TopBar("Profile")
         Column(Modifier.padding(horizontal = 15.dp).padding(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            // header
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // header — tap to set your name (works offline, before any login)
+            Row(
+                Modifier.clickable { editingName = true },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 Box(
                     Modifier.size(62.dp).clip(RoundedCornerShape(20.dp))
                         .background(Brush.linearGradient(listOf(c.sunlit, c.coral))),
                     contentAlignment = Alignment.Center,
                 ) { Text(p.avatar, fontSize = 32.sp) }
                 Column {
-                    Text(p.displayName, color = c.deep, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
-                    Text(p.role, color = c.muted, fontSize = 12.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(p.displayName, color = c.deep, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+                        Text("✎", color = c.muted, fontSize = 15.sp)
+                    }
+                    Text("Tap to set your name", color = c.muted, fontSize = 12.sp)
                 }
             }
+            if (editingName) {
+                var draft by remember { mutableStateOf(p.displayName) }
+                AlertDialog(
+                    onDismissRequest = { editingName = false },
+                    title = { Text("Your name") },
+                    text = {
+                        OutlinedTextField(
+                            value = draft,
+                            onValueChange = { draft = it.take(40) },
+                            singleLine = true,
+                            label = { Text("Display name") },
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { repo.setDisplayName(draft); editingName = false }) { Text("Save") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { editingName = false }) { Text("Cancel") }
+                    },
+                )
+            }
+
             // impact tile
             Box(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
