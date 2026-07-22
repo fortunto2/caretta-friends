@@ -17,6 +17,7 @@ enum Route: Hashable {
     case camera
     case community(String)
     case beach(String)
+    case stats
 }
 
 /// A pushed Compose screen: native swipe-back, no tab bar, hidden nav bar.
@@ -27,7 +28,7 @@ private struct DetailScreen<Content: View>: View {
         content()
             .modifier(FullBleed(on: fullBleed))
             .toolbar(.hidden, for: .navigationBar)
-            .toolbar(.hidden, for: .tabBar)
+            // Keep the bottom tab bar visible on detail cards (per request).
     }
 }
 
@@ -89,6 +90,10 @@ private func destinationView(_ route: Route, path: Binding<NavigationPath>) -> s
                     onOpenNest: { nid in path.wrappedValue.append(Route.nest(nid)) }
                 )
             }
+        }
+    case .stats:
+        DetailScreen(fullBleed: false) {
+            ComposeHost { IosEntryKt.StatsVC(onBack: { path.wrappedValue.removeLast() }) }
         }
     }
 }
@@ -459,7 +464,10 @@ struct ContentView: View {
 
             TabStack { path in
                 ComposeHost {
-                    IosEntryKt.ProfileVC(onOpenCommunity: { path.wrappedValue.append(Route.community(IosEntryKt.primaryCommunityId())) })
+                    IosEntryKt.ProfileVC(
+                        onOpenCommunity: { path.wrappedValue.append(Route.community(IosEntryKt.primaryCommunityId())) },
+                        onOpenStats: { path.wrappedValue.append(Route.stats) }
+                    )
                 }
             }
             .tabItem { Label("Profile", systemImage: "tortoise.fill") }

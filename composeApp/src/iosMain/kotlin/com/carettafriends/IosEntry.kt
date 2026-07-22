@@ -19,6 +19,7 @@ import com.carettafriends.ui.screens.LearnScreen
 import com.carettafriends.ui.screens.MapScreen
 import com.carettafriends.ui.screens.NestDetailScreen
 import com.carettafriends.ui.screens.ProfileScreen
+import com.carettafriends.ui.screens.StatsScreen
 import com.carettafriends.ui.theme.CarettaTheme
 import platform.UIKit.UIViewController
 
@@ -149,9 +150,14 @@ fun LearnVC(): UIViewController = host {
     LearnScreen(state, SharedRepo.repo)
 }
 
-fun ProfileVC(onOpenCommunity: () -> Unit): UIViewController = host {
+fun ProfileVC(onOpenCommunity: () -> Unit, onOpenStats: () -> Unit): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
-    ProfileScreen(SharedRepo.repo, state, onOpenCommunity)
+    ProfileScreen(SharedRepo.repo, state, onOpenCommunity, onOpenStats)
+}
+
+fun StatsVC(onBack: () -> Unit): UIViewController = host {
+    val state by SharedRepo.repo.state.collectAsState()
+    StatsScreen(state, onBack)
 }
 
 fun AddNestVC(onDone: () -> Unit, onCamera: () -> Unit): UIViewController = host {
