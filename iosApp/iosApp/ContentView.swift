@@ -134,6 +134,7 @@ struct MapTab: View {
     @State private var savedPatrolId: String? = nil
     @State private var showPublish = false
     @State private var tappedBeach: TappedBeach? = nil
+    @State private var air: IosAir? = nil
 
     private func reload() {
         points = IosEntryKt.mapPoints().map { p in
@@ -183,6 +184,7 @@ struct MapTab: View {
                 title: p.title
             )
         }
+        air = IosEntryKt.airStatus()
     }
 
     var body: some View {
@@ -216,6 +218,13 @@ struct MapTab: View {
                         }
                         .padding(.horizontal, 14)
                     }
+                    if let a = air {
+                        Text("\(airEmoji(a)) \(airText(a))")
+                            .font(.caption.weight(.bold)).foregroundColor(.white)
+                            .padding(.horizontal, 12).padding(.vertical, 7)
+                            .background(airColor(a).opacity(0.94)).clipShape(Capsule())
+                            .padding(.leading, 14)
+                    }
                     if patrol.isRecording {
                         Text("● Recording · \(patrol.timeLabel) · \(patrol.kmLabel)")
                             .font(.caption.weight(.bold)).foregroundColor(.white)
@@ -246,10 +255,11 @@ struct MapTab: View {
                                 patrol.start()
                             }
                         } label: {
-                            Text(patrol.isRecording ? "■ Stop patrol" : "● Start patrol")
+                            let dust = (air?.patrolAdvisable == false) && !patrol.isRecording
+                            Text(patrol.isRecording ? "■ Stop patrol" : (dust ? "⚠ Dust — not advised" : "● Start patrol"))
                                 .font(.subheadline.weight(.bold)).foregroundColor(.white)
                                 .padding(.horizontal, 14).padding(.vertical, 10)
-                                .background(patrol.isRecording ? Color.cfCoral : Color.cfGood).clipShape(Capsule())
+                                .background((patrol.isRecording || dust) ? Color.cfCoral : Color.cfGood).clipShape(Capsule())
                         }
                         Spacer()
                         Button { showCamera = true } label: {
@@ -315,6 +325,32 @@ struct MapTab: View {
             Button("Publish") { if let id = savedPatrolId { IosEntryKt.publishPatrol(id: id) } }
         } message: {
             Text("Your walk is saved on your phone. Publish to share the route with your community — your live location is never shared.")
+        }
+    }
+
+    private func airEmoji(_ a: IosAir) -> String {
+        switch a.level {
+        case "DUST": return "🌫️"
+        case "UNHEALTHY": return "😷"
+        case "MODERATE": return "🌤️"
+        default: return "🍃"
+        }
+    }
+
+    private func airText(_ a: IosAir) -> String {
+        switch a.level {
+        case "DUST": return "Dust · PM10 \(a.pm10) — patrol not advised"
+        case "UNHEALTHY": return "Unhealthy · PM2.5 \(a.pm25)"
+        case "MODERATE": return "Moderate air · PM2.5 \(a.pm25)"
+        default: return "Air clean · PM2.5 \(a.pm25)"
+        }
+    }
+
+    private func airColor(_ a: IosAir) -> Color {
+        switch a.level {
+        case "DUST", "UNHEALTHY": return .cfCoral
+        case "MODERATE": return .cfAmber
+        default: return .cfGood
         }
     }
 

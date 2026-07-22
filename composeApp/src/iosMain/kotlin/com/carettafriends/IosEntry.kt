@@ -74,6 +74,20 @@ fun beachShapes(): List<IosBeachShape> {
 /** The id of our own (primary) community — for opening it from the Profile screen. */
 fun primaryCommunityId(): String = SharedRepo.repo.state.value.community.id
 
+/** Current air quality for the native map's pill. level = GOOD/MODERATE/UNHEALTHY/DUST. null = no sensor. */
+data class IosAir(
+    val level: String,
+    val pm25: Int,
+    val pm10: Int,
+    val patrolAdvisable: Boolean,
+    val advice: String,
+)
+
+fun airStatus(): IosAir? {
+    val a = SharedRepo.repo.state.value.air ?: return null
+    return IosAir(a.level.name, a.pm25.toInt(), a.pm10.toInt(), a.patrolAdvisable, a.advice)
+}
+
 /** Report the device's current location (one-shot from the native map) for "beaches near me". */
 fun setDeviceLocation(lat: Double, lng: Double) = SharedRepo.repo.setDeviceLocation(lat, lng)
 
