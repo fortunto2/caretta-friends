@@ -77,12 +77,12 @@ struct MapLibreView: UIViewRepresentable {
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         // Keep OSM attribution reachable (required by the tile usage policy).
         mapView.attributionButton.isHidden = false
-        // Tap on a beach dot/polygon (style layers, not annotations) → open its card. Require the map's
-        // own tap recognizers to fail first, so nest-PIN taps still go through didSelect untouched.
+        // Tap on a beach dot/polygon (style layers, not annotations) → open its card. Recognise
+        // SIMULTANEOUSLY with the map's own tap (its recognizer succeeds on every tap, so require-to-fail
+        // would suppress ours forever). Nest PINS are annotations → still handled by didSelect; our
+        // handler just hit-tests the beach layers and no-ops elsewhere.
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleMapTap(_:)))
-        for r in mapView.gestureRecognizers ?? [] where r is UITapGestureRecognizer {
-            tap.require(toFail: r)
-        }
+        tap.delegate = context.coordinator
         mapView.addGestureRecognizer(tap)
         context.coordinator.sync(nests: points, on: mapView)
         return mapView
@@ -98,7 +98,7 @@ struct MapLibreView: UIViewRepresentable {
 
     // MARK: Coordinator = MLNMapViewDelegate
 
-    final class Coordinator: NSObject, MLNMapViewDelegate {
+    final class Coordinator: NSObject, MLNMapViewDelegate, UIGestureRecognizerDelegate {
         var parent: MapLibreView
         private var currentIDs: Set<String> = []
         private var polyline: MLNPolyline?
@@ -174,6 +174,11 @@ struct MapLibreView: UIViewRepresentable {
                 return f
             }
             src.shape = MLNShapeCollectionFeature(shapes: features)
+        }
+
+        // Fire alongside MapLibre's built-in tap (it always recognises, so we must not wait for it).
+        func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+            true
         }
 
         /// Tap on a beach dot or polygon → open its card. Uses a padded rect so small dots are easy to
