@@ -53,8 +53,8 @@ fun MapScreen(state: AppState, onAddMarker: () -> Unit, onOpenNest: (String) -> 
             .forEach { add(MapMarker(it.id, it.point.lat, it.point.lng, isBeach = false)) }
         state.markers.filter { showMarker(filter, it) }
             .forEach { add(MapMarker(it.id, it.point.lat, it.point.lng, isBeach = false)) }
-        // Beaches are always shown (reference) with their name as a label.
-        state.beaches.forEach { add(MapMarker(it.id, it.center.lat, it.center.lng, isBeach = true, label = it.name)) }
+        // Beaches are always shown (reference) — highlighted by their OSM sand polygon.
+        state.beaches.forEach { add(MapMarker(it.id, it.center.lat, it.center.lng, isBeach = true, label = it.name, polygon = it.polygon)) }
     }
 
     Box(Modifier.fillMaxSize()) {

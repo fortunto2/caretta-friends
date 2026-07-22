@@ -99,7 +99,8 @@ class CarettaRepository {
         // Auto-discover nearby beaches from OpenStreetMap so they appear automatically for any coastal
         // city — no hand-entered lists. CACHED: only refetch if we have none yet or the cache is stale
         // (>30 days), so normal starts are instant + offline (Overpass is slow and has no SLA).
-        val haveOsm = _state.value.beaches.any { it.id.startsWith("osm-") }
+        // Refetch if we have no OSM beaches yet OR they lack polygons (older point-only cache).
+        val haveOsm = _state.value.beaches.any { it.id.startsWith("osm-") && it.polygon.isNotEmpty() }
         val stale = nowMillis() - _state.value.beachesSyncedAt > 30L * 24 * 3600 * 1000
         if (!haveOsm || stale) {
             val center = _state.value.beaches.firstOrNull()?.center ?: GeoPoint(36.27, 32.30)
@@ -318,7 +319,7 @@ private fun seedState(): AppState {
     )
     // Only Bıdı Bıdı is seeded (real OSM coordinate) — every other beach is auto-discovered from
     // OpenStreetMap at runtime (see BeachDiscovery), so no per-city hand-entered lists.
-    val bidibidi = Beach("bidibidi", community.id, "Bıdı Bıdı", "Gazipaşa", GeoPoint(36.2529, 32.2869))
+    val bidibidi = Beach("bidibidi", community.id, "Bıdı Bıdı", "Gazipaşa", GeoPoint(36.2529, 32.2869), protected = true)
 
     return AppState(
         community = community,

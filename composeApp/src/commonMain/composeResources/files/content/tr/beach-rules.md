@@ -1,6 +1,6 @@
 # Plaj kuralları ve yasaklar
 
-Gazipaşa ve Alanya'nın korunan yuvalama plajlarında **1 Mayıs–Eylül sonu arası 20:00–08:00 giriş yasaktır**.
+Gazipaşa, **Türkiye'nin 21 resmî korunan deniz kaplumbağası yuvalama plajından** biridir (2009/10 sayılı Genelge). Bu plajlarda **1 Mayıs–Eylül sonu arası 20:00–08:00 giriş yasaktır**.
 
 Yasak: **çadır, ateş, kumda araç, şezlong ve gürültü.**
 

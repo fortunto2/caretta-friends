@@ -42,6 +42,10 @@ data class Beach(
     val center: GeoPoint,
     val leaderName: String? = null,
     val leaderAvatar: String = "🐢",
+    /** OSM sand outline (the yellow beach polygon) — highlighted on the map instead of a point pin. */
+    val polygon: List<GeoPoint> = emptyList(),
+    /** True if this beach is one of Türkiye's official protected turtle nesting beaches (auto/overridable). */
+    val protected: Boolean = false,
 )
 
 @Serializable

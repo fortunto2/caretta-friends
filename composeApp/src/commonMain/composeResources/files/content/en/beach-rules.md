@@ -1,6 +1,6 @@
 # Beach rules & what's banned
 
-On the protected nesting beaches of Gazipaşa and Alanya, access is **banned 20:00–08:00, from 1 May to the end of September**.
+Gazipaşa is one of **Türkiye's 21 official protected sea-turtle nesting beaches** (national Circular 2009/10). On these beaches access is **banned 20:00–08:00, from 1 May to the end of September**.
 
 Prohibited: **tents, fires, vehicles on the sand, sun-loungers, and noise.**
 

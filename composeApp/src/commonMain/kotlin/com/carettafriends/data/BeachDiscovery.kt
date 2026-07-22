@@ -2,6 +2,7 @@ package com.carettafriends.data
 
 import com.carettafriends.domain.Beach
 import com.carettafriends.domain.GeoPoint
+import com.carettafriends.domain.protectedAreaFor
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.header
@@ -29,12 +30,13 @@ class BeachDiscovery {
         }
     }
 
-    /** Named beaches within [radiusM] of (lat,lng), as [Beach] rows tied to [communityId]. */
+    /** Named beaches within [radiusM] of (lat,lng), as [Beach] rows tied to [communityId].
+     *  Each carries its OSM sand POLYGON (`out geom`) so the map highlights the real beach outline
+     *  instead of a point pin (whose centroid can land inland). */
     suspend fun nearby(lat: Double, lng: Double, radiusM: Int, communityId: String): List<Beach> {
-        // nwr = node+way+relation (some beaches, e.g. Koru, are relations). POST the raw Overpass QL
-        // as a text body; read the response as text and parse manually (no ContentNegotiation, which
-        // would otherwise JSON-encode the query string on the way out).
-        val query = "[out:json][timeout:20];nwr[\"natural\"=\"beach\"](around:$radiusM,$lat,$lng);out center tags;"
+        // nwr = node+way+relation (some beaches, e.g. Koru, are relations). `out geom` returns the
+        // full geometry (way node coords / relation members). POST raw QL + manual parse.
+        val query = "[out:json][timeout:25];nwr[\"natural\"=\"beach\"](around:$radiusM,$lat,$lng);out geom tags;"
         val body = http.post("https://overpass-api.de/api/interpreter") {
             header("User-Agent", "CarettaFriends/1.0 (sea-turtle nest monitoring)")
             contentType(ContentType.Text.Plain)
@@ -42,16 +44,24 @@ class BeachDiscovery {
         }.bodyAsText()
         val resp = json.decodeFromString<OverpassResp>(body)
         return resp.elements.mapNotNull { el ->
-            val la = el.lat ?: el.center?.lat ?: return@mapNotNull null
-            val lo = el.lon ?: el.center?.lon ?: return@mapNotNull null
             // Named beaches only — unnamed OSM polygons are noise for a volunteer picker.
             val name = el.tags["name"] ?: el.tags["name:tr"] ?: return@mapNotNull null
+            // Outline: way geometry, else concatenated relation-member geometry.
+            val ring = (el.geometry.takeIf { it.isNotEmpty() } ?: el.members.flatMap { it.geometry })
+                .map { GeoPoint(it.lat, it.lon) }
+            val center = when {
+                ring.isNotEmpty() -> GeoPoint(ring.map { it.lat }.average(), ring.map { it.lng }.average())
+                el.lat != null && el.lon != null -> GeoPoint(el.lat, el.lon)
+                else -> return@mapNotNull null
+            }
             Beach(
                 id = "osm-${el.type}-${el.id}",   // stable across refetches → idempotent upsert
                 communityId = communityId,
                 name = name,
                 city = el.tags["addr:city"] ?: "",
-                center = GeoPoint(la, lo),
+                center = center,
+                polygon = ring,
+                protected = protectedAreaFor(center) != null,
             )
         }
     }
@@ -66,9 +76,13 @@ private data class OverpassEl(
     val id: Long = 0,
     val lat: Double? = null,
     val lon: Double? = null,
-    val center: OverpassCenter? = null,
     val tags: Map<String, String> = emptyMap(),
+    val geometry: List<LatLon> = emptyList(),
+    val members: List<OverpassMember> = emptyList(),
 )
 
 @Serializable
-private data class OverpassCenter(val lat: Double, val lon: Double)
+private data class OverpassMember(val type: String = "", val geometry: List<LatLon> = emptyList())
+
+@Serializable
+private data class LatLon(val lat: Double, val lon: Double)

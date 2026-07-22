@@ -2,10 +2,11 @@ package com.carettafriends.ui.map
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.carettafriends.domain.GeoPoint
 
 /**
- * A map marker with a STABLE, app-level id (nest id / beach id). [isBeach] picks the icon
- * (teal dot for beaches, red pin for nests) so beaches read clearly, matching the iOS map.
+ * A map marker with a STABLE, app-level id (nest id / beach id). Nests render as a dot; beaches
+ * render as a highlighted [polygon] (their OSM sand outline) when available, else a dot.
  */
 data class MapMarker(
     val id: String,
@@ -13,6 +14,7 @@ data class MapMarker(
     val lng: Double,
     val isBeach: Boolean = false,
     val label: String = "",
+    val polygon: List<GeoPoint> = emptyList(),
 )
 
 /**

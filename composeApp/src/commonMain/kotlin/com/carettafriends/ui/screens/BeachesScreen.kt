@@ -115,6 +115,14 @@ private fun BeachGroup(
                     Pill("🥚 $active active", c.sea)
                     if (hatchingSoon > 0) Pill("🐣 $hatchingSoon hatching soon", c.warn)
                 }
+                if (beach.protected) {
+                    Text(
+                        "🛡️ Official protected nesting beach (Türkiye) — night access banned in season.",
+                        color = c.good,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
             }
         }
         // compact nest rows under the beach card
