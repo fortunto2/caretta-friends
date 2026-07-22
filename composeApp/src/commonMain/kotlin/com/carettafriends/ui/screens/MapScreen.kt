@@ -44,7 +44,13 @@ import com.carettafriends.ui.theme.caretta
  * Nests are coral dots, beaches are teal labelled dots; tapping a nest opens its detail.
  */
 @Composable
-fun MapScreen(state: AppState, onAddMarker: () -> Unit, onOpenNest: (String) -> Unit, onOpenBeach: (String) -> Unit = {}) {
+fun MapScreen(
+    state: AppState,
+    onAddMarker: () -> Unit,
+    onOpenNest: (String) -> Unit,
+    onOpenBeach: (String) -> Unit = {},
+    onOpenCommunity: () -> Unit = {},
+) {
     val c = caretta
     var filter by remember { mutableStateOf("all") }
     var tappedBeach by remember { mutableStateOf<String?>(null) }
@@ -63,6 +69,10 @@ fun MapScreen(state: AppState, onAddMarker: () -> Unit, onOpenNest: (String) -> 
         state.beaches.forEach {
             add(MapMarker(it.id, it.center.lat, it.center.lng, isBeach = true, label = it.name, polygon = it.polygon, protected = it.protected))
         }
+        // Community hub — the city this community is registered in (orange dot, tap → community).
+        state.community.let {
+            add(MapMarker("cm:${it.id}", it.center.lat, it.center.lng, label = it.name, isCommunity = true))
+        }
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -71,6 +81,7 @@ fun MapScreen(state: AppState, onAddMarker: () -> Unit, onOpenNest: (String) -> 
             markers,
             onClick = { id -> onOpenNest(id) },
             onBeachTap = { id -> tappedBeach = id },
+            onCommunityTap = { onOpenCommunity() },
         )
 
         // --- Top overlays: filter chips + coverage chip ---

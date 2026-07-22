@@ -125,6 +125,7 @@ struct MapTab: View {
     @State private var showCamera = false
     @State private var points: [MapPoint] = []
     @State private var beaches: [MapPoint] = []
+    @State private var communities: [MapPoint] = []
     @State private var beachPolygons: [BeachPolygon] = []
     @State private var filter = "all"
     @StateObject private var patrol = PatrolRecorder()
@@ -172,6 +173,14 @@ struct MapTab: View {
             )
         }
         beaches = communityDots + areaDots
+        // Community hubs — orange dots at each community's registered city.
+        communities = IosEntryKt.communityPoints().map { p in
+            MapPoint(
+                id: p.id,
+                coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng),
+                title: p.title
+            )
+        }
     }
 
     var body: some View {
@@ -185,6 +194,8 @@ struct MapTab: View {
                     showsCallout: false,
                     onSelect: { id in path.append(Route.nest(id)) },
                     onSelectBeach: { id in path.append(Route.beach(id)) },
+                    communities: communities,
+                    onSelectCommunity: { _ in path.append(Route.community) },
                     track: patrol.coords,
                     beachPolygons: beachPolygons
                 )

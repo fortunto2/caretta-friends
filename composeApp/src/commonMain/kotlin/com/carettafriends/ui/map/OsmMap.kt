@@ -17,6 +17,8 @@ data class MapMarker(
     val polygon: List<GeoPoint> = emptyList(),
     /** Protected nesting beach → green highlight; otherwise amber/yellow. */
     val protected: Boolean = false,
+    /** A community hub (its registered city) → orange dot, tap opens the community. */
+    val isCommunity: Boolean = false,
 )
 
 /**
@@ -33,4 +35,5 @@ expect fun OsmMap(
     points: List<MapMarker>,
     onClick: (markerId: String) -> Unit,
     onBeachTap: (beachId: String) -> Unit = {},
+    onCommunityTap: (communityId: String) -> Unit = {},
 )

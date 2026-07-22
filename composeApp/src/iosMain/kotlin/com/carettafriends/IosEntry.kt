@@ -55,6 +55,12 @@ fun protectedAreaPoints(): List<IosMapPoint> {
     return s.protectedAreas.map { IosMapPoint("pa:${it.name}", it.lat, it.lng, it.name, "area") }
 }
 
+/** Community hubs — the city each community is registered in (orange dot, tap → community screen). */
+fun communityPoints(): List<IosMapPoint> {
+    val c = SharedRepo.repo.state.value.community
+    return listOf(IosMapPoint("cm:${c.id}", c.center.lat, c.center.lng, c.name, "community"))
+}
+
 /** A beach's OSM sand outline for the native map. [polygonCsv] = "lat,lng;lat,lng;…" (empty = no outline). */
 data class IosBeachShape(val id: String, val name: String, val isProtected: Boolean, val polygonCsv: String)
 

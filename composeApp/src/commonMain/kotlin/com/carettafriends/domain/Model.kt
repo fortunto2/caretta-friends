@@ -34,6 +34,9 @@ data class Community(
     /** Public admin contact (phone / handle) for other communities to reach this one. Empty = hidden.
      *  Groundwork for connecting new communities & inter-community coordination later. */
     val adminContact: String = "",
+    /** The city/town this community is registered in — shown as an orange hub dot on the map.
+     *  Default = Gazipaşa (our root community). */
+    val center: GeoPoint = GeoPoint(36.268, 32.319),
 )
 
 @Serializable

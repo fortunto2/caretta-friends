@@ -15,6 +15,7 @@ actual fun OsmMap(
     points: List<MapMarker>,
     onClick: (String) -> Unit,
     onBeachTap: (String) -> Unit,
+    onCommunityTap: (String) -> Unit,
 ) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text("Map — ${points.size} markers")

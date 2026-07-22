@@ -72,6 +72,7 @@ fun CarettaApp() {
                             onAddMarker = { nav.go(Screen.AddNest) },
                             onOpenNest = { nav.go(Screen.NestDetail(it)) },
                             onOpenBeach = { nav.go(Screen.BeachDetail(it)) },
+                            onOpenCommunity = { nav.go(Screen.Community) },
                         )
                         is Screen.Beaches -> BeachesScreen(
                             state,

@@ -343,6 +343,7 @@ private fun seedState(): AppState {
         websiteUrl = "https://carettafriends.com",
         whatsappUrl = "https://wa.me/905013794326",
         instagramUrl = "https://www.instagram.com/gazipasa_caretta_ve_kumzambagi",
+        center = GeoPoint(36.268, 32.319),   // registered in Gazipaşa town (orange hub dot)
     )
     // Only Bıdı Bıdı is seeded (real OSM coordinate) — every other beach is auto-discovered from
     // OpenStreetMap at runtime (see BeachDiscovery), so no per-city hand-entered lists.

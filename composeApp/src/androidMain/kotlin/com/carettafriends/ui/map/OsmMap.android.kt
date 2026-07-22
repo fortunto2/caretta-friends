@@ -33,11 +33,12 @@ import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
 import org.maplibre.geojson.Polygon
 
-// Protected beaches = green, unprotected = amber, nests = coral. Circles + polygon fills are basic
-// GL fills → they render on the emulator's software GL (SwiftShader).
+// Protected beaches = green, unprotected = amber, nests = coral, community hubs = orange. Circles +
+// polygon fills are basic GL fills → they render on the emulator's software GL (SwiftShader).
 private const val GREEN = "#2E9E5B"
 private const val AMBER = "#E0A82E"
 private const val NEST = "#E0533D"
+private const val COMMUNITY = "#F97316"
 private const val BEACH_SRC = "cf-beaches-src"
 private const val BEACH_FILL = "cf-beaches-fill"
 private const val BEACH_LINE = "cf-beaches-line"
@@ -48,6 +49,7 @@ actual fun OsmMap(
     points: List<MapMarker>,
     onClick: (String) -> Unit,
     onBeachTap: (String) -> Unit,
+    onCommunityTap: (String) -> Unit,
 ) {
     val ctx = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -104,6 +106,7 @@ actual fun OsmMap(
                         when {
                             data.startsWith("n:") -> onClick(data.removePrefix("n:"))
                             data.startsWith("b:") -> onBeachTap(data.removePrefix("b:"))
+                            data.startsWith("c:") -> onCommunityTap(data.removePrefix("c:"))
                         }
                         true
                     }
@@ -136,18 +139,24 @@ private fun renderCircles(cm: CircleManager, points: List<MapMarker>) {
     cm.deleteAll()
     points.forEach { m ->
         val color = when {
+            m.isCommunity -> COMMUNITY
             !m.isBeach -> NEST
             m.protected -> GREEN
             else -> AMBER
         }
+        val data = when {
+            m.isCommunity -> "c:${m.id}"
+            m.isBeach -> "b:${m.id}"
+            else -> "n:${m.id}"
+        }
         cm.create(
             CircleOptions()
                 .withLatLng(LatLng(m.lat, m.lng))
-                .withCircleRadius(if (m.isBeach) 6.5f else 8f)
+                .withCircleRadius(if (m.isCommunity) 9f else if (m.isBeach) 6.5f else 8f)
                 .withCircleColor(color)
                 .withCircleStrokeColor("#FFFFFF")
-                .withCircleStrokeWidth(2.5f)
-                .withData(JsonPrimitive(if (m.isBeach) "b:${m.id}" else "n:${m.id}")),
+                .withCircleStrokeWidth(if (m.isCommunity) 3f else 2.5f)
+                .withData(JsonPrimitive(data)),
         )
     }
 }

@@ -63,6 +63,10 @@ struct MapLibreView: UIViewRepresentable {
     var onSelect: (String) -> Void = { _ in }
     /// Fires with the tapped community beach's id (dot or polygon) → opens the beach card.
     var onSelectBeach: (String) -> Void = { _ in }
+    /// Community hubs (registered city) — orange dots; tap fires onSelectCommunity.
+    var communities: [MapPoint] = []
+    /// Fires with the tapped community's id → opens the community screen.
+    var onSelectCommunity: (String) -> Void = { _ in }
     /// Live patrol track (breadcrumb coordinates) drawn as a polyline.
     var track: [CLLocationCoordinate2D] = []
     /// Beach sand outlines (OSM polygons), coloured green (protected) / amber (unprotected).
@@ -94,6 +98,7 @@ struct MapLibreView: UIViewRepresentable {
         context.coordinator.syncTrack(track, on: mapView)
         context.coordinator.applyBeachPolygons(beachPolygons)
         context.coordinator.applyBeachDots(beaches)
+        context.coordinator.applyCommunities(communities)
     }
 
     // MARK: Coordinator = MLNMapViewDelegate
@@ -105,6 +110,7 @@ struct MapLibreView: UIViewRepresentable {
         private var trackCount = -1
         private var beachSource: MLNShapeSource?
         private var beachDotSource: MLNShapeSource?
+        private var communitySource: MLNShapeSource?
 
         init(_ parent: MapLibreView) { self.parent = parent }
 
@@ -142,8 +148,20 @@ struct MapLibreView: UIViewRepresentable {
             style.addLayer(dots)
             beachDotSource = dotSrc
 
+            // Community hubs (registered city) — orange dots, drawn on top of everything.
+            let cSrc = MLNShapeSource(identifier: "cf-community-dots", shape: nil, options: nil)
+            style.addSource(cSrc)
+            let cDots = MLNCircleStyleLayer(identifier: "cf-community-dots", source: cSrc)
+            cDots.circleRadius = NSExpression(forConstantValue: 8.5)
+            cDots.circleColor = NSExpression(forConstantValue: orange)
+            cDots.circleStrokeColor = NSExpression(forConstantValue: UIColor.white)
+            cDots.circleStrokeWidth = NSExpression(forConstantValue: 3)
+            style.addLayer(cDots)
+            communitySource = cSrc
+
             applyBeachPolygons(parent.beachPolygons)
             applyBeachDots(parent.beaches)
+            applyCommunities(parent.communities)
         }
 
         /// Push the current beach outlines into the shape source. Each feature carries `id` (for tap →
@@ -181,13 +199,30 @@ struct MapLibreView: UIViewRepresentable {
             true
         }
 
-        /// Tap on a beach dot or polygon → open its card. Uses a padded rect so small dots are easy to
-        /// hit; only OPENABLE beaches (community beaches, not baked overview areas) navigate.
+        /// Push community hub dots (orange) — each feature carries `id` for tap → community screen.
+        func applyCommunities(_ points: [MapPoint]) {
+            guard let src = communitySource else { return }
+            let features: [MLNPointFeature] = points.map { p in
+                let f = MLNPointFeature()
+                f.coordinate = p.coordinate
+                f.attributes = ["id": p.id]
+                return f
+            }
+            src.shape = MLNShapeCollectionFeature(shapes: features)
+        }
+
+        /// Tap on a community hub, beach dot or polygon → open the matching screen. Uses a padded rect
+        /// so small dots are easy to hit; baked overview areas (openable == NO) don't navigate.
         @objc func handleMapTap(_ gr: UITapGestureRecognizer) {
             guard gr.state == .ended, let mapView = gr.view as? MLNMapView else { return }
             let pt = gr.location(in: mapView)
             let rect = CGRect(x: pt.x - 22, y: pt.y - 22, width: 44, height: 44)
-            // Dots first (drawn on top), then polygons.
+            // Community hubs first (top layer), then beach dots, then polygons.
+            let cFeats = mapView.visibleFeatures(in: rect, styleLayerIdentifiers: ["cf-community-dots"])
+            if let id = cFeats.compactMap({ $0.attribute(forKey: "id") as? String }).first {
+                parent.onSelectCommunity(id)
+                return
+            }
             let feats = mapView.visibleFeatures(in: rect, styleLayerIdentifiers: ["cf-beach-dots", "cf-beaches-fill"])
             for f in feats {
                 let openable = (f.attribute(forKey: "openable") as? NSNumber)?.boolValue ?? true
@@ -211,11 +246,13 @@ struct MapLibreView: UIViewRepresentable {
         }
 
         private let coral = UIColor(red: 0.98, green: 0.45, blue: 0.36, alpha: 1.0)
-        // Match Android: protected #2E9E5B (green), unprotected #E0A82E (amber).
+        // Match Android: protected #2E9E5B (green), unprotected #E0A82E (amber), community #F97316 (orange).
         fileprivate static let green = UIColor(red: 0.18, green: 0.62, blue: 0.357, alpha: 1.0)
         fileprivate static let amber = UIColor(red: 0.878, green: 0.659, blue: 0.18, alpha: 1.0)
+        fileprivate static let orange = UIColor(red: 0.976, green: 0.451, blue: 0.086, alpha: 1.0)
         private var green: UIColor { Coordinator.green }
         private var amber: UIColor { Coordinator.amber }
+        private var orange: UIColor { Coordinator.orange }
 
         // Patrol track (polyline) styling.
         func mapView(_ mapView: MLNMapView, strokeColorForShapeAnnotation annotation: MLNShape) -> UIColor { coral }
