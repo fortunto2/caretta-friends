@@ -22,6 +22,7 @@
       "kind": "NGO",
       "affiliation": "",
       "website": "https://dalyanturtles.com",
+      "email": "info@dalyanturtles.com",
       "lat": 36.762,
       "lng": 28.6215,
       "nearArea": "Dalyan / İztuzu"
@@ -58,6 +59,8 @@
       "kind": "COMMUNITY",
       "affiliation": "",
       "website": "https://lidosk.org.tr",
+      "phone": "+90 507 760 78 76",
+      "email": "info@lidosk.org.tr",
       "lat": 36.23,
       "lng": 29.96,
       "nearArea": "Kale (Demre)"
@@ -83,6 +86,8 @@
       "kind": "NGO",
       "affiliation": "",
       "website": "https://ekad.org.tr",
+      "phone": "+90 530 884 3997",
+      "email": "info@ekad.org.tr",
       "lat": 36.851,
       "lng": 31.055,
       "nearArea": "Belek · Kızılot · Demirtaş · Kumluca · Tekirova"
@@ -95,6 +100,7 @@
       "kind": "UNIVERSITY",
       "affiliation": "Mersin University",
       "website": "https://www.mersin.edu.tr/akademik/deniz-kaplumbagalari-uygulama-ve-arastirma-merkezi",
+      "phone": "+90 324 361 00 01",
       "lat": 36.601,
       "lng": 34.303,
       "nearArea": "Demirtaş · Anamur · Kazanlı · Alata · Göksu Delta"
@@ -107,6 +113,7 @@
       "kind": "COMMUNITY",
       "affiliation": "Volunteer Projects Türkiye",
       "website": "https://gonulluprojeleri.com/anamur.html",
+      "email": "info@gonulluprojeleri.com",
       "lat": 36.018,
       "lng": 32.803,
       "nearArea": "Anamur"
@@ -131,6 +138,8 @@
       "kind": "UNIVERSITY",
       "affiliation": "Çukurova University",
       "website": "https://suf.cu.edu.tr/",
+      "phone": "+90 322 338 60 84",
+      "email": "suf@cu.edu.tr",
       "lat": 36.082,
       "lng": 35.95,
       "nearArea": "Yumurtalık · Samandağ"
