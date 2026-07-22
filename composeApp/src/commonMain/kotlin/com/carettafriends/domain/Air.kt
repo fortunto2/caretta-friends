@@ -19,6 +19,9 @@ data class AirStatus(
     /** false when the air is bad enough that patrolling / lingering outside isn't advisable. */
     val patrolAdvisable: Boolean,
     val advice: String,
+    /** 0–100 overall comfort index from the user's Air Signal API (air + temp + sea + fire + …). null
+     *  when only raw Sensor.Community data was available. */
+    val comfort: Int? = null,
     val fetchedAtMillis: Long = 0,
 )
 
@@ -26,7 +29,7 @@ data class AirStatus(
  * Classify a PM2.5 / PM10 reading. Dust is keyed on the PM10:PM2.5 ratio (sand/dust storms push PM10
  * far above PM2.5) — mirrors the user's airq `classify_source`. Thresholds follow common PM2.5 bands.
  */
-fun classifyAir(pm25: Double, pm10: Double, sensors: Int, nowMillis: Long): AirStatus {
+fun classifyAir(pm25: Double, pm10: Double, sensors: Int, nowMillis: Long, comfort: Int? = null): AirStatus {
     val ratio = if (pm25 > 0.0) pm10 / pm25 else 0.0
     val (level, patrolOk, advice) = when {
         ratio > 4.0 && pm10 > 50.0 ->
@@ -40,6 +43,7 @@ fun classifyAir(pm25: Double, pm10: Double, sensors: Int, nowMillis: Long): AirS
     }
     return AirStatus(
         pm25 = pm25, pm10 = pm10, sensors = sensors,
-        level = level, patrolAdvisable = patrolOk, advice = advice, fetchedAtMillis = nowMillis,
+        level = level, patrolAdvisable = patrolOk, advice = advice,
+        comfort = comfort, fetchedAtMillis = nowMillis,
     )
 }

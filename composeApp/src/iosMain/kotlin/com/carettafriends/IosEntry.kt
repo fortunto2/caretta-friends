@@ -81,11 +81,12 @@ data class IosAir(
     val pm10: Int,
     val patrolAdvisable: Boolean,
     val advice: String,
+    val comfort: Int, // -1 = none
 )
 
 fun airStatus(): IosAir? {
     val a = SharedRepo.repo.state.value.air ?: return null
-    return IosAir(a.level.name, a.pm25.toInt(), a.pm10.toInt(), a.patrolAdvisable, a.advice)
+    return IosAir(a.level.name, a.pm25.toInt(), a.pm10.toInt(), a.patrolAdvisable, a.advice, a.comfort ?: -1)
 }
 
 /** Report the device's current location (one-shot from the native map) for "beaches near me". */

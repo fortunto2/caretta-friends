@@ -241,10 +241,11 @@ private fun AirPill(air: com.carettafriends.domain.AirStatus) {
         com.carettafriends.domain.AirLevel.MODERATE -> Triple(amber, "🌤️", "Moderate air · PM2.5 ${air.pm25.toInt()}")
         com.carettafriends.domain.AirLevel.GOOD -> Triple(green, "🍃", "Air clean · PM2.5 ${air.pm25.toInt()}")
     }
+    val comfortSuffix = air.comfort?.let { " · ☺ $it" } ?: ""
     Box(
         Modifier.padding(start = 14.dp).clip(CircleShape).background(bg.copy(alpha = 0.94f))
             .padding(horizontal = 12.dp, vertical = 7.dp),
     ) {
-        Text("$emoji $text", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+        Text("$emoji $text$comfortSuffix", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
     }
 }

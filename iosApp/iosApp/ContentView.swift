@@ -338,12 +338,14 @@ struct MapTab: View {
     }
 
     private func airText(_ a: IosAir) -> String {
+        let base: String
         switch a.level {
-        case "DUST": return "Dust · PM10 \(a.pm10) — patrol not advised"
-        case "UNHEALTHY": return "Unhealthy · PM2.5 \(a.pm25)"
-        case "MODERATE": return "Moderate air · PM2.5 \(a.pm25)"
-        default: return "Air clean · PM2.5 \(a.pm25)"
+        case "DUST": base = "Dust · PM10 \(a.pm10) — patrol not advised"
+        case "UNHEALTHY": base = "Unhealthy · PM2.5 \(a.pm25)"
+        case "MODERATE": base = "Moderate air · PM2.5 \(a.pm25)"
+        default: base = "Air clean · PM2.5 \(a.pm25)"
         }
+        return a.comfort >= 0 ? "\(base) · ☺ \(a.comfort)" : base
     }
 
     private func airColor(_ a: IosAir) -> Color {

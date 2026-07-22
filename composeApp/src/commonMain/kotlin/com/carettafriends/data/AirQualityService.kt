@@ -11,6 +11,9 @@ import kotlinx.serialization.json.Json
 /** Median PM2.5 / PM10 (µg/m³) for an area, plus how many sensors contributed. */
 data class AirSample(val pm25: Double, val pm10: Double, val sensors: Int)
 
+/** The user's Air Signal comfort read: merged PM2.5 (sensors + model fallback) + a 0–100 index. */
+data class ComfortSample(val pm25: Double?, val comfort: Int)
+
 /**
  * Pulls open citizen air-quality data from **Sensor.Community** (the same free source the user's Air
  * Signal / airq project uses — Gazipaşa is sensor 77955). No API key. Supplementary layer: returns
@@ -27,6 +30,19 @@ class AirQualityService {
             socketTimeoutMillis = 15_000
         }
     }
+
+    /** The user's deployed Air Signal comfort index (merged sensors + model, 0–100) for a point.
+     *  Primary source — more robust than raw sensors (falls back to a model when sensors are offline). */
+    suspend fun comfort(lat: Double, lng: Double): ComfortSample? = runCatching {
+        val url = "https://air.miralinka.com/api/comfort?lat=$lat&lon=$lng"
+        val body = http.get(url) { header("User-Agent", "caretta-app/1.0") }.bodyAsText()
+        val resp = json.decodeFromString<ComfortResp>(body)
+        val total = resp.total ?: return@runCatching null
+        val pm = resp.scores?.air?.value
+            ?.substringAfter("PM2.5:", "")?.trim()
+            ?.takeWhile { it.isDigit() || it == '.' }?.toDoubleOrNull()
+        ComfortSample(pm25 = pm, comfort = total)
+    }.getOrNull()
 
     /** Nearest sensors within [radiusKm] of (lat,lng), aggregated to a median reading. */
     suspend fun near(lat: Double, lng: Double, radiusKm: Int = 15): AirSample? = runCatching {
@@ -71,3 +87,12 @@ private data class ScSensor(val id: Long = 0)
 
 @Serializable
 private data class ScValue(val value_type: String = "", val value: String = "")
+
+@Serializable
+private data class ComfortResp(val total: Int? = null, val scores: ComfortScores? = null)
+
+@Serializable
+private data class ComfortScores(val air: ComfortMetric? = null)
+
+@Serializable
+private data class ComfortMetric(val score: Int? = null, val value: String = "")

@@ -216,14 +216,22 @@ class CarettaRepository {
         scope.launch { refreshAir() }   // refresh air for where the volunteer actually is
     }
 
-    /** Pull current air quality (Sensor.Community) for the volunteer's location or the community beach. */
+    /** Pull current air quality for the volunteer's location or the community beach. Primary =
+     *  the user's Air Signal comfort API (merged PM2.5 + 0–100 index); Sensor.Community adds PM10
+     *  (for dust) and is the fallback when the Air Signal server is unreachable. */
     suspend fun refreshAir() {
         val s = _state.value
         val p = s.deviceLocation ?: s.community.center
+        val comfort = airQuality.comfort(p.lat, p.lng)
         val sample = airQuality.near(p.lat, p.lng)
-        _state.value = _state.value.copy(
-            air = sample?.let { classifyAir(it.pm25, it.pm10, it.sensors, nowMillis()) },
-        )
+        val pm25 = comfort?.pm25 ?: sample?.pm25
+        _state.value = if (pm25 == null) {
+            _state.value.copy(air = null)
+        } else {
+            _state.value.copy(
+                air = classifyAir(pm25, sample?.pm10 ?: pm25, sample?.sensors ?: 0, nowMillis(), comfort?.comfort),
+            )
+        }
     }
 
     fun addNest(
