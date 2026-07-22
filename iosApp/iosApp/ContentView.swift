@@ -459,9 +459,10 @@ struct ContentView: View {
             .tabItem { Label("Beaches", systemImage: "beach.umbrella.fill") }
             .tag(Tab.beaches)
 
-            // Centre "+" — never shows its own content; it triggers the add flow.
+            // Centre "+" — never shows its own content; the coral overlay button triggers the add
+            // flow. Empty tab item (blank space, no icon) so nothing peeks from under the coral button.
             Color.clear
-                .tabItem { Label("Add", systemImage: "plus.circle.fill") }
+                .tabItem { Text(" ") }
                 .tag(Tab.add)
 
             TabStack { _ in
@@ -482,6 +483,20 @@ struct ContentView: View {
             .tag(Tab.profile)
         }
         .tint(Color.cfCoral)
+        // Prominent coral "+" over the centre tab (Android has the same). Sits on top of the
+        // sentinel .add tab; tapping either opens the add flow.
+        .overlay(alignment: .bottom) {
+            Button { showAdd = true } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 26, weight: .heavy))
+                    .foregroundColor(.white)
+                    .frame(width: 52, height: 52)
+                    .background(Color.cfCoral)
+                    .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+                    .shadow(color: Color.cfCoral.opacity(0.45), radius: 8, y: 4)
+            }
+            .offset(y: -14)
+        }
         .onChange(of: selection) { newValue in
             if newValue == .add {
                 showAdd = true
