@@ -55,10 +55,10 @@ fun protectedAreaPoints(): List<IosMapPoint> {
     return s.protectedAreas.map { IosMapPoint("pa:${it.name}", it.lat, it.lng, it.name, "area") }
 }
 
-/** Community hubs — the city each community is registered in (orange dot, tap → community screen). */
+/** Community hubs — our own + collected local groups (orange squares, tap → community screen). */
 fun communityPoints(): List<IosMapPoint> {
-    val c = SharedRepo.repo.state.value.community
-    return listOf(IosMapPoint("cm:${c.id}", c.center.lat, c.center.lng, c.name, "community"))
+    val s = SharedRepo.repo.state.value
+    return s.allCommunities.map { IosMapPoint("cm:${it.id}", it.center.lat, it.center.lng, it.name, "community") }
 }
 
 /** A beach's OSM sand outline for the native map. [polygonCsv] = "lat,lng;lat,lng;…" (empty = no outline). */
@@ -70,6 +70,9 @@ fun beachShapes(): List<IosBeachShape> {
         IosBeachShape(b.id, b.name, b.protected, b.polygon.joinToString(";") { "${it.lat},${it.lng}" })
     }
 }
+
+/** The id of our own (primary) community — for opening it from the Profile screen. */
+fun primaryCommunityId(): String = SharedRepo.repo.state.value.community.id
 
 /** Report the device's current location (one-shot from the native map) for "beaches near me". */
 fun setDeviceLocation(lat: Double, lng: Double) = SharedRepo.repo.setDeviceLocation(lat, lng)
@@ -155,7 +158,7 @@ fun CameraVC(onBack: () -> Unit, onCaptured: () -> Unit): UIViewController = hos
     CameraScreen(onBack, onCaptured)
 }
 
-fun CommunityVC(onBack: () -> Unit): UIViewController = host {
+fun CommunityVC(communityId: String, onBack: () -> Unit): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
-    CommunityScreen(state, onBack)
+    CommunityScreen(state.communityOrPrimary(communityId), state, onBack)
 }

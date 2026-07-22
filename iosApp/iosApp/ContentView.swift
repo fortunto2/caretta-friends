@@ -15,7 +15,7 @@ enum Route: Hashable {
     case excavation(String)
     case addNest
     case camera
-    case community
+    case community(String)
     case beach(String)
 }
 
@@ -76,9 +76,9 @@ private func destinationView(_ route: Route, path: Binding<NavigationPath>) -> s
                 )
             }
         }
-    case .community:
+    case .community(let id):
         DetailScreen(fullBleed: false) {
-            ComposeHost { IosEntryKt.CommunityVC(onBack: { path.wrappedValue.removeLast() }) }
+            ComposeHost { IosEntryKt.CommunityVC(communityId: id, onBack: { path.wrappedValue.removeLast() }) }
         }
     case .beach(let id):
         DetailScreen(fullBleed: false) {
@@ -197,7 +197,9 @@ struct MapTab: View {
                     onSelect: { id in path.append(Route.nest(id)) },
                     onTapBeach: { tb in withAnimation(.easeInOut(duration: 0.2)) { tappedBeach = tb } },
                     communities: communities,
-                    onSelectCommunity: { _ in path.append(Route.community) },
+                    onSelectCommunity: { id in
+                        path.append(Route.community(id.hasPrefix("cm:") ? String(id.dropFirst(3)) : id))
+                    },
                     track: patrol.coords,
                     beachPolygons: beachPolygons
                 )
@@ -392,7 +394,7 @@ struct ContentView: View {
 
             TabStack { path in
                 ComposeHost {
-                    IosEntryKt.ProfileVC(onOpenCommunity: { path.wrappedValue.append(Route.community) })
+                    IosEntryKt.ProfileVC(onOpenCommunity: { path.wrappedValue.append(Route.community(IosEntryKt.primaryCommunityId())) })
                 }
             }
             .tabItem { Label("Profile", systemImage: "tortoise.fill") }

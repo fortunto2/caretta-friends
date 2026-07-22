@@ -72,7 +72,7 @@ fun CarettaApp() {
                             onAddMarker = { nav.go(Screen.AddNest) },
                             onOpenNest = { nav.go(Screen.NestDetail(it)) },
                             onOpenBeach = { nav.go(Screen.BeachDetail(it)) },
-                            onOpenCommunity = { nav.go(Screen.Community) },
+                            onOpenCommunity = { nav.go(Screen.Community(it)) },
                         )
                         is Screen.Beaches -> BeachesScreen(
                             state,
@@ -80,10 +80,10 @@ fun CarettaApp() {
                             onOpenBeach = { nav.go(Screen.BeachDetail(it)) },
                         )
                         is Screen.Learn -> LearnScreen(state, repo)
-                        is Screen.Profile -> ProfileScreen(repo, state) { nav.go(Screen.Community) }
+                        is Screen.Profile -> ProfileScreen(repo, state) { nav.go(Screen.Community(state.community.id)) }
                         is Screen.AddNest -> AddNestScreen(repo, state, { nav.back() }, { nav.go(Screen.Camera) })
                         is Screen.Camera -> CameraScreen({ nav.back() }, { nav.back() })
-                        is Screen.Community -> CommunityScreen(state) { nav.back() }
+                        is Screen.Community -> CommunityScreen(state.communityOrPrimary(current.communityId), state) { nav.back() }
                         is Screen.NestDetail -> {
                             val n = state.nest(current.nestId)
                             if (n != null) {

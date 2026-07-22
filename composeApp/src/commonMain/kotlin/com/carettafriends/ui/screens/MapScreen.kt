@@ -49,7 +49,7 @@ fun MapScreen(
     onAddMarker: () -> Unit,
     onOpenNest: (String) -> Unit,
     onOpenBeach: (String) -> Unit = {},
-    onOpenCommunity: () -> Unit = {},
+    onOpenCommunity: (String) -> Unit = {},
 ) {
     val c = caretta
     var filter by remember { mutableStateOf("all") }
@@ -69,8 +69,8 @@ fun MapScreen(
         state.beaches.forEach {
             add(MapMarker(it.id, it.center.lat, it.center.lng, isBeach = true, label = it.name, polygon = it.polygon, protected = it.protected))
         }
-        // Community hub — the city this community is registered in (orange dot, tap → community).
-        state.community.let {
+        // Community hubs — our own + collected local groups (orange squares, tap → community).
+        state.allCommunities.forEach {
             add(MapMarker("cm:${it.id}", it.center.lat, it.center.lng, label = it.name, isCommunity = true))
         }
     }
@@ -81,7 +81,7 @@ fun MapScreen(
             markers,
             onClick = { id -> onOpenNest(id) },
             onBeachTap = { id -> tappedBeach = id },
-            onCommunityTap = { onOpenCommunity() },
+            onCommunityTap = { id -> onOpenCommunity(id.removePrefix("cm:")) },
         )
 
         // --- Top overlays: filter chips + coverage chip ---

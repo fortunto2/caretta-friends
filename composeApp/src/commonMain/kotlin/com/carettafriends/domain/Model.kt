@@ -34,9 +34,17 @@ data class Community(
     /** Public admin contact (phone / handle) for other communities to reach this one. Empty = hidden.
      *  Groundwork for connecting new communities & inter-community coordination later. */
     val adminContact: String = "",
-    /** The city/town this community is registered in — shown as an orange hub dot on the map.
+    /** The city/town this community is registered in — shown as an orange hub square on the map.
      *  Default = Gazipaşa (our root community). */
     val center: GeoPoint = GeoPoint(36.268, 32.319),
+    /** Public phone / email for local groups people can reach directly. */
+    val phone: String = "",
+    val email: String = "",
+    /** false = a STUB: a real local conservation group we collected but that has no admin on the app
+     *  yet (people nearby can contact them; their admins can claim it later). true = run on the app. */
+    val claimed: Boolean = true,
+    /** The protected nesting area this group works around (links a stub to its beach). */
+    val nearArea: String = "",
 )
 
 @Serializable
@@ -207,6 +215,9 @@ data class Profile(
 @Serializable
 data class AppState(
     val community: Community,
+    /** All communities shown on the map (our own + collected STUB groups near other beaches).
+     *  Includes [community]. Orange squares; tap → community screen (contacts). */
+    val communities: List<Community> = emptyList(),
     val beaches: List<Beach>,
     val nests: List<Nest>,
     val markers: List<SimpleMarker>,
@@ -225,4 +236,11 @@ data class AppState(
 ) {
     fun beach(id: String): Beach? = beaches.firstOrNull { it.id == id }
     fun nest(id: String): Nest? = nests.firstOrNull { it.id == id }
+
+    /** All communities to render (our own primary + any collected stubs), de-duplicated by id. */
+    val allCommunities: List<Community>
+        get() = (listOf(community) + communities).distinctBy { it.id }
+
+    fun communityOrPrimary(id: String): Community =
+        allCommunities.firstOrNull { it.id == id } ?: community
 }

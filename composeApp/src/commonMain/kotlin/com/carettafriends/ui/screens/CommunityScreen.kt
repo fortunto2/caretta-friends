@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.carettafriends.domain.AppState
+import com.carettafriends.domain.Community
 import com.carettafriends.domain.Member
 import com.carettafriends.domain.MemberRole
 import com.carettafriends.ui.components.Pill
@@ -35,9 +36,8 @@ import com.carettafriends.ui.components.SectionLabel
 import com.carettafriends.ui.theme.caretta
 
 @Composable
-fun CommunityScreen(state: AppState, onBack: () -> Unit) {
+fun CommunityScreen(community: Community, state: AppState, onBack: () -> Unit) {
     val c = caretta
-    val community = state.community
     val uri = LocalUriHandler.current
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -63,35 +63,63 @@ fun CommunityScreen(state: AppState, onBack: () -> Unit) {
             Modifier.padding(horizontal = 15.dp).padding(top = 14.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            // Join = message the org on WhatsApp (an admin adds you). No public self-join.
-            PrimaryButton("💬 Join — message us on WhatsApp") { uri.openUri(community.whatsappUrl) }
-            Text(
-                "New here? Message us on WhatsApp or Instagram — an admin will add you to the team.",
-                color = c.muted,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-            )
+            if (community.claimed) {
+                // Join = message the org on WhatsApp (an admin adds you). No public self-join.
+                PrimaryButton("💬 Join — message us on WhatsApp") { uri.openUri(community.whatsappUrl) }
+                Text(
+                    "New here? Message us on WhatsApp or Instagram — an admin will add you to the team.",
+                    color = c.muted,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                )
 
-            // ── Team (admins & volunteers) ──────────────────────────────
-            SectionLabel("Team")
-            state.members.sortedBy { it.role.ordinal }.forEach { m -> MemberRow(m) }
-            MemberRow(
-                Member(
-                    "you", "${state.profile.displayName} (you)", state.profile.memberRole,
-                    state.profile.avatar, link = state.profile.link,
-                ),
-            )
+                // ── Team (admins & volunteers) ──────────────────────────
+                SectionLabel("Team")
+                state.members.sortedBy { it.role.ordinal }.forEach { m -> MemberRow(m) }
+                MemberRow(
+                    Member(
+                        "you", "${state.profile.displayName} (you)", state.profile.memberRole,
+                        state.profile.avatar, link = state.profile.link,
+                    ),
+                )
+            } else {
+                // STUB: a real local group not on Caretta Friends yet — show contacts + a claim CTA.
+                Text(
+                    if (community.nearArea.isNotBlank()) "Local group · near ${community.nearArea}" else "Local conservation group",
+                    color = c.sea, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    "🐢 This local group isn't on Caretta Friends yet — reach out to them directly below. " +
+                        "Are you part of it? Message us and we'll give your admins access.",
+                    color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                )
+                PrimaryButton("🙋 We run this group — give us access") { uri.openUri(state.community.whatsappUrl) }
+            }
 
-            // ── Reach us (tappable) ─────────────────────────────────────
-            SectionLabel("Reach us")
-            LinkRow("💬", "WhatsApp", community.whatsappUrl.removePrefix("https://"), c.good) { uri.openUri(community.whatsappUrl) }
-            LinkRow("📸", "Instagram", "@gazipasa_caretta_ve_kumzambagi", c.coral) { uri.openUri(community.instagramUrl) }
-            LinkRow("🌐", "carettafriends.com", "Official website", c.sea) { uri.openUri(community.websiteUrl) }
+            // ── Reach them (tappable, from the community's own public contacts) ──
+            SectionLabel("Reach them")
+            if (community.websiteUrl.isNotBlank()) {
+                LinkRow("🌐", "Website", linkHost(community.websiteUrl), c.sea) { uri.openUri(community.websiteUrl) }
+            }
+            if (community.instagramUrl.isNotBlank()) {
+                LinkRow("📸", "Instagram", linkHost(community.instagramUrl), c.coral) { uri.openUri(community.instagramUrl) }
+            }
+            if (community.whatsappUrl.isNotBlank()) {
+                LinkRow("💬", "WhatsApp", linkHost(community.whatsappUrl), c.good) { uri.openUri(community.whatsappUrl) }
+            }
+            if (community.phone.isNotBlank()) {
+                LinkRow("📞", "Phone", community.phone, c.deep) { runCatching { uri.openUri("tel:${community.phone.filter { ch -> ch.isDigit() || ch == '+' }}") } }
+            }
+            if (community.email.isNotBlank()) {
+                LinkRow("✉️", "Email", community.email, c.deep) { runCatching { uri.openUri("mailto:${community.email}") } }
+            }
             if (community.adminContact.isNotBlank()) {
-                LinkRow("📞", "Admin contact", community.adminContact, c.deep) {
+                LinkRow("📇", "Contact", community.adminContact, c.deep) {
                     if (community.adminContact.startsWith("http")) uri.openUri(community.adminContact)
                 }
             }
+
+            if (!community.claimed) return@Column
 
             // ── Top volunteers — by nests found & hatchlings freed ──────
             SectionLabel("Top volunteers · by nests")

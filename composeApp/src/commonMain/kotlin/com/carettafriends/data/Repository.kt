@@ -89,6 +89,8 @@ class CarettaRepository {
         scope.launch { _state.drop(1).collect { persist(json, it) } }
         // Load the official protected-beach catalogue (by-country data file) → state.
         scope.launch { _state.value = _state.value.copy(protectedAreas = loadProtectedAreas()) }
+        // Load baked STUB communities (local groups near other beaches, no admin yet) → state.
+        scope.launch { _state.value = _state.value.copy(communities = loadStubCommunities()) }
         // Best-effort cloud sync (no-op when offline).
         scope.launch { syncOnStart() }
     }
