@@ -1,0 +1,615 @@
+[
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "DEKAMER — Sea Turtle Research, Rescue and Rehabilitation Center (Pamukkale University / Deniz Kaplumbağaları Araştırma, Kurtarma ve Rehabilitasyon Merkezi)",
+    "role": "NGO / university research center + official ÖÇK nest-monitoring program",
+    "website": "https://www.dekamer.org.tr/",
+    "instagram": "https://www.instagram.com/dekamerturkey/",
+    "phone": "+90 252 289 00 77",
+    "email": "dekamerturkey@gmail.com",
+    "notes": "Primary and effectively only conservation body operating AT the Dalaman nesting beach. Peer-reviewed literature names the site 'Dalaman-Sarıgerme beach'; DEKAMER personnel + volunteers walk ~15 km nightly across the İztuzu–Sarıgerme–Dalaman Special Environmental Protection Areas (ÖÇK) each nesting season, relocate/cage nests, and gave pre-season nesting training to Sarıgerme hotel staff. Founded 2009 in Dalyan (Ortaca district, Muğla) under a protocol between Turkey's nature-protection directorate, the Dalyan municipality, and Pamukkale University; directed by Prof. Dr. Yakup Kaska (Pamukkale Univ. Dept. of Biology). Additional public mobile/emergency line reported on their contact page: +90 538 403 2501. Facebook: https://www.facebook.com/dekamerturkey/. Address: İztuzu Plajı, Dalyan, Ortaca, Muğla, Türkiye. Phone/email consistently listed on dekamer.org.tr/iletisim (contact page was behind a verification screen at fetch time but numbers are corroborated across multiple sources).",
+    "confidence": "high"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "EKAD — Ekolojik Araştırmalar Derneği (Ecological Research Society)",
+    "role": "NGO",
+    "website": "https://ekad.org.tr",
+    "instagram": "https://www.instagram.com/ekadofficial/",
+    "phone": "+90 530 884 3997",
+    "email": "info@ekad.org.tr",
+    "notes": "Primary conservation NGO for the Kumluca nesting beach. EKAD coordinates the 'Research, Monitoring and Conservation of Sea Turtle (Caretta caretta, Chelonia mydas) Populations on Kumluca (21 km) Beaches Project' — covering the Kumluca coast including Karaöz and Mavikent. Founded 2003 by biodiversity/nature-conservation academics; runs nest detection, night patrols, hatchling releases, satellite tracking, volunteer camps and awareness work across Antalya beaches (Belek, Kızılot, Demirtaş, Kumluca). HQ in Ankara (Çankaya). Also on Facebook: facebook.com/ekadofficial and YouTube: @ekad9551. Phone/email verified from their public İletişim/contact listing.",
+    "confidence": "high"
+   },
+   {
+    "name": "Doğa Koruma ve Milli Parklar 6. Bölge Müdürlüğü (DKMP – 6th Regional Directorate of Nature Conservation & National Parks)",
+    "role": "official monitoring program / government authority",
+    "website": "https://bolge6.tarimorman.gov.tr",
+    "phone": "+90 248 233 31 43",
+    "email": "bolge6.dkmp@milliparklar.gov.tr",
+    "notes": "Government body (Ministry of Agriculture & Forestry) that officially oversees and supports Caretta caretta nest protection on the Kumluca beaches (Tekirova, Beycik, Maden, Boncuklu bays and Mavikent/Kumluca). Regional directorate based in Burdur, covering Antalya, Burdur and Isparta provinces; it authorizes/funds the on-the-ground monitoring EKAD carries out. Public contact from the directorate's official İletişim page (address: Bahçelievler Mah. Stadyum Cad. No:1, Burdur Merkez). This is the oversight authority, not a field conservation team — contact EKAD for beach-level nest work.",
+    "confidence": "medium"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "DEKAMER — Pamukkale University Sea Turtle Research, Rescue and Rehabilitation Center (Deniz Kaplumbağaları Araştırma, Kurtarma ve Rehabilitasyon Merkezi)",
+    "role": "university research center / official monitoring program",
+    "website": "https://www.dekamer.org.tr/",
+    "instagram": "https://www.instagram.com/dekamerturkey/",
+    "phone": "+90 252 289 0077",
+    "email": "dekamerturkey@gmail.com",
+    "notes": "Pamukkale University's sea turtle center (based in Dalyan, Muğla) is the scientific hub for loggerhead work across Muğla nesting beaches. Its affiliated researcher Öğr. Gör. Doğan Sözbilen coordinates the official 'Fethiye-Göcek Special Environmental Protection Area (SEPA) Sea Turtle Monitoring & Protection Project' run by the Ministry of Environment, Urbanisation & Climate Change — the program that monitors Çalış/Kocaçalış, Yanıklar and Karaot nesting beaches and drives the red-light initiative at Çalış. Runs a volunteer program. Website sits behind Cloudflare; mobile +90 538 403 2501 also listed. Facebook: facebook.com/dekamerturkey.",
+    "confidence": "high"
+   },
+   {
+    "name": "MEDASSET — Mediterranean Association to Save the Sea Turtles",
+    "role": "NGO (monitoring, advocacy, Bern Convention complainant)",
+    "website": "https://medasset.org/",
+    "instagram": "https://www.instagram.com/medasset_/",
+    "phone": "+30 210 3613572",
+    "email": "medasset@medasset.org",
+    "notes": "International NGO (Athens, since 1988) with long-running loggerhead conservation-monitoring specifically at Fethiye and Patara SPAs; publishes update reports (2011, 2021) and filed the Bern Convention complaint over degradation of the Fethiye nesting beaches. Address: 1c Licavitou St., 106 72 Athens, Greece. The most authoritative external watchdog tied directly to the Çalış/Fethiye beaches.",
+    "confidence": "high"
+   },
+   {
+    "name": "Fethiye-Göcek SEPA Sea Turtle Monitoring & Protection Project — coordinator Öğr. Gör. Doğan Sözbilen (Pamukkale University)",
+    "role": "official monitoring program / university researcher",
+    "website": "https://akbis.pau.edu.tr/personel/49386",
+    "notes": "Dr. Doğan Sözbilen (Pamukkale Univ., Acıpayam Vocational School, Veterinary Dept.; ORCID 0000-0002-2267-1636) is the named coordinator of the government-run Fethiye-Göcek SEPA sea turtle monitoring project that directly covers Çalış/Kocaçalış, Yanıklar and Karaot beaches, and advises the ADM Elektrik red-light program at Çalış. This is the person/program doing the actual on-ground nest monitoring at THIS beach. No public personal email/phone published — reachable via his PAU profile or through DEKAMER.",
+    "confidence": "high"
+   },
+   {
+    "name": "Fethiye Belediyesi (Fethiye Municipality)",
+    "role": "municipality conservation program",
+    "website": "https://www.fethiye.bel.tr/",
+    "notes": "Runs local sea-turtle protection and awareness activities at Çalış Public Beach (e.g., Environment Week events with the Çalış tourism association and Akdeniz Koruma Derneği/Mediterranean Conservation Society), night-time restrictions on Çalış/Koca Çalış beaches in nesting season, and supports the red-light lighting rollout. Municipality-level partner rather than a dedicated turtle NGO; general contact via its official website. Turtle-program-specific phone/email not found in a public source, so omitted to avoid inaccuracy.",
+    "confidence": "medium"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "DEKAMER — Sea Turtle Research, Rescue and Rehabilitation Center (Deniz Kaplumbağaları Araştırma, Kurtarma ve Rehabilitasyon Merkezi)",
+    "role": "University research center / official monitoring program — Pamukkale University Biology Dept., located at the southern end of İztuzu Beach",
+    "website": "https://www.dekamer.org.tr",
+    "instagram": "https://www.instagram.com/dekamerturkey/",
+    "phone": "+90 252 289 0077",
+    "email": "dekamerturkey@gmail.com",
+    "notes": "THE primary conservation/research/rescue body for İztuzu. Established 2009, sits at the south end of İztuzu Beach; runs nest monitoring, beach rangers, the turtle hospital, and an international volunteer program. Operated by Pamukkale University (Deniz Kaplumbağaları Araştırma ve Uygulama Merkezi) — so 'Pamukkale University Sea Turtle Research Center' = DEKAMER, not a separate org. Additional mobile: +90 538 403 2501. Director Prof. Yakup Kaska (public academic contact: yakupkaska@gmail.com). Also on Facebook (/dekamerturkey), X (@dekamerturkey), LinkedIn (/company/dekamer). Contacts confirmed across dekamer.org.tr, foiztuzubeach.com and Lonely Planet listings.",
+    "confidence": "high"
+   },
+   {
+    "name": "Kaptan June Sea Turtle Conservation Foundation (Kaptan June Deniz Kaplumbağaları Koruma Vakfı)",
+    "role": "NGO / foundation — sea turtle conservation & advocacy at İztuzu Beach, Dalyan",
+    "website": "https://dalyanturtles.com",
+    "instagram": "https://www.instagram.com/k.junevakfi/",
+    "phone": "+90 252 284 2855",
+    "email": "info@dalyanturtles.com",
+    "notes": "Local NGO founded 2010–2011, named after June Haimoff ('Kaptan June'), who campaigned from 1984 to save İztuzu nesting beach. Runs an Information Centre & Museum in Kaptan June's Hut at İztuzu; works in cooperation with DEKAMER. Registered Turkish foundation (registry no. 5403, Ortaca/Muğla tax office). Address: Kaptan Haziran Sokak 19, Dalyan, Muğla. Second email: kaptanjuneseaturtlefoundation@gmail.com; second phone: +90 252 243 5877. Active Facebook page (/KaptanJuneSeaTurtleConservationFoundation). Instagram handle @k.junevakfi ('vakfı' = foundation) is the likely official account — medium confidence on the handle specifically; email/phone/website are high confidence.",
+    "confidence": "high"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "DEKAMER — Sea Turtle Research, Rescue and Rehabilitation Center (Pamukkale University / Deniz Kaplumbağaları Araştırma, Kurtarma ve Rehabilitasyon Merkezi)",
+    "role": "university research center / rescue-rehab NGO",
+    "website": "https://www.dekamer.org.tr/",
+    "instagram": "https://www.instagram.com/dekamerturkey/",
+    "phone": "+90 252 289 0077",
+    "email": "dekamerturkey@gmail.com",
+    "notes": "Based in Dalyan (Ortaca, Muğla). Under the state-supported 'Patara Deniz Kaplumbağaları Koruma ve İzleme Programı', DEKAMER treats injured turtles from Patara and runs satellite tracking. Same Pamukkale University institutional family that monitors Patara nests. Also mobile +90 538 403 2501; open daily 10:00-18:00. Covers many SW-Turkey beaches, not only Patara. Facebook: facebook.com/dekamerturkey.",
+    "confidence": "high"
+   },
+   {
+    "name": "Pamukkale University Sea Turtle Team — Patara Special Environmental Protection Area monitoring project (Prof. Dr. Eyüp Başkale)",
+    "role": "university research center / official nest-monitoring program (on-beach operator at Patara)",
+    "website": "https://akbis.pau.edu.tr/personel/279",
+    "email": "ebaskale@pau.edu.tr",
+    "notes": "THE group physically monitoring Patara nests. Prof. Dr. Eyüp Başkale (Biology/Zoology, Pamukkale Univ.), with biologist Ayfer Şirin, runs the 'Patara Özel Çevre Koruma Bölgesi' Caretta caretta / Chelonia mydas monitoring under the Ministry's General Directorate for Protection of Natural Assets (TVK). Email ebaskale@pau.edu.tr confirmed as his corresponding-author address on loggerhead papers. ORCID 0000-0003-4489-8687. No direct personal phone found publicly — reach via Pamukkale University Biology Dept or DEKAMER.",
+    "confidence": "high"
+   },
+   {
+    "name": "MEDASSET — Mediterranean Association to Save the Sea Turtles",
+    "role": "NGO (advocacy + conservation monitoring/assessment of Fethiye & Patara SPAs)",
+    "website": "https://medasset.org/",
+    "phone": "+30 210 3613572",
+    "email": "medasset@medasset.org",
+    "notes": "Athens-based watchdog NGO. Has monitored and published assessment/update reports on the Fethiye & Patara SPA nesting beaches since 1988 and lobbies the Bern Convention (Council of Europe) for better Patara protection. Not an on-beach field-station operator — advocacy/assessment role. Phone is Athens HQ (Greece). Socials: X @MEDASSET, Facebook facebook.com/MEDASSET.ORG (public Instagram handle not confirmed — omitted to avoid guessing).",
+    "confidence": "high"
+   },
+   {
+    "name": "General Directorate for Protection of Natural Assets (Tabiat Varlıklarını Koruma Genel Müdürlüğü, TVK) — Ministry of Environment, Urbanisation & Climate Change",
+    "role": "official / government monitoring program (sponsor of Patara ÖÇK monitoring)",
+    "website": "https://tvk.csb.gov.tr/",
+    "notes": "Government body that commissions and funds the 'Patara Özel Çevre Koruma Bölgesi Tür ve Habitat İzleme' project, executed on the ground by the Pamukkale University / Başkale team. Also sets the seasonal Patara beach night-access and camping bans for turtle protection. No Patara-specific direct public phone/email located — contact routes through national CSB channels.",
+    "confidence": "medium"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "DEKAMER — Pamukkale University Sea Turtle Research, Rescue and Rehabilitation Center (Deniz Kaplumbağaları Araştırma, Kurtarma ve Rehabilitasyon Merkezi)",
+    "role": "university research center / official monitoring program",
+    "website": "https://www.dekamer.org.tr/",
+    "instagram": "https://www.instagram.com/dekamerturkey/",
+    "phone": "+90 252 289 0077",
+    "email": "dekamerturkey@gmail.com",
+    "notes": "PRIMARY org for Ekincik. Based at İztuzu Beach, Dalyan (Ortaca, Muğla) — the nearest active sea-turtle center to Ekincik. Runs the official Köyceğiz-Dalyan Special Environmental Protection Area (ÖÇKB) nesting monitoring project, whose ~4.7 km Dalyan nesting coast is explicitly listed as 'İztuzu, Dalyanağzı, Ekincik beaches.' Founded by Prof. Dr. Yakup Kaska (Pamukkale Univ.); research/academic contact yakupkaska@gmail.com. Field work carried out via Pamukkale Bilim Merkezi Derneği. Also mobile +90 538 403 2501; Facebook facebook.com/dekamerturkey. Best single point of contact for Ekincik nest monitoring.",
+    "confidence": "high"
+   },
+   {
+    "name": "Kaptan June Sea Turtle Conservation Foundation (Kaptan June Deniz Kaplumbağaları Koruma Vakfı)",
+    "role": "NGO",
+    "website": "https://dalyanturtles.com",
+    "phone": "+90 252 284 2855",
+    "email": "kaptanjuneseaturtlefoundation@gmail.com",
+    "notes": "Dalyan-based local NGO (founded 2011 by June Haimoff, 'Kaptan June') focused on protecting İztuzu/Dalyan nesting habitat immediately adjacent to Ekincik. Role is advocacy, awareness and habitat protection rather than confirmed field monitoring of Ekincik itself. Facebook: facebook.com/KaptanJuneSeaTurtleConservationFoundation. Instagram handle not publicly confirmed — omitted rather than guessed. Second phone +90 252 243 5877 appears in listings.",
+    "confidence": "medium"
+   },
+   {
+    "name": "MEDASSET — Mediterranean Association to Save the Sea Turtles",
+    "role": "NGO",
+    "website": "https://medasset.org",
+    "instagram": "https://www.instagram.com/medasset_/",
+    "phone": "+30 210 36 40 389",
+    "email": "medasset@medasset.org",
+    "notes": "International (Athens-based) conservation NGO. Its Turkey 'Protecting Important Sea Turtle Nesting Habitats' project explicitly names Ekincik among the monitored Dalyan beaches (İztuzu, Dalyanağzı, Ekincik). Role is advocacy/policy (Bern Convention, surveys, complaints) rather than on-ground patrols at Ekincik. Partners locally with DEKAMER and Kaptan June Foundation. Tel/Fax +30 210 36 13 572; address Licavitou 1(C), Athens 10672, Greece.",
+    "confidence": "medium"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "LİDOSK — Lykia İzcilik ve Doğa Sporları Kulübü Derneği (Lykia Scouting and Nature Sports Club Association)",
+    "role": "NGO",
+    "website": "https://lidosk.org.tr",
+    "instagram": "https://www.instagram.com/lidoskngo/",
+    "phone": "+90 507 760 78 76",
+    "email": "info@lidosk.org.tr",
+    "notes": "PRIMARY on-the-ground operator at Demre. Runs the 'Caretta Caretta Monitoring and Protection Project' on Demre beaches every summer since 2020 (ongoing through 2026), including the Çayağzı/Beymelek-Lagün, Sülüklü and Taşdibi sections. ESC/volunteer coordination email: esc@lidosk.org.tr. HQ: Kışla Mah. Şht. Binbaşı Cengiz Toytunç Cd. No:118/4, 07040 Muratpaşa/Antalya. Alt phone seen in NGO directories: +90 532 592 6967. Also reachable at lidosk.org. IG/FB/Twitter all @lidoskngo. Confirmed as the direct Demre nest-protection group by the University's own researchers and Turkish government press.",
+    "confidence": "high"
+   },
+   {
+    "name": "ÇOMÜ DEKUM — Çanakkale Onsekiz Mart Üniversitesi Deniz Kaplumbağaları Araştırma ve Uygulama Merkezi (Sea Turtle Research & Application Center)",
+    "role": "university research center",
+    "website": "https://dekum.comu.edu.tr",
+    "instagram": "https://www.instagram.com/comudekum/",
+    "phone": "+90 286 218 00 18 (ext. 22104 / 22181)",
+    "email": "sozdilek@comu.edu.tr",
+    "notes": "Academic partner that performed the scientific monitoring of the 9.2 km Demre (Kale) nesting beach (2020 breeding season, published in Marine and Life Sciences). Team: Dr. Aytaç Altın (center deputy director), Hakan Ayyıldız, Mehmet Maden. Center director email listed is Prof. Şükran Yalçın Özdilek (sozdilek@comu.edu.tr). Based in Çanakkale — collaborates with LİDOSK + DKMP on Demre rather than being locally resident. Confidence medium: link to Demre is via the researchers/news, and DEKUM's own site does not list Demre as a standing program.",
+    "confidence": "medium"
+   },
+   {
+    "name": "T.C. Tarım ve Orman Bakanlığı — Doğa Koruma ve Milli Parklar 6. Bölge Müdürlüğü (Nature Conservation & National Parks, 6th Regional Directorate)",
+    "role": "official monitoring program (government authority)",
+    "website": "https://bolge6.tarimorman.gov.tr",
+    "phone": "+90 248 233 31 43",
+    "email": "bolge6.dkmp@milliparklar.gov.tr",
+    "notes": "Government authority that officially designated the Demre coast as a 'Sea Turtle Nesting Area' and permits/co-runs the nest-protection work there. HQ in Burdur (Bahçelievler Mah. Stadyum Cad. No:1); jurisdiction covers Antalya province, which includes Demre. Twitter @antalyadkmp for the Antalya provincial branch. Confidence medium: confirmed named partner in the Demre project, but it is a multi-province regulator, not a Demre-specific field team.",
+    "confidence": "medium"
+   },
+   {
+    "name": "EKAD — Ekolojik Araştırmalar Derneği (Ecological Research Society)",
+    "role": "NGO",
+    "website": "https://ekad.org.tr",
+    "instagram": "https://www.instagram.com/ekadofficial/",
+    "phone": "+90 530 884 3997",
+    "email": "info@ekad.org.tr",
+    "notes": "Nearby national sea-turtle NGO, NOT the Demre operator. Monitors Belek, Kızılot and Kumluca (21 km) beaches — Kumluca is the district immediately adjacent to Demre — plus satellite-tracking of turtles through Finike/Kumluca/Kaş. HQ: Mustafa Kemal Mah., Dumlupınar Bulvarı, Tepe Prime C Blok D:47, 06530 Çankaya/Ankara. Volunteer email: volunteer@ekad.org.tr. Include as an adjacent-area player to contact, but its field work is on Belek/Kızılot/Kumluca, not on the Demre (Kale) beach itself.",
+    "confidence": "low"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "S.S. Ulupınar Çevre Koruma Geliştirme ve İşletme Kooperatifi (Ulupınar Environmental Protection, Development & Management Cooperative)",
+    "role": "NGO / local cooperative — the primary operator of the Çıralı sea-turtle nest-monitoring program",
+    "website": "http://www.ulupinarkoop.org",
+    "instagram": "https://www.instagram.com/cirali.caretta/",
+    "phone": "+90 242 825 73 77",
+    "email": "info@ekocirali.com",
+    "notes": "THE group that actually monitors and protects Caretta caretta nests on Çıralı beach — volunteer-run since ~1994/1999 (26 years), ~100-108 nests/season. Instagram bio: 'Çıralı'da Caretta Koruma Kooperatif / Sea Turtle Protection in Cirali' (@cirali.caretta, ~5k followers). Contact form linked in IG bio: https://forms.gle/WqpmqAgEAiSNA3ds5 . Runs a formal nest-protection protocol with the govt DKMP directorate. Phone/email are the cooperative's general contacts (they also run ekocirali.com organic-produce shop). Best first point of contact for the beach.",
+    "confidence": "high"
+   },
+   {
+    "name": "Prof. Dr. Bektaş Sönmez — Sivas Cumhuriyet University (Suşehri Timur Karabal MYO)",
+    "role": "University research center — scientific lead / advisor for Çıralı nest monitoring & research",
+    "website": "https://avesis.cumhuriyet.edu.tr/bsonmez",
+    "notes": "Scientific advisor for sea-turtle research at Çıralı, partnering with the Ulupınar cooperative. Lead author of the peer-reviewed Çıralı nesting studies (e.g. 'Nesting activity of loggerhead turtles 2013-2020 and 20-year abundance trend 2001-2020 on Çıralı Beach', Regional Studies in Marine Science 2021) and the 2021-2026 climate-change/sex-determination (data-logger) study on the beach. No public personal phone/email located — reach via the AVESIS academic profile or the cooperative. Not DEKAMER/EKAD — those national NGOs cover other beaches (Dalyan, Belek, Kızılot, Demirtaş, Kumluca), NOT Çıralı.",
+    "confidence": "high"
+   },
+   {
+    "name": "T.C. Tarım ve Orman Bakanlığı — Doğa Koruma ve Milli Parklar (DKMP) 6. Bölge Müdürlüğü (Nature Conservation & National Parks, 6th Regional Directorate)",
+    "role": "Official government monitoring program — holds the nest-protection protocol; oversees the area (Beydağları/Olympos Coastal National Park)",
+    "website": "https://bolge6.tarimorman.gov.tr",
+    "instagram": "https://www.instagram.com/bolge6.dkmp/",
+    "phone": "+90 248 233 31 43",
+    "email": "bolge6.dkmp@milliparklar.gov.tr",
+    "notes": "State authority for nature conservation covering Antalya/Burdur/Isparta (HQ in Burdur; Antalya Şube Müdürlüğü handles the field). Signed the multi-year Çıralı nest detection/marking/monitoring protocol with the Ulupınar cooperative. Çıralı falls within its jurisdiction (Beydağları Coastal / Olympos National Park). Phone/email are the regional HQ contacts; for Çıralı-specific matters the Antalya branch or the cooperative is faster.",
+    "confidence": "high"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "EKAD — Ekolojik Araştırmalar Derneği / Ecological Research Society",
+    "role": "NGO",
+    "website": "https://ekad.org.tr",
+    "instagram": "https://www.instagram.com/ekadofficial/",
+    "phone": "+90 530 884 3997",
+    "email": "info@ekad.org.tr",
+    "notes": "THE organization operating at Belek. Runs the 'Belek & Kızılot Sea Turtle Monitoring and Conservation Project' (Caretta caretta + Chelonia mydas) since 1994 — 32nd year in 2026, ~29.5 km of Belek coast, one of the two largest loggerhead nesting sites in the Mediterranean. Same handle @ekadofficial on Instagram, Facebook (facebook.com/ekadofficial) and X/Twitter. Project led by Prof. Dr. Ali Fuat Canbolat (EKAD founder/president, biologist); 2026 field/project coordinator: Cansu Ulusoy. Runs an international volunteer program (~150 volunteers from 15 countries) with a field camp at Belek ('Ekad-Caretta Kamp'). HQ address: Mustafa Kemal Mah., Dumlupınar Blv., Tepe Prime, Çankaya, Ankara. Website is behind bot-detection so email/phone are from search + third-party directory listings (info@ pattern matches the domain); verify by calling before use.",
+    "confidence": "high"
+   },
+   {
+    "name": "BETUYAB — Belek Turizm Yatırımcıları Birliği (Belek Tourism Investors Union)",
+    "role": "Local tourism-investors association co-running/funding the beach program",
+    "notes": "Long-time local partner and primary funder of the Belek sea-turtle project, carried out together with EKAD and the General Directorate for the Protection of Natural Assets (Tabiat Varlıklarını Koruma Genel Müdürlüğü). Not a standalone conservation NGO — it is the union of Belek hotels/resorts that finances monitoring, nest caging, satellite-tagging, etc. No public conservation-contact channel verified; reach the conservation work through EKAD. Included because it is the on-the-ground institutional owner of the Belek beach program.",
+    "confidence": "medium"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "Ulupınar Çevre Koruma Geliştirme ve İşletme Kooperatifi (Çıralı Ulupınar Environmental Protection Cooperative)",
+    "role": "NGO / cooperative — on-the-ground nest monitoring",
+    "website": "",
+    "instagram": "https://www.instagram.com/cirali.caretta/",
+    "phone": "",
+    "email": "",
+    "notes": "THE primary conservation group for the Tekirova/Çıralı area. Runs the annual Caretta caretta nest watch on Çıralı beach (the main loggerhead nesting beach immediately next to Tekirova, monitored since 1994) with volunteers, under a renewed protocol with the Ministry's 6th Regional Directorate. Tekirova's own hotel-beach nests are counted within this same Kemer program. Chairman: Habib Altınkaya. Instagram handle @cirali.caretta ('Çirali Caretta Ulupinar Kooperatif'). Facebook: https://www.facebook.com/BaskaCiraliyok/ ('Çıralı Ulupınar Çevre Koruma Kooperatifi'). No standalone public phone/email verified for the co-op itself — reach via Instagram/Facebook DM. Best first contact for the wife's NGO.",
+    "confidence": "high"
+   },
+   {
+    "name": "T.C. Tarım ve Orman Bakanlığı — Doğa Koruma ve Milli Parklar Genel Müdürlüğü, 6. Bölge Müdürlüğü (Antalya)",
+    "role": "official monitoring program (government)",
+    "website": "https://bolge6.tarimorman.gov.tr",
+    "instagram": "",
+    "phone": "",
+    "email": "",
+    "notes": "Official government body co-running nest protection at Çıralı/Tekirova/Göynük under a 3-year protocol with the Ulupınar cooperative; installs the wire protection cages and coordinates the season. Regional Director cited: Mahmut Temel. Website is the DKMP 6th Regional Directorate (Antalya) — did not verify a turtle-specific phone/email, so omitted to avoid inventing one.",
+    "confidence": "medium"
+   },
+   {
+    "name": "Kemer Belediyesi (Kemer Municipality)",
+    "role": "municipality",
+    "website": "https://www.kemer.bel.tr",
+    "instagram": "",
+    "phone": "",
+    "email": "",
+    "notes": "Municipality covering Tekirova, Çıralı and Göynük neighborhoods; publicly supports Caretta caretta protection (published statement 'we do everything we can as a municipality to protect the carettas'). General municipal contact only — no turtle-desk phone/email verified, so omitted.",
+    "confidence": "medium"
+   },
+   {
+    "name": "cirali.org (Çıralı village guide / info portal)",
+    "role": "local info portal (tourism guide, NOT the conservation cooperative)",
+    "website": "https://cirali.org/caretta-caretta/",
+    "instagram": "",
+    "phone": "+90 506 503 10 55",
+    "email": "info@cirali.org",
+    "notes": "Community/tourism portal for Çıralı village with a dedicated Caretta caretta info page. Phone +90 506 503 10 55 and email info@cirali.org are verified from the site's contact page and are a usable local contact route for the Çıralı area — but this is the village guide, NOT the Ulupınar conservation cooperative itself; do not attribute these contacts to the co-op. (The Instagram/Facebook links on the site are Envato theme placeholders, not real.)",
+    "confidence": "low"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "EKAD — Ekolojik Araştırmalar Derneği (Ecological Research Society)",
+    "role": "NGO — runs the sea-turtle (Caretta caretta) nest-monitoring and volunteer 'life-watch' program on the 16 km Kızılot beach in Manavgat; operates a dedicated field camp there ('EKAD Kızılot Kamp Alanı')",
+    "website": "https://ekad.org.tr/",
+    "instagram": "https://www.instagram.com/ekadofficial",
+    "phone": "+90 530 884 3997",
+    "email": "info@ekad.org.tr",
+    "notes": "THE org operating at Kızılot. Verified directly from official contact page ekad.org.tr/iletisim (page lists both 'EKAD Belek Kamp Alanı' and 'EKAD Kızılot Kamp Alanı'). HQ: Mustafa Kemal Mah., Dumlupınar Bulvarı, Tepe Prime İş ve Yaşam Merkezi No:266 C Blok D:47, 06530 Çankaya-Ankara. Other official channels: Facebook facebook.com/ekadofficial, LinkedIn linkedin.com/company/ekadtr, YouTube youtube.com/@ekad9551. Kızılot project coordinator: Fatih Polat. Scientific lead: Prof. Ali Fuat Canbolat (Hacettepe University), also EKAD president. Field work authorized by DKMP. ~6th season at Kızılot; >100 international volunteers.",
+    "confidence": "high"
+   },
+   {
+    "name": "Hacettepe University — Department of Biology (Prof. Ali Fuat Canbolat)",
+    "role": "University research center — academic lead of the Kızılot 'Research, Monitoring and Conservation of Sea Turtles' project (delivered operationally through EKAD)",
+    "website": "https://www.hacettepe.edu.tr/",
+    "notes": "Genuinely linked to Kızılot via project lead Prof. Ali Fuat Canbolat, who directs the monitoring and is EKAD's president. No Kızılot-beach-specific public phone/email verified — operational contact for this beach is EKAD (above). Department of Biology, Beytepe campus, Ankara.",
+    "confidence": "low"
+   },
+   {
+    "name": "T.C. Doğa Koruma ve Milli Parklar Genel Müdürlüğü (DKMP — General Directorate of Nature Conservation and National Parks)",
+    "role": "Official government authority / monitoring program — authorizes and oversees the Caretta caretta nest-monitoring at Kızılot (field work delegated to EKAD)",
+    "website": "https://www.tarimorman.gov.tr/DKMP",
+    "notes": "National body under the Ministry of Agriculture and Forestry; not a beach-specific office. Named in reporting as the authority permitting the Kızılot/Manavgat sea-turtle field studies. No Kızılot-specific public contact verified; website is the general directorate portal.",
+    "confidence": "low"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "EKAD — Ekolojik Araştırmalar Derneği (Ecological Research Society)",
+    "role": "NGO / official monitoring program (Turkish Ministry of Environment)",
+    "website": "https://ekad.org.tr",
+    "instagram": "https://www.instagram.com/ekadofficial",
+    "phone": "+90 530 884 3997",
+    "email": "info@ekad.org.tr",
+    "notes": "THE on-the-ground monitor for Demirtaş. Project archive explicitly names 'Research, Monitoring and Conservation of Sea Turtle (Caretta caretta, Chelonia mydas) and Nile Turtle (Trionyx triunguis) Populations on Alanya/Demirtaş Beaches'. Led by Dr. Ali Fuat Canbolat (Hacettepe University), EKAD president. HQ in Çankaya, Ankara; field camps at Belek and Kızılot (same Antalya coast as Demirtaş). Also: Facebook facebook.com/ekadofficial, LinkedIn linkedin.com/company/ekadtr, YouTube @ekad9551. Contacts verified live on ekad.org.tr/iletisim (Jul 2026).",
+    "confidence": "high"
+   },
+   {
+    "name": "DEKAMER — Sea Turtle Research, Rescue and Rehabilitation Center (Pamukkale University)",
+    "role": "University research / national rescue & rehabilitation center",
+    "website": "https://www.dekamer.org.tr",
+    "instagram": "https://instagram.com/dekamerturkey",
+    "phone": "+90 252 289 0077",
+    "email": "dekamerturkey@gmail.com",
+    "notes": "Secondary/national player, NOT the direct monitor of Demirtaş. Based in Dalyan, Muğla. Its beaches page lists Demirtaş (7.8 km, 41-137 Caretta caretta nests) among Turkey's 21 national nesting beaches and states these are 'monitored by different NGOs and universities' (i.e. EKAD for Demirtaş). Relevant as the national rescue center for injured/stranded turtles and for reference data/collaboration. Also mobile +90 538 403 2501; Instagram @dekamerturkey, Facebook facebook.com/dekamerturkey, Twitter/X twitter.com/dekamerturkey, YouTube youtube.com/c/dekamerturkey. Contacts verified live on dekamer.org.tr/contact (Jul 2026).",
+    "confidence": "low"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "Mersin University Sea Turtle Application and Research Center (MeÜ-DEKUYAM / Deniz Kaplumbağaları Uygulama ve Araştırma Merkezi)",
+    "role": "university research center / official monitoring program",
+    "website": "https://www.mersin.edu.tr/akademik/deniz-kaplumbagalari-uygulama-ve-arastirma-merkezi",
+    "instagram": "https://www.instagram.com/dekuyam/",
+    "phone": "+90 324 361 00 01",
+    "email": "meudekuyam@gmail.com",
+    "notes": "THE org that monitors the Alata (Erdemli) beach. Directed by Prof. Dr. Serap Ergene; the center explicitly lists its Mersin-province nesting beaches as Kazanlı, Alata, Davultepe, Göksu and Anamur. Affiliated with the Faculty of Science and Letters (Fen Edebiyat Fakültesi), Çiftlikköy Campus, Yenişehir/Mersin. Phone is the Mersin University switchboard (extensions 14604/14600). Instagram handle @dekuyam verified as 'Mersin University Sea Turtles Application & Research Center'. Alata is a Caretta caretta + Chelonia mydas index nesting beach. Highest-relevance, closest-to-beach official body.",
+    "confidence": "high"
+   },
+   {
+    "name": "DEKAMER — Sea Turtle Research, Rescue and Rehabilitation Center (Pamukkale University / Deniz Kaplumbağaları Araştırma, Kurtarma ve Rehabilitasyon Merkezi)",
+    "role": "NGO / national university research & rescue center",
+    "website": "https://www.dekamer.org.tr",
+    "instagram": "https://www.instagram.com/dekamerturkey/",
+    "phone": "+90 258 296 3677",
+    "email": "dekamerturkey@gmail.com",
+    "notes": "National sea-turtle rescue/rehab and research center at İztuzu Beach, Dalyan (Muğla), run with Pamukkale University (alt. academic email caretta@pau.edu.tr; phone is the PAU Faculty of Science line). NOT the primary monitoring team for Alata (that is Mersin University/DEKUYAM), but the go-to national body for stranded/injured turtle rescue and coordination across the whole Turkish Mediterranean, including Mersin province. Include as a rescue/coordination contact, not as the beach's monitoring program.",
+    "confidence": "medium"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "Mersin University Sea Turtles Application and Research Center (MeÜ-DEKUYAM / Deniz Kaplumbağaları Uygulama ve Araştırma Merkezi)",
+    "role": "university research center",
+    "website": "https://www.mersin.edu.tr/akademik/deniz-kaplumbagalari-uygulama-ve-arastirma-merkezi",
+    "instagram": "",
+    "phone": "+90 324 361 00 01 (Mersin Univ. switchboard; center ext. 14604/14600)",
+    "email": "meudekuyam@gmail.com",
+    "notes": "PRIMARY academic monitoring body for the Anamur beach. Director: Prof. Dr. Serap Ergene (head of MeÜ Biology Dept.). Confirmed to monitor the ~13 km Anamur beach (Anamur Burnu to Pullu Forest Camp) for all three species: Caretta caretta, Chelonia mydas AND Trionyx triunguis (Nile softshell). Runs 5 Mersin-province nesting sites, satellite tagging, nest protection, awareness campaigns in Anamur. Switchboard phone confirmed on the official mersin.edu.tr page; the gmail address and extensions come from directory/search snippets so verify before publishing. This is the best local scientific partner for the Anamur beach.",
+    "confidence": "high"
+   },
+   {
+    "name": "MERÇED — Mersin Çevre ve Doğa Derneği (Mersin Environment and Nature Association)",
+    "role": "local NGO",
+    "website": "",
+    "instagram": "",
+    "phone": "",
+    "email": "",
+    "notes": "Local Mersin environmental NGO with a documented watchdog/advocacy role on THIS beach: filed an official complaint in 2019 over habitat destruction at the Anamur sea-turtle nesting area, and has publicly warned that uncontrolled coastal development threatens the turtles' habitat. Only verified public channel found is Facebook: https://www.facebook.com/MersinMerced/ . No Instagram, website, phone or email could be verified — do not invent; reach out via the Facebook page.",
+    "confidence": "medium"
+   },
+   {
+    "name": "Gönüllü Projeleri (Volunteer Projects Türkiye) — Anamur Sea Turtle & Trionyx Monitoring Project",
+    "role": "volunteer nest-monitoring program",
+    "website": "https://gonulluprojeleri.com/anamur.html",
+    "instagram": "",
+    "phone": "",
+    "email": "",
+    "notes": "Runs the field volunteer program 'Anamur Deniz Kaplumbağası ve Trionyx Popülasyonlarının İzlenmesi' — daily ~12 km beach patrols, systematic nest data collection at Anamur (Caretta caretta + Trionyx triunguis). Almost certainly operates in coordination with the academic monitoring (Mersin University). Project page is Cloudflare-protected; no phone/email/Instagram could be extracted — application is via the site's contact form.",
+    "confidence": "medium"
+   },
+   {
+    "name": "MEDASSET (Mediterranean Association to Save the Sea Turtles)",
+    "role": "international NGO / monitoring reports",
+    "website": "https://medasset.org",
+    "instagram": "https://www.instagram.com/medasset_/",
+    "phone": "+30 210 36 40 389",
+    "email": "contact@medasset.org",
+    "notes": "International NGO (HQ Athens, Greece) directly engaged with THIS beach: authored the Bern Convention conservation-monitoring reports on Anamur (Caretta caretta & Trionyx triunguis), describing Anamur as the 2nd most important loggerhead nesting site in Türkiye and 4th in the Mediterranean; co-filed 2022 update with MERÇED. Not locally based — useful for international advocacy/data, not day-to-day fieldwork. Also on Facebook (MEDASSET.ORG), X (@medasset), LinkedIn.",
+    "confidence": "medium"
+   },
+   {
+    "name": "Doğa Koruma ve Milli Parklar Genel Müdürlüğü (General Directorate of Nature Conservation and National Parks, DKMP)",
+    "role": "official government monitoring authority",
+    "website": "https://www.tarimorman.gov.tr/DKMP",
+    "instagram": "",
+    "phone": "",
+    "email": "",
+    "notes": "The official state authority that marks/registers and legally protects sea-turtle nests on Anamur beach (a nationally protected nesting site), working with the NGOs above. Regional coverage for Mersin/Anamur is via its Adana-based 7th Regional Directorate (7. Bölge Müdürlüğü). Included as the government context; no Anamur-specific public phone/email verified — do not invent. Lower actionable value than the university center.",
+    "confidence": "low"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "Caretta Gazipaşa (Caretta Friends)",
+    "role": "NGO",
+    "website": "https://carettafriends.com",
+    "instagram": "https://instagram.com/gazipasa_caretta_ve_kumzambagi",
+    "notes": "Volunteer group operating directly ON the Gazipaşa nesting beaches (Selinus, Bıdı Bıdı) — nest monitoring, beach cleanups, education, working with the Gazipaşa expat community. NOTE: this is the requester's own/affiliated NGO (wife's), included for completeness. No public phone/email listed on the site; contact is via Instagram DM.",
+    "confidence": "high"
+   },
+   {
+    "name": "T.C. Tarım ve Orman Bakanlığı — Doğa Koruma ve Milli Parklar (DKMP) 6. Bölge Müdürlüğü, Antalya",
+    "role": "official monitoring program (government)",
+    "website": "https://www.tarimorman.gov.tr/DKMP",
+    "notes": "The Ministry's Nature Conservation & National Parks 6th Regional Directorate (Antalya) is the official authority that coordinates sea-turtle nest monitoring/protection at Gazipaşa (Koru, Selinus, Kahyalar beaches — 167 nests recorded in 2024) together with volunteers. This is the formal government program, not an NGO. No dedicated public turtle-program Instagram/phone/email verified; reach via the DKMP Antalya regional directorate.",
+    "confidence": "high"
+   },
+   {
+    "name": "Güldane Şahin + Gazipaşa İlçe Milli Eğitim AKUB (District Search & Rescue Unit)",
+    "role": "local volunteer / municipality-linked effort",
+    "notes": "Grassroots nest-protection effort at Gazipaşa's Kahyalar/Koru/Selinus beaches led by environmentalist teacher Güldane Şahin, coordinated with the Gazipaşa District National Education Search & Rescue Unit (AKUB). Ran awareness projects ('100 Rüzgar Çanı'). Genuinely on THIS beach but informal — no organizational website, phone, email, or Instagram published that I could verify; do NOT publish personal contacts.",
+    "confidence": "medium"
+   },
+   {
+    "name": "DEKAFOK — Deniz Kaplumbağaları ve Foklar Koruma / Eğitim ve Araştırma Merkezi",
+    "role": "NGO",
+    "website": "https://www.dekafok.org.tr",
+    "instagram": "https://instagram.com/dekafok",
+    "phone": "+90 543 933 0707",
+    "email": "info@dekafok.org.tr",
+    "notes": "Regional marine-conservation NGO (sea turtles + Mediterranean monk seals) that monitors nesting beaches along the Antalya coast. HQ: Sorgun Mah., Boğaz Sahili, Manavgat/Antalya — roughly 150 km WEST of Gazipaşa, and no explicit Gazipaşa coverage stated on their site. Listed as a plausible rescue/monitoring partner, but NOT confirmed to operate at Gazipaşa specifically. Phone/email taken directly from their own site. Also on Facebook/X/YouTube/LinkedIn as @dekafok.",
+    "confidence": "low"
+   },
+   {
+    "name": "DEKAMER — Sea Turtle Research, Rescue & Rehabilitation Center (Pamukkale University), Dalyan",
+    "role": "university research center / national rescue center",
+    "website": "https://www.dekamer.org.tr",
+    "instagram": "https://instagram.com/dekamerturkey",
+    "notes": "National sea-turtle rescue/rehab hub (also https://www.pau.edu.tr/dekamer). Covers many Turkish nesting beaches and would be the referral point for injured/stranded turtles from the Gazipaşa region (their eastern coverage reaches Anamur), but does not run day-to-day nest monitoring at Gazipaşa itself. Active as @dekamerturkey on Instagram/Facebook/YouTube. Public phone/email not verified from my accessible sources — site is bot-protected; obtain from dekamer.org.tr contact page.",
+    "confidence": "low"
+   },
+   {
+    "name": "EKAD — Ekolojik Araştırmalar Derneği (Ecological Research Society), Antalya",
+    "role": "NGO",
+    "website": "https://www.ekad.org.tr",
+    "notes": "Long-running Antalya sea-turtle NGO whose monitored beaches are Belek, Kızılot, Demirtaş, Kumluca, Çıralı. The nearest of these — Demirtaş (Alanya district) — is ~40 km WEST of Gazipaşa; EKAD is not confirmed to work at Gazipaşa. Included as a relevant national player / possible partner. Site is Cloudflare-protected — I could not verify a public phone, email, or Instagram; do not assume one.",
+    "confidence": "low"
+   },
+   {
+    "name": "Akdeniz University — Prof. Dr. Hakan Sert (Biology Dept., sea-turtle expert)",
+    "role": "university research center / academic",
+    "website": "https://avesis.akdeniz.edu.tr/hsert",
+    "notes": "Antalya's regional-university loggerhead expert; provides scientific expertise on Antalya-coast Caretta caretta monitoring. Public appearances tie him to Manavgat/Sorgun monitoring, NOT specifically Gazipaşa. Listed as the natural academic contact for the area via his public university profile only; do not infer private contacts.",
+    "confidence": "low"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "Mersin Üniversitesi Deniz Kaplumbağaları Uygulama ve Araştırma Merkezi (DEKUYAM) — Mersin University Sea Turtle Application & Research Center",
+    "role": "university research center",
+    "website": "https://www.mersin.edu.tr/akademik/deniz-kaplumbagalari-uygulama-ve-arastirma-merkezi",
+    "instagram": "https://www.instagram.com/dekuyam/",
+    "phone": "+90 324 361 00 01",
+    "email": "sergene@mersin.edu.tr",
+    "notes": "Primary on-the-ground monitor of the Kazanlı nesting beach (green turtle Chelonia mydas + loggerhead Caretta caretta). Directed by Prof. Dr. Serap Ergene (Faculty of Science, Biology Dept, Zoology). ~90,000 hatchlings tracked per season, June–early October. Phone is the university switchboard; Ergene ext. 14604/153. General office email yaziisleri@mersin.edu.tr. Community Facebook group: facebook.com/groups/268643733243563. Director email verified via apbs.mersin.edu.tr. Instagram bio confirmed: 'Mersin University Sea Turtles Application & Research Center'.",
+    "confidence": "high"
+   },
+   {
+    "name": "MEDASSET — Mediterranean Association to Save the Sea Turtles",
+    "role": "NGO (international conservation/advocacy & monitoring)",
+    "website": "https://www.medasset.org",
+    "instagram": "https://www.instagram.com/medasset_/",
+    "phone": "+30 210 36 40 389",
+    "email": "info@medasset.org",
+    "notes": "Athens-based NGO with a long, documented Kazanlı-specific campaign: first reported Kazanlı conservation problems to the Bern Convention in 1999, complainant on Recommendation No. 95 (2002) on marine turtle conservation at Kazanlı, and filed follow-up/update reports through 2021–2023 (T-PVS/Files(2021)78, T-PVS/Files(2023)40). Role is advocacy + status monitoring/reporting, not a field team on the beach. HQ: 1(C) Lykavittou St., Athens 10672, Greece.",
+    "confidence": "high"
+   },
+   {
+    "name": "Akdeniz Belediyesi (Akdeniz Municipality, Mersin) — Çevre Koruma ve Kontrol Müdürlüğü",
+    "role": "municipality",
+    "website": "https://www.akdeniz.bel.tr",
+    "notes": "Local municipality covering Kazanlı; organizes pre-nesting-season beach cleanups at Kazanlı to protect loggerhead and green turtle nests, sometimes with the local youth NGO Akdeniz Üçüncü Göz Eğitim ve Gençlik Derneği. Support/cleanup role, not a scientific monitoring program. Address: İhsaniye Mah. 123. Cad. No:92, 33170 Akdeniz/Mersin. Did not verify a clean public phone/email for the environment directorate, so those are omitted rather than guessed.",
+    "confidence": "low"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "WWF-Türkiye (Doğal Hayatı Koruma Vakfı)",
+    "role": "NGO",
+    "website": "https://www.wwf.org.tr",
+    "instagram": "https://www.instagram.com/wwf_turkiye",
+    "notes": "PRIMARY operator at Akyatan. Runs the green sea turtle (Chelonia mydas) nest-monitoring field camp on the ~22 km Akyatan beach and has worked there 20+ years (regular monitoring under a signed protocol since ~2006). Reported ~280,000 hatchlings from ~7,900 nests over 20 years; mean ~387 nests/season 2012-2021. HQ in Istanbul (Beyoğlu). General contact is via the wwf.org.tr contact form; its widely-published org email is bilgi@wwf.org.tr and switchboard is the Istanbul +90 212 line, but I could NOT re-verify the exact phone/email on their live site this session, so those fields are omitted rather than guessed. Instagram handle @wwf_turkiye seen referenced across their posts. NOTE: national players EKAD (Belek/Antalya), DEKAMER (Dalyan/İztuzu rescue center), and MEDASSET (advocacy) do NOT operate at Akyatan — Akyatan is WWF-Türkiye + government + Çukurova Univ. territory.",
+    "confidence": "high"
+   },
+   {
+    "name": "Doğa Koruma ve Milli Parklar 7. Bölge Müdürlüğü (General Directorate of Nature Conservation & National Parks, 7th Regional Directorate, Ministry of Agriculture and Forestry — Adana)",
+    "role": "official monitoring program",
+    "website": "https://bolge7.tarimorman.gov.tr",
+    "phone": "+90 322 325 07 63",
+    "email": "bolge7.dkmp@milliparklar.gov.tr",
+    "notes": "Official state authority responsible for the Akyatan Yaban Hayatı Geliştirme Sahası (Wildlife Development Area), the protected zone where the turtle nests are. Co-signs the conservation protocol with WWF-Türkiye and runs coastal-ecosystem / sea-turtle awareness activities at Akyatan with Çukurova University and the Adana Provincial Directorate of National Education. Address: Sinanpaşa Mah. Kozan Cad. No:116, Yüreğir/Adana. Fax: +90 322 325 07 08. Regional Director listed as Abdullah Alioğlu. Phone/email verified via public directory listings.",
+    "confidence": "high"
+   },
+   {
+    "name": "Çukurova Üniversitesi (Çukurova University), Adana",
+    "role": "university research center",
+    "website": "https://www.cu.edu.tr",
+    "notes": "Adana-based university whose Biology Department and Yumurtalık Vocational School (Yumurtalık MYO) take part in sea-turtle research and pre-season beach-clean/awareness work at Akyatan and neighbouring Yumurtalık beaches, in cooperation with the DKMP 7th Regional Directorate. Named as a research/protection collaborator in WWF-Türkiye's Akyatan work. No dedicated public turtle-program phone/email or Instagram found — contact would be through the general university switchboard/Biology Department.",
+    "confidence": "medium"
+   }
+  ]
+ },
+ {
+  "label": "",
+  "orgs": [
+   {
+    "name": "Doğa Koruma ve Milli Parklar 7. Bölge Müdürlüğü (Adana) — DKMP, Tarım ve Orman Bakanlığı",
+    "role": "official monitoring program / government directorate",
+    "website": "https://bolge7.tarimorman.gov.tr/",
+    "phone": "+90 322 325 07 63",
+    "email": "bolge7.dkmp@milliparklar.gov.tr",
+    "notes": "Official authority managing/monitoring Yumurtalık Tabiatı Koruma Alanı (Nature Reserve), where Caretta caretta and Chelonia mydas nest. Region covers Adana/Mersin/Hatay/Osmaniye/K.Maraş. Address: Sinanpaşa Mah. Kozan Cad. No:116 Yüreğir/Adana. Fax 0322 325 07 08. Facebook: facebook.com/Bolge7DKMP. This is the government body that permits and coordinates nest work at Yumurtalık — the primary official contact for the beach.",
+    "confidence": "high"
+   },
+   {
+    "name": "Çukurova Üniversitesi Su Ürünleri Fakültesi (Çukurova University, Faculty of Fisheries), Adana",
+    "role": "university research center",
+    "website": "https://suf.cu.edu.tr/",
+    "phone": "+90 322 338 60 84",
+    "email": "suf@cu.edu.tr",
+    "notes": "Local academic monitor. Published peer-reviewed nesting research on the Sugözü / Botaş–Yumurtalık coast (Caretta caretta & Chelonia mydas; authors Dursun Avşar, Sinan Mavruk, Hacer Yeldan, Meltem Manaşırlı, Caner Enver Özyurt). CU also operates the 'C.Ü. Kamp Yeri' beach at Yumurtalık, a documented Caretta nesting site. Phone/email are the faculty general office (Balcalı campus) — route to individual sea-turtle researchers through the faculty.",
+    "confidence": "high"
+   },
+   {
+    "name": "WWF-Türkiye (Doğal Hayatı Koruma Vakfı / Nature Conservation Foundation)",
+    "role": "NGO",
+    "website": "https://www.wwf.org.tr/",
+    "instagram": "https://www.instagram.com/wwf_turkiye/",
+    "phone": "+90 212 528 20 30",
+    "email": "info@wwf.org.tr",
+    "notes": "Conducted the 'Tuzla, Akyatan ve Yumurtalık Tabiatı Koruma Alanı Kumsalları' sea-turtle nesting research/monitoring/conservation study and produces Çukurova-delta (Akyatan) conservation materials (hosted on wwftr.awsassets). Genuine project-based/historical linkage to Yumurtalık; national office in Istanbul (Asmalı Mescit Mah., İstiklal Cad. No:136). Instagram handle @wwf_turkiye.",
+    "confidence": "medium"
+   },
+   {
+    "name": "DEKAMER — Deniz Kaplumbağaları Araştırma, Kurtarma ve Rehabilitasyon Merkezi (Pamukkale University Sea Turtle Research Center), Dalyan/Muğla",
+    "role": "national research & rescue center",
+    "website": "https://www.dekamer.org.tr/",
+    "instagram": "https://www.instagram.com/dekamerturkey/",
+    "email": "dekamerturkey@gmail.com",
+    "notes": "National sea-turtle rescue/rehab and research center. No documented direct nest-monitoring at Yumurtalık was found — included as a national reference/rescue coordination point (injured turtles from the Adana/Mediterranean coast are typically referred here). Instagram/X/Facebook all @dekamerturkey. Based in Dalyan, not the Çukurova delta — low confidence for a Yumurtalık-specific link.",
+    "confidence": "low"
+   }
+  ]
+ }
+]
