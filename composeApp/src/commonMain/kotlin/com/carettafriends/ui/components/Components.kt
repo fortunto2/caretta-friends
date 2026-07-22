@@ -215,9 +215,12 @@ private fun Modifier.widthIn(): Modifier = this // keeps tabular width simple
 
 data class NavItem(val key: String, val emoji: String, val label: String)
 
+/** Bottom nav — always visible. The first half of [items], then a prominent centre "+" (add nest),
+ *  then the rest. */
 @Composable
-fun BottomBar(current: String, items: List<NavItem>, onSelect: (String) -> Unit) {
+fun BottomBar(current: String, items: List<NavItem>, onSelect: (String) -> Unit, onAdd: () -> Unit) {
     val c = caretta
+    val half = (items.size + 1) / 2
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -227,21 +230,26 @@ fun BottomBar(current: String, items: List<NavItem>, onSelect: (String) -> Unit)
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        items.forEach { item ->
-            val on = item.key == current
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable { onSelect(item.key) }.padding(horizontal = 8.dp),
-            ) {
-                Text(item.emoji, fontSize = 18.sp)
-                Text(
-                    item.label,
-                    color = if (on) c.sea else c.muted,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-        }
+        items.take(half).forEach { NavTab(it, current, onSelect) }
+        Box(
+            modifier = Modifier.size(52.dp).clip(RoundedCornerShape(17.dp)).background(c.coral)
+                .clickable { onAdd() },
+            contentAlignment = Alignment.Center,
+        ) { Text("＋", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold) }
+        items.drop(half).forEach { NavTab(it, current, onSelect) }
+    }
+}
+
+@Composable
+private fun NavTab(item: NavItem, current: String, onSelect: (String) -> Unit) {
+    val c = caretta
+    val on = item.key == current
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { onSelect(item.key) }.padding(horizontal = 8.dp, vertical = 2.dp),
+    ) {
+        Text(item.emoji, fontSize = 18.sp)
+        Text(item.label, color = if (on) c.sea else c.muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
     }
 }
 

@@ -18,7 +18,6 @@ import com.carettafriends.ui.Screen
 import com.carettafriends.ui.components.BottomBar
 import com.carettafriends.ui.components.EmptyHint
 import com.carettafriends.ui.components.NavItem
-import com.carettafriends.ui.isTab
 import com.carettafriends.ui.screens.AddNestScreen
 import com.carettafriends.ui.screens.BeachDetailScreen
 import com.carettafriends.ui.screens.BeachesScreen
@@ -40,10 +39,11 @@ private val navItems = listOf(
 )
 
 private fun tabKey(s: Screen): String = when (s) {
+    is Screen.Map -> "map"
     is Screen.Beaches -> "beaches"
     is Screen.Learn -> "learn"
     is Screen.Profile -> "profile"
-    else -> "map"
+    else -> ""   // detail screens: no tab highlighted, but the bar stays visible
 }
 
 private fun tabFromKey(k: String): Screen = when (k) {
@@ -106,9 +106,13 @@ fun CarettaApp() {
                         }
                     }
                 }
-                if (current.isTab()) {
-                    BottomBar(current = tabKey(current), items = navItems, onSelect = { nav.selectTab(tabFromKey(it)) })
-                }
+                // Always visible — tabs switch, the centre + adds a nest from anywhere.
+                BottomBar(
+                    current = tabKey(current),
+                    items = navItems,
+                    onSelect = { nav.selectTab(tabFromKey(it)) },
+                    onAdd = { nav.go(Screen.AddNest) },
+                )
             }
         }
     }

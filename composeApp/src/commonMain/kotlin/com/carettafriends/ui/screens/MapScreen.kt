@@ -123,15 +123,7 @@ fun MapScreen(
             )
         }
 
-        // --- Coral FAB ---
-        Box(
-            Modifier.align(Alignment.BottomEnd).padding(end = 18.dp, bottom = 22.dp)
-                .size(56.dp).clip(RoundedCornerShape(18.dp)).background(c.coral)
-                .clickable { onAddMarker() },
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("＋", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
-        }
+        // (Add-nest "+" moved to the centre of the bottom bar — no map FAB.)
 
         // --- Beach tooltip (shown when a beach is tapped) ---
         tappedBeach?.let { id ->
