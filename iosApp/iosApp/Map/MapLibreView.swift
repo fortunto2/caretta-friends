@@ -62,7 +62,7 @@ struct MapLibreView: UIViewRepresentable {
         context.coordinator.parent = self          // keep closure/props fresh across SwiftUI updates
         context.coordinator.sync(nests: points, beaches: beaches, on: mapView)
         context.coordinator.syncTrack(track, on: mapView)
-        context.coordinator.syncBeachPolygons(beachPolygons, on: mapView)
+        context.coordinator.applyBeachPolygons(beachPolygons)
     }
 
     // MARK: Coordinator = MLNMapViewDelegate
@@ -72,10 +72,36 @@ struct MapLibreView: UIViewRepresentable {
         private var currentIDs: Set<String> = []
         private var polyline: MLNPolyline?
         private var trackCount = -1
-        private var beachPolys: [MLNPolygon] = []
-        private var beachPolyCount = -1
+        private var beachSource: MLNShapeSource?
 
         init(_ parent: MapLibreView) { self.parent = parent }
+
+        // Add a beach-highlight source + fill/line style layers once the style is ready. Style layers
+        // render reliably (unlike MLNPolygon annotations, which didn't show); then push the polygons.
+        func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
+            let src = MLNShapeSource(identifier: "cf-beaches", shape: nil, options: nil)
+            style.addSource(src)
+            let fill = MLNFillStyleLayer(identifier: "cf-beaches-fill", source: src)
+            fill.fillColor = NSExpression(forConstantValue: teal)
+            fill.fillOpacity = NSExpression(forConstantValue: 0.30)
+            style.addLayer(fill)
+            let line = MLNLineStyleLayer(identifier: "cf-beaches-line", source: src)
+            line.lineColor = NSExpression(forConstantValue: teal)
+            line.lineWidth = NSExpression(forConstantValue: 2.5)
+            style.addLayer(line)
+            beachSource = src
+            applyBeachPolygons(parent.beachPolygons)
+        }
+
+        /// Push the current beach outlines into the shape source (set the whole collection).
+        func applyBeachPolygons(_ polys: [[CLLocationCoordinate2D]]) {
+            guard let src = beachSource else { return }
+            let features: [MLNPolygonFeature] = polys.filter { $0.count >= 3 }.map { coords in
+                var c = coords
+                return MLNPolygonFeature(coordinates: &c, count: UInt(c.count))
+            }
+            src.shape = MLNShapeCollectionFeature(shapes: features)
+        }
 
         /// Rebuild the patrol polyline only when the breadcrumb count changes (grows while recording).
         func syncTrack(_ coords: [CLLocationCoordinate2D], on mapView: MLNMapView) {
@@ -89,32 +115,11 @@ struct MapLibreView: UIViewRepresentable {
             polyline = line
         }
 
-        // Beach sand outlines (OSM polygons) drawn as translucent teal highlights.
-        func syncBeachPolygons(_ polys: [[CLLocationCoordinate2D]], on mapView: MLNMapView) {
-            guard polys.count != beachPolyCount else { return }
-            beachPolyCount = polys.count
-            if !beachPolys.isEmpty { mapView.removeAnnotations(beachPolys); beachPolys = [] }
-            for coords in polys where coords.count >= 3 {
-                var c = coords
-                let poly = MLNPolygon(coordinates: &c, count: UInt(c.count))
-                mapView.addAnnotation(poly)
-                beachPolys.append(poly)
-            }
-        }
-
         private let teal = UIColor(red: 0.09, green: 0.55, blue: 0.62, alpha: 1.0)
         private let coral = UIColor(red: 0.98, green: 0.45, blue: 0.36, alpha: 1.0)
 
-        // Beach polygons = teal, patrol track = coral.
-        func mapView(_ mapView: MLNMapView, strokeColorForShapeAnnotation annotation: MLNShape) -> UIColor {
-            annotation is MLNPolygon ? teal : coral
-        }
-
-        func mapView(_ mapView: MLNMapView, fillColorForPolygonAnnotation annotation: MLNPolygon) -> UIColor { teal }
-
-        func mapView(_ mapView: MLNMapView, alphaForShapeAnnotation annotation: MLNShape) -> CGFloat {
-            annotation is MLNPolygon ? 0.28 : 0.9
-        }
+        // Patrol track (polyline) styling.
+        func mapView(_ mapView: MLNMapView, strokeColorForShapeAnnotation annotation: MLNShape) -> UIColor { coral }
 
         func mapView(_ mapView: MLNMapView, lineWidthForPolylineAnnotation annotation: MLNPolyline) -> CGFloat { 4 }
 
