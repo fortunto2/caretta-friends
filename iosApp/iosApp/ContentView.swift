@@ -274,14 +274,6 @@ struct MapTab: View {
                                 .background((patrol.isRecording || dust) ? Color.cfCoral : Color.cfGood).clipShape(Capsule())
                         }
                         Spacer()
-                        Button { showCamera = true } label: {
-                            Image(systemName: "plus")
-                                .font(.title.weight(.bold)).foregroundColor(.white)
-                                .frame(width: 58, height: 58)
-                                .background(Color.cfCoral)
-                                .clipShape(RoundedRectangle(cornerRadius: 19, style: .continuous))
-                                .shadow(color: Color.cfCoral.opacity(0.5), radius: 10, y: 6)
-                        }
                     }
                     .padding(.horizontal, 16).padding(.bottom, 10)
                 }
@@ -442,10 +434,19 @@ struct MapTab: View {
 }
 
 struct ContentView: View {
+    // Tab tags. `.add` is a sentinel centre tab: selecting it opens the add-a-nest flow
+    // (from ANY tab) and immediately reverts to the previously-selected tab.
+    private enum Tab: Hashable { case map, beaches, add, learn, profile }
+
+    @State private var selection: Tab = .map
+    @State private var prior: Tab = .map
+    @State private var showAdd = false
+
     var body: some View {
-        TabView {
+        TabView(selection: $selection) {
             MapTab()
                 .tabItem { Label("Map", systemImage: "map.fill") }
+                .tag(Tab.map)
 
             TabStack { path in
                 ComposeHost {
@@ -456,11 +457,18 @@ struct ContentView: View {
                 }
             }
             .tabItem { Label("Beaches", systemImage: "beach.umbrella.fill") }
+            .tag(Tab.beaches)
+
+            // Centre "+" — never shows its own content; it triggers the add flow.
+            Color.clear
+                .tabItem { Label("Add", systemImage: "plus.circle.fill") }
+                .tag(Tab.add)
 
             TabStack { _ in
                 ComposeHost { IosEntryKt.LearnVC() }
             }
             .tabItem { Label("Learn", systemImage: "book.fill") }
+            .tag(Tab.learn)
 
             TabStack { path in
                 ComposeHost {
@@ -471,6 +479,69 @@ struct ContentView: View {
                 }
             }
             .tabItem { Label("Profile", systemImage: "tortoise.fill") }
+            .tag(Tab.profile)
         }
+        .tint(Color.cfCoral)
+        .onChange(of: selection) { newValue in
+            if newValue == .add {
+                showAdd = true
+                selection = prior          // bounce back so the empty tab never shows
+            } else {
+                prior = newValue
+            }
+        }
+        .fullScreenCover(isPresented: $showAdd) {
+            AddFlow(onClose: { showAdd = false })
+        }
+    }
+}
+
+/// The global add-a-nest flow launched from the centre "+" tab: native camera → Compose AddNest
+/// form. Mirrors the map FAB flow but works from any tab (Android has the same centre "+").
+private struct AddFlow: View {
+    let onClose: () -> Void
+    @State private var path = NavigationPath()
+    @State private var showCamera = false
+    @State private var started = false
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            Color(.systemBackground).ignoresSafeArea()
+                .navigationDestination(for: Route.self) { route in
+                    if case .addNest = route {
+                        DetailScreen(fullBleed: false) {
+                            ComposeHost {
+                                IosEntryKt.AddNestVC(
+                                    onDone: { onClose() },
+                                    onCamera: { showCamera = true }
+                                )
+                            }
+                        }
+                    } else {
+                        destinationView(route, path: $path)
+                    }
+                }
+                .fullScreenCover(isPresented: $showCamera) {
+                    CameraCaptureView(
+                        author: "You",
+                        onDone: { imagePath, lat, lng in
+                            showCamera = false
+                            IosEntryKt.setPendingPhoto(
+                                path: imagePath,
+                                lat: lat ?? 0,
+                                lng: lng ?? 0,
+                                hasLocation: lat != nil && lng != nil
+                            )
+                            if path.isEmpty { path.append(Route.addNest) }
+                        },
+                        onCancel: {
+                            showCamera = false
+                            if path.isEmpty { onClose() }   // cancelled before the form → close the flow
+                        }
+                    )
+                }
+        }
+        // Open the camera once, after the cover is on screen (avoids nested-present warnings).
+        .onAppear { if !started { started = true; showCamera = true } }
     }
 }
