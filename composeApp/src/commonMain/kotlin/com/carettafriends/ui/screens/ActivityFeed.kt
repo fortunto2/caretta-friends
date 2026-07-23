@@ -20,12 +20,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.carettafriends.content.AppStrings
+import com.carettafriends.data.today
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Member
 import com.carettafriends.domain.NestUpdate
 import com.carettafriends.domain.UpdateKind
 import com.carettafriends.ui.components.LocalPhoto
 import com.carettafriends.ui.theme.caretta
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 
 /**
  * ONE activity-feed entry (a photo/observation tied to a nest). The feed is the app's home for
@@ -43,10 +47,26 @@ data class FeedEntry(
     val nestId: String,
 )
 
+/** Time window for the activity feed (chips on the profile): today, last week, last month, everything. */
+enum class FeedRange { TODAY, WEEK, MONTH, ALL }
+
+/** Epoch-millis cutoff for a [FeedRange]: only entries at/after it are shown (ALL = no cutoff). */
+private fun rangeCutoff(range: FeedRange): Long {
+    val tz = TimeZone.currentSystemDefault()
+    val nowMs = Clock.System.now().toEpochMilliseconds()
+    val dayMs = 24L * 3600 * 1000
+    return when (range) {
+        FeedRange.TODAY -> today().atStartOfDayIn(tz).toEpochMilliseconds()
+        FeedRange.WEEK -> nowMs - 7 * dayMs
+        FeedRange.MONTH -> nowMs - 30 * dayMs
+        FeedRange.ALL -> 0L
+    }
+}
+
 /**
  * Build the activity feed, scoped: pass [member] for one volunteer, [beachId] for one beach,
  * [communityId] for a whole community (→ its beaches → their nests), or nothing for everything.
- * (City scope can layer on later.) One builder, one [ActivityFeed] component — reused everywhere.
+ * [range] narrows to a time window (today/week/month/all). One builder, one [ActivityFeed] component.
  */
 fun activityFeed(
     state: AppState,
@@ -54,6 +74,7 @@ fun activityFeed(
     member: Member? = null,
     beachId: String? = null,
     communityId: String? = null,
+    range: FeedRange = FeedRange.ALL,
     limit: Int = 30,
 ): List<FeedEntry> {
     val memberNests = member?.let { state.nestsBy(it).map { n -> n.id }.toSet() }
@@ -65,6 +86,7 @@ fun activityFeed(
     val nests = state.nests.filter { n ->
         (memberNests == null || n.id in memberNests) && (beachIds == null || n.beachId in beachIds)
     }
+    val cutoff = rangeCutoff(range)
     return nests.flatMap { n ->
         n.updates.map { u ->
             FeedEntry(
@@ -79,7 +101,16 @@ fun activityFeed(
                 nestId = n.id,
             )
         }
-    }.sortedByDescending { it.millis }.take(limit)
+    }.filter { it.millis >= cutoff }.sortedByDescending { it.millis }.take(limit)
+}
+
+/** A compact, shareable "today" summary (emoji-labelled, i18n-light): nests found · hatchings · updates. */
+fun todayReportText(state: AppState, s: AppStrings): String {
+    val startToday = today().atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+    val todays = state.nests.flatMap { it.updates }.filter { it.createdEpochMillis >= startToday }
+    val found = todays.count { it.kind == UpdateKind.FOUND }
+    val hatch = todays.count { it.kind == UpdateKind.HATCHED }
+    return "🐢 Caretta Friends · ${s.today}\n🥚 $found · 🐣 $hatch · 📝 ${todays.size}"
 }
 
 private fun feedEmoji(u: NestUpdate): String = when (u.kind) {

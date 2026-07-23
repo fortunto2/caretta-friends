@@ -266,6 +266,10 @@ class AppStrings(private val m: Map<String, String>, val months: List<String>) {
     val excZeroHint: String get() = m.getValue("excZeroHint")
     val excThanksRecord: String get() = m.getValue("excThanksRecord")
     val activityTitle: String get() = m.getValue("activityTitle")
+    val rangeWeek: String get() = m.getValue("rangeWeek")
+    val rangeMonth: String get() = m.getValue("rangeMonth")
+    val shareDay: String get() = m.getValue("shareDay")
+    val activityEmpty: String get() = m.getValue("activityEmpty")
     val moreDetails: String get() = m.getValue("moreDetails")
     val addPhotoBtn: String get() = m.getValue("addPhotoBtn")
     val noteHint: String get() = m.getValue("noteHint")
@@ -530,6 +534,10 @@ private fun enStrings() = AppStrings(
         "excZeroHint" to "Count what you find below ↓",
         "excThanksRecord" to "Every count matters — thank you for recording this nest 🐢",
         "activityTitle" to "Activity",
+        "rangeWeek" to "Week",
+        "rangeMonth" to "Month",
+        "shareDay" to "Share today",
+        "activityEmpty" to "Nothing here yet for this period.",
         "moreDetails" to "More details",
         "addPhotoBtn" to "📷 Add photo",
         "noteHint" to "Add a note (optional)",
@@ -796,6 +804,10 @@ private fun ruStrings() = AppStrings(
         "excZeroHint" to "Считай находки ниже ↓",
         "excThanksRecord" to "Каждый учёт важен — спасибо, что записал это гнездо 🐢",
         "activityTitle" to "Активность",
+        "rangeWeek" to "Неделя",
+        "rangeMonth" to "Месяц",
+        "shareDay" to "Отчёт за день",
+        "activityEmpty" to "За этот период пока пусто.",
         "moreDetails" to "Подробнее",
         "addPhotoBtn" to "📷 Добавить фото",
         "noteHint" to "Заметка (необязательно)",
@@ -1062,6 +1074,10 @@ private fun trStrings() = AppStrings(
         "excZeroHint" to "Bulduklarını aşağıda say ↓",
         "excThanksRecord" to "Her kayıt önemli — bu yuvayı kaydettiğin için teşekkürler 🐢",
         "activityTitle" to "Etkinlik",
+        "rangeWeek" to "Hafta",
+        "rangeMonth" to "Ay",
+        "shareDay" to "Bugünü paylaş",
+        "activityEmpty" to "Bu dönem için henüz bir şey yok.",
         "moreDetails" to "Daha fazla",
         "addPhotoBtn" to "📷 Fotoğraf ekle",
         "noteHint" to "Not ekle (isteğe bağlı)",

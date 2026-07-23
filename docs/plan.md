@@ -30,6 +30,11 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
   `AppState.addUpdateFor` → `repo.requestAddUpdate()`/`clearAddUpdate()`; the on-screen `NestDetailScreen`
   opens its dialog via `LaunchedEffect`. iOS tracks the top nest in `AppRouter.currentNestId`
   (set/clear on `.nest` appear/disappear); the coral "+" routes through `handlePlus()`.
+- **D — feed range filter + today report**: the profile activity feed has time chips (Today / Week /
+  Month / All → `activityFeed(range = FeedRange…)`, cutoff by `createdEpochMillis`) + an empty state,
+  and a "📤 Share today" button that shares a compact emoji report (`todayReportText()` →
+  `platformShare`). Shared Compose `ProfileScreen`, so both platforms get it. i18n: `rangeWeek`,
+  `rangeMonth`, `shareDay`, `activityEmpty` (EN/RU/TR).
 - **Photo durability (iOS)**: capture also saved to a **"Caretta Friends" Photos album** (`PhotoAlbumSaver`) so photos survive reinstall.
 - **Crash fixes**: iOS photo-share (dropped fragile CoreGraphics watermark); AppStrings 255-field VerifyError (Map-backed).
 - Empty states (encouraging CTA, not big "0"); excavation celebration (or supportive msg when 0); watch persists (`Profile.watchedNestIds`).
@@ -43,10 +48,6 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 - **Swipe between tabs** (Instagram-style): HorizontalPager (Android) / paged content (iOS) under the persistent bottom bar.
 - **My location = compass arrow, not a dot** (avoid confusion with nest dots); **remove the bottom-right locate button** — show heading "like a navigator" (custom `MLNUserLocationAnnotationView` triangle, or `showsUserHeadingIndicator`).
 - **Android map my-location**: MapLibre `LocationComponent` (iOS has it; Android pending).
-
-### D — Feed report + filters
-- Time filter on the activity feed: **today / week / month / all** (add a range param to `activityFeed()`).
-- A **shareable "today report"** (default profile view) — screenshot/share summary of today's activity. Reuse `platformShareImage`.
 
 ### Other pending
 - **Photo cloud sync (offline-first, V2)**: nest *metadata* already syncs to Supabase; **photo files** do not — upload to Supabase Storage (→ Cloudflare R2 later, behind `CloudBackend`). Android durability: also save captures to a public MediaStore album (iOS done).

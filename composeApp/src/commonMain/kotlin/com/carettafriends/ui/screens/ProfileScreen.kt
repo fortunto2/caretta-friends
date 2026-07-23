@@ -67,6 +67,7 @@ fun ProfileScreen(
     var pickingBeach by remember { mutableStateOf(false) }
     var pickingLang by remember { mutableStateOf(false) }
     var showAuth by remember { mutableStateOf(false) }
+    var feedRange by remember { mutableStateOf(FeedRange.ALL) }
 
     // "Beaches you've been to" — where this volunteer has patrolled or logged a nest.
     val visitedIds = (state.patrols.map { it.beachId } + state.nests.filter { it.foundBy == p.displayName }.map { it.beachId }).toSet()
@@ -236,11 +237,29 @@ fun ProfileScreen(
             }
 
             // Activity — your trail (photo + what happened per nest), the same feed used on member,
-            // beach and community screens. Replaces the bare photo grid / nest-code lists.
-            val feed = activityFeed(state, s, member = state.meAsMember)
+            // beach and community screens. Time-filtered (today/week/month/all) + a "share today" report.
+            val feed = activityFeed(state, s, member = state.meAsMember, range = feedRange)
+            SectionLabel(s.activityTitle)
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                RangeChip(s.today, feedRange == FeedRange.TODAY) { feedRange = FeedRange.TODAY }
+                RangeChip(s.rangeWeek, feedRange == FeedRange.WEEK) { feedRange = FeedRange.WEEK }
+                RangeChip(s.rangeMonth, feedRange == FeedRange.MONTH) { feedRange = FeedRange.MONTH }
+                RangeChip(s.filterAll, feedRange == FeedRange.ALL) { feedRange = FeedRange.ALL }
+                Box(
+                    Modifier.clip(RoundedCornerShape(50)).background(c.sea)
+                        .clickable { platformShare(todayReportText(state, s)) }
+                        .padding(horizontal = 13.dp, vertical = 8.dp),
+                ) {
+                    Text("📤 ${s.shareDay}", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                }
+            }
             if (feed.isNotEmpty()) {
-                SectionLabel(s.activityTitle)
                 ActivityFeed(feed, onOpenNest)
+            } else {
+                Text(s.activityEmpty, color = c.muted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             }
 
             // trends / charts
@@ -335,6 +354,20 @@ private fun ProfileNavRow(label: String, onClick: () -> Unit) {
             Text(label, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
             Text("›", color = c.muted, fontSize = 18.sp)
         }
+    }
+}
+
+@Composable
+private fun RangeChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    val c = caretta
+    Box(
+        Modifier.clip(RoundedCornerShape(50))
+            .background(if (selected) c.sea else c.surface)
+            .border(1.dp, if (selected) c.sea else c.line, RoundedCornerShape(50))
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+    ) {
+        Text(label, color = if (selected) Color.White else c.ink, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
     }
 }
 
