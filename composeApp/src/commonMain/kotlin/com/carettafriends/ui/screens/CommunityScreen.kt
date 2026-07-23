@@ -26,6 +26,8 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.carettafriends.content.AppStrings
+import com.carettafriends.content.appStrings
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Community
 import com.carettafriends.domain.CommunityKind
@@ -40,6 +42,7 @@ import com.carettafriends.ui.theme.caretta
 fun CommunityScreen(community: Community, state: AppState, onBack: () -> Unit) {
     val c = caretta
     val uri = LocalUriHandler.current
+    val s = appStrings(state.profile.language)
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         // cover header
@@ -66,7 +69,7 @@ fun CommunityScreen(community: Community, state: AppState, onBack: () -> Unit) {
         ) {
             // Type badge (community / NGO / university / official) + who they're affiliated with.
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Pill(kindLabel(community.kind), kindColor(community.kind))
+                Pill(kindLabel(community.kind, s), kindColor(community.kind))
                 if (community.affiliation.isNotBlank()) {
                     Text(community.affiliation, color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
@@ -78,57 +81,57 @@ fun CommunityScreen(community: Community, state: AppState, onBack: () -> Unit) {
 
             if (community.claimed) {
                 // Join = message the org on WhatsApp (an admin adds you). No public self-join.
-                PrimaryButton("💬 Join — message us on WhatsApp") { uri.openUri(community.whatsappUrl) }
+                PrimaryButton(s.joinWhatsapp) { uri.openUri(community.whatsappUrl) }
                 Text(
-                    "New here? Message us on WhatsApp or Instagram — an admin will add you to the team.",
+                    s.joinSub,
                     color = c.muted,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
                 )
 
                 // ── Team (admins & volunteers) ──────────────────────────
-                SectionLabel("Team")
-                state.members.sortedBy { it.role.ordinal }.forEach { m -> MemberRow(m) }
+                SectionLabel(s.team)
+                state.members.sortedBy { it.role.ordinal }.forEach { m -> MemberRow(m, s) }
                 MemberRow(
                     Member(
-                        "you", "${state.profile.displayName} (you)", state.profile.memberRole,
+                        "you", "${state.profile.displayName} (${s.youWord})", state.profile.memberRole,
                         state.profile.avatar, link = state.profile.link,
                     ),
+                    s,
                 )
             } else {
                 // STUB: a real local group not on Caretta Friends yet — show contacts + a claim CTA.
                 Text(
-                    if (community.nearArea.isNotBlank()) "Local group · near ${community.nearArea}" else "Local conservation group",
+                    if (community.nearArea.isNotBlank()) "${s.localGroupNear} ${community.nearArea}" else s.localGroup,
                     color = c.sea, fontSize = 12.sp, fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    "🐢 This local group isn't on Caretta Friends yet — reach out to them directly below. " +
-                        "Are you part of it? Message us and we'll give your admins access.",
+                    s.stubNotOnApp + s.stubClaim,
                     color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium,
                 )
-                PrimaryButton("🙋 We run this group — give us access") { uri.openUri(state.community.whatsappUrl) }
+                PrimaryButton(s.weRunGroup) { uri.openUri(state.community.whatsappUrl) }
             }
 
             // ── Reach them (tappable) — WhatsApp / call first, then the rest ──
-            SectionLabel("Reach them")
+            SectionLabel(s.reachThem)
             val digits = community.phone.filter { ch -> ch.isDigit() || ch == '+' }
             if (community.whatsappUrl.isNotBlank()) {
-                LinkRow("💬", "Message on WhatsApp", linkHost(community.whatsappUrl), c.good) { uri.openUri(community.whatsappUrl) }
+                LinkRow("💬", s.reachWhatsapp, linkHost(community.whatsappUrl), c.good) { uri.openUri(community.whatsappUrl) }
             }
             if (community.phone.isNotBlank()) {
-                LinkRow("📞", "Call", community.phone, c.sea) { runCatching { uri.openUri("tel:$digits") } }
+                LinkRow("📞", s.callWord, community.phone, c.sea) { runCatching { uri.openUri("tel:$digits") } }
             }
             if (community.email.isNotBlank()) {
-                LinkRow("✉️", "Email", community.email, c.deep) { runCatching { uri.openUri("mailto:${community.email}") } }
+                LinkRow("✉️", s.email, community.email, c.deep) { runCatching { uri.openUri("mailto:${community.email}") } }
             }
             if (community.instagramUrl.isNotBlank()) {
-                LinkRow("📸", "Instagram", linkHost(community.instagramUrl), c.coral) { uri.openUri(community.instagramUrl) }
+                LinkRow("📸", s.instagramWord, linkHost(community.instagramUrl), c.coral) { uri.openUri(community.instagramUrl) }
             }
             if (community.websiteUrl.isNotBlank()) {
-                LinkRow("🌐", "Website", linkHost(community.websiteUrl), c.sea) { uri.openUri(community.websiteUrl) }
+                LinkRow("🌐", s.websiteWord, linkHost(community.websiteUrl), c.sea) { uri.openUri(community.websiteUrl) }
             }
             if (community.adminContact.isNotBlank()) {
-                LinkRow("📇", "Contact", community.adminContact, c.deep) {
+                LinkRow("📇", s.contactWord, community.adminContact, c.deep) {
                     if (community.adminContact.startsWith("http")) uri.openUri(community.adminContact)
                 }
             }
@@ -136,14 +139,14 @@ fun CommunityScreen(community: Community, state: AppState, onBack: () -> Unit) {
             if (!community.claimed) return@Column
 
             // ── Top volunteers — by nests found & hatchlings freed ──────
-            SectionLabel("Top volunteers · by nests")
+            SectionLabel(s.topVolunteers)
             val board = state.nests
                 .groupBy { it.foundBy }
                 .map { (name, ns) -> Ranked(name, ns.size, ns.sumOf { it.excavation?.hatchlingsToSea ?: 0 }) }
                 .sortedWith(compareByDescending<Ranked> { it.nests }.thenByDescending { it.hatchlings })
             if (board.isEmpty()) {
                 Text(
-                    "No nests logged yet — be the first to mark one this season 🥚",
+                    s.noNestsBeFirst,
                     color = c.muted,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
@@ -158,11 +161,11 @@ fun CommunityScreen(community: Community, state: AppState, onBack: () -> Unit) {
 
 private data class Ranked(val name: String, val nests: Int, val hatchlings: Int)
 
-private fun kindLabel(k: CommunityKind): String = when (k) {
-    CommunityKind.COMMUNITY -> "🐢 Volunteer group"
-    CommunityKind.NGO -> "🌍 NGO"
-    CommunityKind.UNIVERSITY -> "🎓 University"
-    CommunityKind.OFFICIAL -> "🏛️ Official"
+private fun kindLabel(k: CommunityKind, s: AppStrings): String = when (k) {
+    CommunityKind.COMMUNITY -> s.kindCommunity
+    CommunityKind.NGO -> s.kindNgo
+    CommunityKind.UNIVERSITY -> s.kindUniversity
+    CommunityKind.OFFICIAL -> s.kindOfficial
 }
 
 private fun kindColor(k: CommunityKind): Color = when (k) {
@@ -172,14 +175,14 @@ private fun kindColor(k: CommunityKind): Color = when (k) {
     CommunityKind.OFFICIAL -> Color(0xFF123B40)
 }
 
-private fun roleLabel(role: MemberRole): String = when (role) {
-    MemberRole.ADMIN -> "Admin"
-    MemberRole.BEACH_LEADER -> "Leader"
-    MemberRole.VOLUNTEER -> "Volunteer"
+private fun roleLabel(role: MemberRole, s: AppStrings): String = when (role) {
+    MemberRole.ADMIN -> s.roleAdmin
+    MemberRole.BEACH_LEADER -> s.roleLeader
+    MemberRole.VOLUNTEER -> s.roleVolunteer
 }
 
 @Composable
-private fun MemberRow(m: Member) {
+private fun MemberRow(m: Member, s: AppStrings) {
     val c = caretta
     val uri = LocalUriHandler.current
     val hasLink = m.link.isNotBlank()
@@ -206,7 +209,7 @@ private fun MemberRow(m: Member) {
                 m.note.isNotBlank() -> Text(m.note, color = c.muted, fontSize = 12.sp)
             }
         }
-        Pill(roleLabel(m.role), tint)
+        Pill(roleLabel(m.role, s), tint)
     }
 }
 
