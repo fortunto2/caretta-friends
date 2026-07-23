@@ -156,7 +156,7 @@ fun ProfileScreen(
             SectionLabel(s.community)
             CommunityCard(
                 name = state.community.name,
-                tagline = state.community.tagline,
+                tagline = state.community.taglineFor(p.language),
                 members = state.members.size,
                 onOpen = onOpenCommunity,
             )

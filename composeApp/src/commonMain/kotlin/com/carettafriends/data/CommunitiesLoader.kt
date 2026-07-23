@@ -25,6 +25,10 @@ private data class StubEntry(
     val lat: Double,
     val lng: Double,
     val nearArea: String = "",
+    val taglineRu: String = "",
+    val taglineTr: String = "",
+    val descriptionRu: String = "",
+    val descriptionTr: String = "",
 )
 
 private val cJson = Json { ignoreUnknownKeys = true }
@@ -52,6 +56,10 @@ suspend fun loadStubCommunities(): List<Community> = runCatching {
             nearArea = it.nearArea,
             kind = runCatching { CommunityKind.valueOf(it.kind.uppercase()) }.getOrDefault(CommunityKind.COMMUNITY),
             affiliation = it.affiliation,
+            taglineRu = it.taglineRu,
+            taglineTr = it.taglineTr,
+            descriptionRu = it.descriptionRu,
+            descriptionTr = it.descriptionTr,
         )
     }
 }.getOrDefault(emptyList())

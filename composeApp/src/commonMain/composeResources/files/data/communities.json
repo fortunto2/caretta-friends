@@ -12,7 +12,11 @@
       "email": "dekamerturkey@gmail.com",
       "lat": 36.7544,
       "lng": 28.6333,
-      "nearArea": "Dalyan / İztuzu · Dalaman · Ekincik · Fethiye"
+      "nearArea": "Dalyan / İztuzu · Dalaman · Ekincik · Fethiye",
+      "taglineRu": "İztuzu–Dalaman: мониторинг и нацспасцентр",
+      "taglineTr": "İztuzu–Dalaman izleme & ulusal kurtarma",
+      "descriptionRu": "Главный в Турции центр исследования, спасения и реабилитации морских черепах. Ведёт многолетний ночной мониторинг на побережье İztuzu–Dalaman, содержит национальный госпиталь для раненых черепах и обучает персонал отелей. Основан в 2009; руководит проф. д-р Yakup Kaska.",
+      "descriptionTr": "Türkiye'nin başlıca deniz kaplumbağası araştırma, kurtarma ve rehabilitasyon merkezi. İztuzu–Dalaman kıyısında uzun soluklu gece izlemesi yürütür, yaralı kaplumbağalar için ulusal kurtarma hastanesini işletir ve otel personeline eğitim verir. 2009'da kuruldu; Prof. Dr. Yakup Kaska yönetiminde."
     },
     {
       "id": "kaptan-june",
@@ -25,7 +29,11 @@
       "email": "info@dalyanturtles.com",
       "lat": 36.762,
       "lng": 28.6215,
-      "nearArea": "Dalyan / İztuzu"
+      "nearArea": "Dalyan / İztuzu",
+      "taglineRu": "Защита пляжа Дальян / İztuzu",
+      "taglineTr": "Dalyan / İztuzu plaj koruması",
+      "descriptionRu": "Фонд, основанный «капитаном» June Haimoff, которая помогла спасти İztuzu (Черепаший пляж) от застройки в 1980-х. Защищает гнездовой пляж Дальян/İztuzu и повышает осведомлённость.",
+      "descriptionTr": "İztuzu'yu (Kaplumbağa Plajı) 1980'lerde yapılaşmadan kurtarmaya yardım eden 'Kaptan' June Haimoff tarafından kurulan vakıf. Dalyan/İztuzu yuvalama plajını korur ve farkındalık yaratır."
     },
     {
       "id": "fethiye-sepa",
@@ -37,7 +45,11 @@
       "website": "https://akbis.pau.edu.tr/personel/49386",
       "lat": 36.6519,
       "lng": 29.1028,
-      "nearArea": "Fethiye / Çalış"
+      "nearArea": "Fethiye / Çalış",
+      "taglineRu": "Чалыш / Фетхие: учёт гнёзд",
+      "taglineTr": "Çalış / Fethiye yuva sayımı",
+      "descriptionRu": "Сезонный мониторинг гнёзд в Особо охраняемой природной зоне Фетхие–Гёджек, обследование Чалыша и соседних пляжей. Координатор — преп. Doğan Sözbilen.",
+      "descriptionTr": "Fethiye–Göcek Özel Çevre Koruma Bölgesi’nde mevsimlik yuva izlemesi; Çalış ve çevre plajları tarar. Öğr. Gör. Doğan Sözbilen koordinasyonunda."
     },
     {
       "id": "patara-pau",
@@ -49,7 +61,11 @@
       "website": "https://akbis.pau.edu.tr/personel/279",
       "lat": 36.2713,
       "lng": 29.2897,
-      "nearArea": "Patara"
+      "nearArea": "Patara",
+      "taglineRu": "Мониторинг гнёзд Патара (ООПТ)",
+      "taglineTr": "Patara ÖÇK yuva izleme",
+      "descriptionRu": "Университетская команда мониторит гнёзда в Патаре — одном из самых давно охраняемых гнездовых пляжей Турции, внутри Особо охраняемой природной зоны. Руководит проф. д-р Eyüp Başkale.",
+      "descriptionTr": "Üniversite ekibi Patara'da yuvaları izliyor — Özel Çevre Koruma Bölgesi içinde, Türkiye'nin en uzun süredir korunan yuvalama plajlarından biri. Prof. Dr. Eyüp Başkale yönetiminde."
     },
     {
       "id": "lidosk",
@@ -63,7 +79,11 @@
       "email": "info@lidosk.org.tr",
       "lat": 36.23,
       "lng": 29.96,
-      "nearArea": "Kale (Demre)"
+      "nearArea": "Kale (Demre)",
+      "taglineRu": "Мониторинг пляжа Кале (Демре)",
+      "taglineTr": "Kale (Demre) plaj izleme",
+      "descriptionRu": "Местный скаутско-природный клуб, чьи волонтёры мониторят и защищают гнездовой пляж Кале/Демре (Çayağzı).",
+      "descriptionTr": "Yerel izcilik ve doğa sporları kulübü; gönüllüleri Kale/Demre (Çayağzı) yuvalama plajını izler ve korur."
     },
     {
       "id": "cirali-ulupinar",
@@ -76,7 +96,11 @@
       "instagram": "https://www.instagram.com/cirali.caretta/",
       "lat": 36.4086,
       "lng": 30.4815,
-      "nearArea": "Çıralı · Kumluca"
+      "nearArea": "Çıralı · Kumluca",
+      "taglineRu": "Çıralı: защита силами общины",
+      "taglineTr": "Topluluk yönetiminde Çıralı koruması",
+      "descriptionRu": "Сельский кооператив, ведущий охрану черепах в Çıralı — известный пример гнездового пляжа под управлением общины, где охрана природы сочетается с щадящим туризмом.",
+      "descriptionTr": "Çıralı'nın kaplumbağa korumasını yürüten köy kooperatifi — korumayı düşük etkili turizmle birleştiren, topluluk yönetiminde bilinen bir yuvalama plajı örneği."
     },
     {
       "id": "ekad",
@@ -90,7 +114,11 @@
       "email": "info@ekad.org.tr",
       "lat": 36.851,
       "lng": 31.055,
-      "nearArea": "Belek · Kızılot · Demirtaş · Kumluca · Tekirova"
+      "nearArea": "Belek · Kızılot · Demirtaş · Kumluca · Tekirova",
+      "taglineRu": "Гнездовые пляжи Анталийской дуги",
+      "taglineTr": "Antalya yayı yuvalama plajları",
+      "descriptionRu": "Давняя НКО (Ekolojik Araştırmalar Derneği), мониторит гнездование логгерхедов вдоль Анталийской дуги — Белек, Кызылот, Кумлуджа, Демирташ и Текирова. Полевые исследования, охрана гнёзд и обучение.",
+      "descriptionTr": "Köklü bir STK (Ekolojik Araştırmalar Derneği); Antalya yayı boyunca — Belek, Kızılot, Kumluca, Demirtaş ve Tekirova — caretta yuvalamasını izler. Saha araştırması, yuva koruması ve eğitim."
     },
     {
       "id": "mersin-dekuyam",
@@ -103,7 +131,11 @@
       "phone": "+90 324 361 00 01",
       "lat": 36.601,
       "lng": 34.303,
-      "nearArea": "Demirtaş · Anamur · Kazanlı · Alata · Göksu Delta"
+      "nearArea": "Demirtaş · Anamur · Kazanlı · Alata · Göksu Delta",
+      "taglineRu": "Мониторинг побережья Мерсин / Чукурова",
+      "taglineTr": "Mersin / Çukurova kıyı izleme",
+      "descriptionRu": "Университетский центр применения и исследований морских черепах, мониторит гнездование зелёных черепах и логгерхедов на побережье Мерсин/Чукурова (Казанлы, Алата, дельта Гёксу) и помогает раненым черепахам.",
+      "descriptionTr": "Üniversite Deniz Kaplumbağaları Uygulama & Araştırma Merkezi; Mersin/Çukurova kıyısında (Kazanlı, Alata, Göksu Deltası) yeşil ve caretta yuvalamasını izler ve yaralı kaplumbağa bakımını destekler."
     },
     {
       "id": "anamur-gonullu",
@@ -116,7 +148,11 @@
       "email": "info@gonulluprojeleri.com",
       "lat": 36.018,
       "lng": 32.803,
-      "nearArea": "Anamur"
+      "nearArea": "Anamur",
+      "taglineRu": "Волонтёры Анамура и Trionyx",
+      "taglineTr": "Anamur plajı & Trionyx gönüllüleri",
+      "descriptionRu": "Волонтёрская программа мониторинга гнёзд логгерхедов и находящейся под угрозой евфратской мягкотелой черепахи (Trionyx) в районе Анамура — одного из самых широких гнездовых пляжей Турции.",
+      "descriptionTr": "Anamur çevresinde caretta yuvalarını ve nesli tehlikedeki Fırat yumuşak kabuklu kaplumbağasını (Trionyx) izleyen gönüllü programı; Türkiye'nin en geniş yuvalama plajlarından biri."
     },
     {
       "id": "wwf-turkiye",
@@ -128,7 +164,11 @@
       "website": "https://www.wwf.org.tr",
       "lat": 36.62,
       "lng": 35.28,
-      "nearArea": "Akyatan · Yumurtalık · Samandağ"
+      "nearArea": "Akyatan · Yumurtalık · Samandağ",
+      "taglineRu": "Пляжи дельты Чукурова",
+      "taglineTr": "Çukurova deltası plajları",
+      "descriptionRu": "Национальная природоохранная организация, поддерживает пляжи дельты Чукурова в Турции (Акъятан, Юмурталык): охрана местообитаний, работа с политикой и мониторинг.",
+      "descriptionTr": "Ulusal koruma kuruluşu; Türkiye'nin Çukurova deltası plajlarını (Akyatan, Yumurtalık) habitat koruması, politika çalışması ve izlemeyle destekler."
     },
     {
       "id": "cukurova-suf",
@@ -142,7 +182,11 @@
       "email": "suf@cu.edu.tr",
       "lat": 36.082,
       "lng": 35.95,
-      "nearArea": "Yumurtalık · Samandağ"
+      "nearArea": "Yumurtalık · Samandağ",
+      "taglineRu": "Исследования побережья Чукурова",
+      "taglineTr": "Çukurova kıyısı araştırması",
+      "descriptionRu": "Исследования и мониторинг факультета рыбного хозяйства на побережье Чукурова, включая Самандаг и гнездовые пляжи залива Искендерун.",
+      "descriptionTr": "Su Ürünleri Fakültesi’nin Çukurova kıyısındaki araştırma ve izlemesi; Samandağ ve İskenderun Körfezi yuvalama plajları dahil."
     }
   ]
 }

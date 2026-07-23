@@ -59,7 +59,7 @@ fun CommunityScreen(community: Community, state: AppState, onBack: () -> Unit) {
             ) { Text("‹", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold) }
             Column(Modifier.align(Alignment.BottomStart).padding(start = 15.dp, bottom = 14.dp, end = 70.dp)) {
                 Text(community.name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
-                Text(community.tagline, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp)
+                Text(community.taglineFor(state.profile.language), color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp)
             }
         }
 
@@ -75,8 +75,9 @@ fun CommunityScreen(community: Community, state: AppState, onBack: () -> Unit) {
                 }
             }
             // Short human summary (who they are, what they do, how long).
-            if (community.description.isNotBlank()) {
-                Text(community.description, color = c.deep, fontSize = 13.sp, lineHeight = 18.sp)
+            val localizedDesc = community.descriptionFor(state.profile.language)
+            if (localizedDesc.isNotBlank()) {
+                Text(localizedDesc, color = c.deep, fontSize = 13.sp, lineHeight = 18.sp)
             }
 
             if (community.claimed) {

@@ -457,10 +457,20 @@ internal fun seedCommunity(): Community = Community(
     id = "gazipasa-caretta",
     name = "Gazipaşa Caretta",
     tagline = "Protecting loggerheads & sand lilies",
+    taglineRu = "Защищаем логгерхедов и песчаные лилии",
+    taglineTr = "Caretta ve kum zambaklarını koruyoruz",
     description = "Local volunteers protecting loggerhead (Caretta caretta) nests along Gazipaşa's " +
         "beaches — finding and marking nests, watching the ~50-day incubation, guarding hatchling " +
         "emergences and recording excavation counts, plus beach clean-ups and awareness. " +
         "Community-run, working to Türkiye's national monitoring standards.",
+    descriptionRu = "Местные волонтёры защищают гнёзда черепах-логгерхедов (Caretta caretta) на пляжах " +
+        "Газипаши — находят и отмечают гнёзда, следят за ~50-дневной инкубацией, охраняют выход " +
+        "черепашат и ведут учёт при вскрытии, а также убирают пляжи и просвещают людей. " +
+        "Работаем силами сообщества по национальным стандартам мониторинга Турции.",
+    descriptionTr = "Yerel gönüllüler Gazipaşa plajlarında caretta (Caretta caretta) yuvalarını koruyor — " +
+        "yuvaları bulup işaretliyor, ~50 günlük kuluçkayı izliyor, yavru çıkışlarını koruyor ve kazı " +
+        "sayımlarını kaydediyor; ayrıca plaj temizliği ve farkındalık çalışmaları yapıyor. " +
+        "Topluluk yönetiminde, Türkiye'nin ulusal izleme standartlarına göre çalışıyor.",
     websiteUrl = "https://carettafriends.com",
     whatsappUrl = "https://wa.me/905013794326",
     instagramUrl = "https://www.instagram.com/gazipasa_caretta_ve_kumzambagi",

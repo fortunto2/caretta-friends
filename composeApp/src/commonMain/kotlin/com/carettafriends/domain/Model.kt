@@ -56,7 +56,26 @@ data class Community(
     val kind: CommunityKind = CommunityKind.COMMUNITY,
     /** Who they're affiliated with (parent university, ministry, network) — "" if independent. */
     val affiliation: String = "",
-)
+    /** Localized tagline / description (RU + TR). Empty → falls back to the English [tagline]/[description]. */
+    val taglineRu: String = "",
+    val taglineTr: String = "",
+    val descriptionRu: String = "",
+    val descriptionTr: String = "",
+) {
+    /** Tagline in [lang] ("ru"/"tr"), falling back to English. */
+    fun taglineFor(lang: String): String = when (lang.lowercase()) {
+        "ru" -> taglineRu.ifBlank { tagline }
+        "tr" -> taglineTr.ifBlank { tagline }
+        else -> tagline
+    }
+
+    /** Description in [lang] ("ru"/"tr"), falling back to English. */
+    fun descriptionFor(lang: String): String = when (lang.lowercase()) {
+        "ru" -> descriptionRu.ifBlank { description }
+        "tr" -> descriptionTr.ifBlank { description }
+        else -> description
+    }
+}
 
 @Serializable
 data class Beach(
