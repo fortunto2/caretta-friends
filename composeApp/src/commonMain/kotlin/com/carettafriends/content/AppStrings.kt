@@ -227,6 +227,8 @@ data class AppStrings(
     val saveViolation: String,
     val filterViolations: String,
     val timelapse: String,
+    val shareImpact: String,
+    val shareText: String, // "%d" = hatchlings
 )
 
 private val EN = AppStrings(
@@ -316,6 +318,8 @@ private val EN = AppStrings(
     violationPrivateHint = "Kept private for the record — guests won't see who reported it.",
     anonymousWord = "Report anonymously", saveViolation = "Report violation ⛔",
     filterViolations = "⛔ Violations", timelapse = "🎞️ Timelapse",
+    shareImpact = "📣 Share my impact",
+    shareText = "🐢 I'm a Caretta Friends volunteer — %d hatchlings have reached the sea! Join us: carettafriends.com",
 )
 
 private val RU = AppStrings(
@@ -405,6 +409,8 @@ private val RU = AppStrings(
     violationPrivateHint = "Хранится приватно для жалобы — гости не увидят, кто сообщил.",
     anonymousWord = "Сообщить анонимно", saveViolation = "Сообщить о нарушении ⛔",
     filterViolations = "⛔ Нарушения", timelapse = "🎞️ Таймлапс",
+    shareImpact = "📣 Поделиться вкладом",
+    shareText = "🐢 Я волонтёр Caretta Friends — %d черепашат добрались до моря! Присоединяйся: carettafriends.com",
 )
 
 private val TR = AppStrings(
@@ -494,6 +500,8 @@ private val TR = AppStrings(
     violationPrivateHint = "Kayıt için gizli tutulur — misafirler kimin bildirdiğini görmez.",
     anonymousWord = "Anonim bildir", saveViolation = "İhlal bildir ⛔",
     filterViolations = "⛔ İhlaller", timelapse = "🎞️ Zaman akışı",
+    shareImpact = "📣 Katkımı paylaş",
+    shareText = "🐢 Ben bir Caretta Friends gönüllüsüyüm — %d yavru denize ulaştı! Sen de katıl: carettafriends.com",
 )
 
 /** The string bundle for [lang] ("ru" / "tr" / anything else → EN). */

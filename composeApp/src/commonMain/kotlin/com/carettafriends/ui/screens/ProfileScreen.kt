@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.carettafriends.content.appStrings
 import com.carettafriends.data.CarettaRepository
+import com.carettafriends.data.platformShare
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Badge
 import com.carettafriends.ui.components.CarettaCard
@@ -145,6 +146,17 @@ fun ProfileScreen(
                     Text(s.hatchlingsReached, color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
                 }
             }
+            // share my impact — motivational "I'm a volunteer" card via the OS share sheet.
+            Box(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+                    .background(c.coral.copy(alpha = 0.14f)).border(1.dp, c.coral.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                    .clickable { platformShare(s.shareText.replace("%d", p.hatchlingsReached.toString())) }
+                    .padding(13.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(s.shareImpact, color = c.coral, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+            }
+
             // stats
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 StatTile("🔥 ${p.streakDays}", s.dayStreak, Modifier.weight(1f))
