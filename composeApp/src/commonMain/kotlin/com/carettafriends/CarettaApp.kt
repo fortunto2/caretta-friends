@@ -15,6 +15,7 @@ import com.carettafriends.data.CarettaRepository
 import com.carettafriends.ui.Navigator
 import com.carettafriends.ui.PlatformBackHandler
 import com.carettafriends.ui.Screen
+import com.carettafriends.ui.isTab
 import com.carettafriends.ui.components.BottomBar
 import com.carettafriends.ui.components.EmptyHint
 import com.carettafriends.ui.components.NavItem
@@ -91,6 +92,7 @@ fun CarettaApp() {
                             onOpenStats = { nav.go(Screen.Stats) },
                             onOpenNest = { nav.go(Screen.NestDetail(it)) },
                             onOpenBeach = { nav.go(Screen.BeachDetail(it)) },
+                            onAddNest = { nav.go(Screen.AddNest) },
                         )
                         is Screen.Stats -> StatsScreen(state) { nav.back() }
                         is Screen.AddNest -> AddNestScreen(
@@ -137,13 +139,17 @@ fun CarettaApp() {
                         )
                     }
                 }
-                // Always visible — tabs switch, the centre + adds a nest from anywhere.
-                BottomBar(
-                    current = tabKey(current),
-                    items = navItems(s),
-                    onSelect = { nav.selectTab(tabFromKey(it)) },
-                    onAdd = { nav.go(Screen.AddNest) },
-                )
+                // Only on the 4 root tabs — pushed screens (camera, add-nest, details) go full-height,
+                // matching iOS (which hides its tab bar on push). Fixes the bar breaking the dark camera
+                // and the centre "+" re-pushing AddNest while you're already on it.
+                if (current.isTab()) {
+                    BottomBar(
+                        current = tabKey(current),
+                        items = navItems(s),
+                        onSelect = { nav.selectTab(tabFromKey(it)) },
+                        onAdd = { nav.go(Screen.AddNest) },
+                    )
+                }
             }
         }
             // First-run intro — shown once until dismissed.

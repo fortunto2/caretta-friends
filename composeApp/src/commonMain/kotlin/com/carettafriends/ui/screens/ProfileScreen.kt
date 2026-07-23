@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.carettafriends.content.appStrings
@@ -57,6 +58,7 @@ fun ProfileScreen(
     onOpenStats: () -> Unit = {},
     onOpenNest: (String) -> Unit = {},
     onOpenBeach: (String) -> Unit = {},
+    onAddNest: () -> Unit = {},
 ) {
     val c = caretta
     val p = state.profile
@@ -143,15 +145,22 @@ fun ProfileScreen(
                 EmailAuthDialog(repo, appStrings(p.language), onDismiss = { showAuth = false })
             }
 
-            // impact tile
+            // impact tile — when it's still 0, the whole tile is a tappable "log your first nest" CTA.
             Box(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
-                    .background(Brush.linearGradient(listOf(c.sea, c.deep))).padding(16.dp),
+                    .background(Brush.linearGradient(listOf(c.sea, c.deep)))
+                    .then(if (p.hatchlingsReached == 0) Modifier.clickable { onAddNest() } else Modifier)
+                    .padding(16.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${p.hatchlingsReached}", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.ExtraBold)
-                    Text(s.hatchlingsReached, color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
+                    if (p.hatchlingsReached > 0) {
+                        Text("${p.hatchlingsReached}", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.ExtraBold)
+                        Text(s.hatchlingsReached, color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
+                    } else {
+                        Text("🐣", fontSize = 30.sp)
+                        Text(s.impactZeroCta, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                    }
                 }
             }
             // share my impact — motivational "I'm a volunteer" card via the OS share sheet.
@@ -247,6 +256,15 @@ fun ProfileScreen(
                             repeat(3 - rowPhotos.size) { Box(Modifier.weight(1f)) }
                         }
                     }
+                }
+            }
+
+            // watching — nests this volunteer follows (the persisted hatch-watch hook), tap to open.
+            val watched = state.nests.filter { it.id in p.watchedNestIds }
+            if (watched.isNotEmpty()) {
+                SectionLabel(s.watching)
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    watched.forEach { n -> Box(Modifier.clickable { onOpenNest(n.id) }) { Pill("🥚 ${n.code}", c.sea) } }
                 }
             }
 

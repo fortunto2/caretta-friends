@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,8 +25,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.carettafriends.content.appStrings
 import com.carettafriends.data.CarettaRepository
 import com.carettafriends.domain.Excavation
@@ -48,6 +52,7 @@ fun ExcavationScreen(nest: Nest, repo: CarettaRepository, lang: String, onBack: 
     var pipped by remember { mutableStateOf(seed?.pipped ?: 0) }
     var inNest by remember { mutableStateOf(seed?.inNest ?: 0) }
     var helpedOut by remember { mutableStateOf(seed?.helpedOut ?: 0) }
+    var celebrating by remember { mutableStateOf(false) }
 
     val exc = Excavation(
         shells = shells,
@@ -89,12 +94,41 @@ fun ExcavationScreen(nest: Nest, repo: CarettaRepository, lang: String, onBack: 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("${exc.hatchlingsToSea}", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.ExtraBold)
                     Text(s.hatchlingsReached, color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
+                    if (exc.hatchlingsToSea == 0) {
+                        Text(s.excZeroHint, color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
             PrimaryButton(s.excFinish) {
                 repo.setExcavation(nest.id, exc)
-                onBack()
+                celebrating = true
+            }
+        }
+    }
+
+    // Celebratory send-off — this is the emotional peak (nest excavated, babies to the sea).
+    if (celebrating) {
+        Dialog(onDismissRequest = { onBack() }) {
+            Box(
+                Modifier.clip(RoundedCornerShape(24.dp))
+                    .background(Brush.linearGradient(listOf(c.sea, c.deep))).padding(28.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (exc.hatchlingsToSea > 0) {
+                        // A real payoff — hatchlings made it to the sea.
+                        Text("🎉", fontSize = 46.sp)
+                        Text("${exc.hatchlingsToSea}", color = Color.White, fontSize = 52.sp, fontWeight = FontWeight.ExtraBold)
+                        Text(s.hatchlingsReached, color = Color.White.copy(alpha = 0.92f), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    } else {
+                        // A failed / predated nest — no confetti; thank the volunteer for the record.
+                        Text("🐢", fontSize = 46.sp)
+                        Text(s.excThanksRecord, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    PrimaryButton(s.done) { onBack() }
+                }
             }
         }
     }

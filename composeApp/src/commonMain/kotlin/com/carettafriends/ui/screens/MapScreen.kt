@@ -321,7 +321,7 @@ private fun AirDetail(air: com.carettafriends.domain.AirStatus) {
     val c = caretta
     Box(
         Modifier.padding(start = 14.dp, end = 14.dp).clip(RoundedCornerShape(14.dp))
-            .background(Color.White.copy(alpha = 0.96f)).padding(12.dp),
+            .background(c.surface).padding(12.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(air.advice, color = c.deep, fontSize = 12.sp, fontWeight = FontWeight.Bold)

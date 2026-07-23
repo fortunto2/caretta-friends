@@ -197,7 +197,7 @@ private fun BeachListCard(
                     Text(beach.name, color = c.deep, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
                     Text(
                         buildString {
-                            append(if (distanceAway != null) "$distanceAway away" else beach.city.ifBlank { s.beachWord })
+                            append(if (distanceAway != null) "$distanceAway ${s.awayWord}" else beach.city.ifBlank { s.beachWord })
                             if (beach.protected) append(" · 🛡️ ${s.protectedWord}")
                         },
                         color = if (beach.protected) accent else c.muted,

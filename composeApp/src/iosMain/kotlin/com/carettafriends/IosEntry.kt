@@ -203,9 +203,10 @@ fun ProfileVC(
     onOpenStats: () -> Unit,
     onOpenNest: (String) -> Unit,
     onOpenBeach: (String) -> Unit,
+    onAddNest: () -> Unit,
 ): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
-    ProfileScreen(SharedRepo.repo, state, onOpenCommunity, onOpenStats, onOpenNest, onOpenBeach)
+    ProfileScreen(SharedRepo.repo, state, onOpenCommunity, onOpenStats, onOpenNest, onOpenBeach, onAddNest)
 }
 
 fun StatsVC(onBack: () -> Unit): UIViewController = host {

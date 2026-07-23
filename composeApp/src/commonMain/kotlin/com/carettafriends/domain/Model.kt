@@ -255,6 +255,9 @@ data class Profile(
     val link: String = "",
     /** Optional profile photo (local path) the volunteer may add later; null → emoji avatar. */
     val photoPath: String? = null,
+    /** Nests this volunteer is watching (persisted). The hatch-watch retention hook — survives
+     *  restarts; a local notification near the hatch window is a follow-up. */
+    val watchedNestIds: Set<String> = emptySet(),
     /** First-run onboarding seen? false → show the 3-page intro once. */
     val onboarded: Boolean = false,
 ) {

@@ -88,7 +88,7 @@ fun NestDetailScreen(
     val beach = state.beach(n.beachId)
     val s = appStrings(state.profile.language)
     val uri = LocalUriHandler.current
-    var watching by remember { mutableStateOf(false) }
+    val watching = n.id in state.profile.watchedNestIds
     var sheet by remember { mutableStateOf(DetailSheet.NONE) }
     // Gallery photo → a timeline update; an old photo's EXIF date back-dates it (capped a month).
     val pickPhoto = rememberGalleryPicker { picked ->
@@ -126,19 +126,19 @@ fun NestDetailScreen(
             Pill(
                 if (watching) s.watching else s.watch,
                 fg = if (watching) c.deep else Color.White,
-                bg = if (watching) c.sunlit else Color.White.copy(alpha = 0.22f),
+                bg = if (watching) c.sunlit else Color.Black.copy(alpha = 0.33f),
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(10.dp)
                     .clip(CircleShape)
-                    .clickable { watching = !watching },
+                    .clickable { repo.toggleWatch(n.id) },
             )
             // Share the photo (watermarked with the nest code · beach · date).
             n.photos.firstOrNull()?.localUri?.let { path ->
                 Pill(
                     "↗",
                     fg = Color.White,
-                    bg = Color.White.copy(alpha = 0.22f),
+                    bg = Color.Black.copy(alpha = 0.33f),
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(10.dp)
@@ -173,7 +173,9 @@ fun NestDetailScreen(
             }
 
             // Unconfirmed banner (informational — a nest is confirmed by adding a photo/observation).
-            if (n.confidence == NestConfidence.UNCONFIRMED) {
+            // Only nag when there's genuinely no photo — a photographed nest (even without precise GPS)
+            // shouldn't be told it "needs a photo".
+            if (n.confidence == NestConfidence.UNCONFIRMED && n.photos.isEmpty()) {
                 Box(
                     Modifier
                         .fillMaxWidth()
@@ -188,6 +190,20 @@ fun NestDetailScreen(
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.Bold,
                     )
+                }
+            }
+
+            // Hatch window is open — the ~55-day wait is up; watch for emerging hatchlings.
+            if ((n.status == NestStatus.INCUBATING || n.status == NestStatus.HATCHING) &&
+                nestDay(n) >= n.incubationDaysEst - 3
+            ) {
+                Box(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+                        .background(c.good.copy(alpha = 0.16f))
+                        .border(1.dp, c.good.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                ) {
+                    Text(s.hatchWindowOpen, color = c.good, fontSize = 12.5.sp, fontWeight = FontWeight.ExtraBold)
                 }
             }
 
@@ -291,21 +307,27 @@ fun NestDetailScreen(
                 DetailSheet.NONE -> {}
             }
 
-            // Excavation payoff — delicate work, gated to experienced volunteers & beach leaders.
-            if (state.profile.canExcavate) {
-                PrimaryButton(s.excavation, onClick = onExcavate)
-            } else {
-                CarettaCard {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("🔒", fontSize = 20.sp)
-                        Column(Modifier.weight(1f)) {
-                            Text(s.excavation, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
-                            Text(
-                                s.excavationLockedSub,
-                                color = c.muted,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                            )
+            // Excavation payoff — ONLY once the nest has hatched (or its window has passed). Never a
+            // dig CTA on a live incubating nest. Then it's gated to experienced volunteers / leaders.
+            val readyToExcavate = n.status == NestStatus.HATCHED ||
+                n.status == NestStatus.EXCAVATED ||
+                nestDay(n) > n.incubationDaysEst
+            if (readyToExcavate) {
+                if (state.profile.canExcavate) {
+                    PrimaryButton(s.excavation, onClick = onExcavate)
+                } else {
+                    CarettaCard {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text("🔒", fontSize = 20.sp)
+                            Column(Modifier.weight(1f)) {
+                                Text(s.excavation, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                                Text(
+                                    s.excavationLockedSub,
+                                    color = c.muted,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
                         }
                     }
                 }
@@ -418,7 +440,7 @@ private fun conditionSuffix(u: NestUpdate, s: AppStrings): String = when (u.cond
     ObsCondition.DISTURBED -> " · ⚠ ${s.condDisturbed.lowercase()}"
     ObsCondition.PREDATED -> " · ⚠ ${s.condPredated.lowercase()}"
     ObsCondition.WASHED_OVER -> " · 🌊 ${s.condWashed.lowercase()}"
-    ObsCondition.POACHED -> " · ⚠ ${s.condPredated.lowercase()}"
+    ObsCondition.POACHED -> " · 🚫 ${s.condPoached.lowercase()}"
     ObsCondition.RELOCATED -> " · ➡"
 }
 

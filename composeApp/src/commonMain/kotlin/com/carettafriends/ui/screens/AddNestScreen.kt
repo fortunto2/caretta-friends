@@ -51,7 +51,9 @@ import com.carettafriends.ui.components.LocalPhoto
 import com.carettafriends.ui.components.Pill
 import com.carettafriends.ui.components.PrimaryButton
 import com.carettafriends.ui.components.SectionLabel
+import com.carettafriends.ui.PickedPhoto
 import com.carettafriends.ui.components.TopBar
+import com.carettafriends.ui.rememberGalleryPicker
 import com.carettafriends.ui.theme.caretta
 
 @Composable
@@ -74,7 +76,12 @@ fun AddNestScreen(
     }
     var markerType by remember { mutableStateOf(MarkerType.NEST) }
     var isNest by remember { mutableStateOf(true) }
-    var hasPhoto by remember { mutableStateOf(pending != null) }
+    // Gallery pick attaches a REAL photo file (was a no-op flag before). Location still comes from the
+    // native camera's EXIF only — a gallery import has no reliable GPS, so it falls back to the beach.
+    var galleryPhoto by remember { mutableStateOf<PickedPhoto?>(null) }
+    val galleryPick = rememberGalleryPicker { picked -> if (picked != null) galleryPhoto = picked }
+    val photoPath = pending?.path ?: galleryPhoto?.path
+    val hasPhoto = photoPath != null
     var exposure by remember { mutableStateOf(SunExposure.PARTIAL) }
     var beachManual by remember { mutableStateOf(false) }
     var showDetails by remember { mutableStateOf(false) }
@@ -141,25 +148,16 @@ fun AddNestScreen(
 
             // ── Photo ──────────────────────────────────────────────────
             SectionLabel(s.photo)
-            if (pending?.path != null) {
-                // Show the just-captured photo right here in the form.
+            if (photoPath != null) {
+                // Show the attached photo (camera capture or gallery pick) right here in the form.
                 LocalPhoto(
-                    pending.path,
+                    photoPath,
                     Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(14.dp)),
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                GhostButton(if (pending?.path != null) s.retake else s.cameraBtn, Modifier.weight(1f)) { onCamera() }
-                GhostButton(s.gallery, Modifier.weight(1f)) { hasPhoto = true }
-            }
-            if (hasPhoto && pending?.path == null) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Text("✅", fontSize = 13.sp)
-                    Text(s.photoAdded, color = c.good, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
+                GhostButton(if (photoPath != null) s.retake else s.cameraBtn, Modifier.weight(1f)) { onCamera() }
+                GhostButton(s.gallery, Modifier.weight(1f)) { galleryPick() }
             }
 
             // ── Location ───────────────────────────────────────────────
@@ -284,7 +282,7 @@ fun AddNestScreen(
                         protection = protection,
                         clutchSizeEst = null,
                         hasPhoto = hasPhoto,
-                        photoPath = pending?.path,
+                        photoPath = photoPath,
                         locationSource = if (fixPoint != null) LocationSource.PHOTO_EXIF else LocationSource.NONE,
                         visibility = visibility,
                     )

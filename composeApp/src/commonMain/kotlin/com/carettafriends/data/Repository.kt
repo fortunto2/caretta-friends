@@ -268,6 +268,14 @@ class CarettaRepository {
         _state.value = _state.value.copy(profile = _state.value.profile.copy(language = lang))
     }
 
+    /** Toggle watching a nest (persists → survives restarts). Returns the new watching state. */
+    fun toggleWatch(nestId: String): Boolean {
+        val cur = _state.value.profile.watchedNestIds
+        val next = if (nestId in cur) cur - nestId else cur + nestId
+        _state.value = _state.value.copy(profile = _state.value.profile.copy(watchedNestIds = next))
+        return nestId in next
+    }
+
     /** Mark the first-run onboarding as seen (persists → shown only once). */
     fun setOnboarded() {
         _state.value = _state.value.copy(profile = _state.value.profile.copy(onboarded = true))
@@ -445,7 +453,18 @@ class CarettaRepository {
         val backDate = obsDate?.takeIf { it != today() }
         val photo = photoPath?.let { PhotoRef(nextId("ph"), PhotoSource.GALLERY, localUri = it) }
         update(nestId) { n ->
+            // Observing "hatching / hatched" advances the nest's lifecycle — otherwise a nest sits on
+            // INCUBATING forever and the countdown / "hatching" filter / hatch payoff never resolve.
+            // Only advance FORWARD — never downgrade a more-advanced/terminal status (e.g. a late
+            // "hatching" note must not knock an EXCAVATED/HATCHED nest back).
+            val advanced = when (condition) {
+                ObsCondition.HATCHING -> if (n.status == NestStatus.INCUBATING) NestStatus.HATCHING else n.status
+                ObsCondition.HATCHED ->
+                    if (n.status == NestStatus.INCUBATING || n.status == NestStatus.HATCHING) NestStatus.HATCHED else n.status
+                else -> n.status
+            }
             n.copy(
+                status = advanced,
                 updates = n.updates + NestUpdate(
                     id = nextId("u"),
                     kind = kind,

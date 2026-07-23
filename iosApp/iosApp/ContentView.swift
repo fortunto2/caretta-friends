@@ -592,7 +592,8 @@ struct ContentView: View {
                         onOpenCommunity: { path.wrappedValue.append(Route.community(IosEntryKt.primaryCommunityId())) },
                         onOpenStats: { path.wrappedValue.append(Route.stats) },
                         onOpenNest: { path.wrappedValue.append(Route.nest($0)) },
-                        onOpenBeach: { path.wrappedValue.append(Route.beach($0)) }
+                        onOpenBeach: { path.wrappedValue.append(Route.beach($0)) },
+                        onAddNest: { path.wrappedValue.append(Route.addNest) }
                     )
                 }
             }
