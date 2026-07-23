@@ -37,6 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.carettafriends.content.AppStrings
+import com.carettafriends.content.appStrings
 import com.carettafriends.data.CarettaRepository
 import com.carettafriends.data.MAX_BACKDATE_DAYS
 import com.carettafriends.data.nestDay
@@ -72,6 +74,7 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
     val state by repo.state.collectAsState()
     val n = state.nest(nest.id) ?: nest
     val beach = state.beach(n.beachId)
+    val s = appStrings(state.profile.language)
     var watching by remember { mutableStateOf(false) }
     var sheet by remember { mutableStateOf(DetailSheet.NONE) }
 
@@ -98,7 +101,7 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                 )
             }
             Pill(
-                if (watching) "🔔 Watching" else "🔔 Watch",
+                if (watching) s.watching else s.watch,
                 fg = if (watching) c.deep else Color.White,
                 bg = if (watching) c.sunlit else Color.White.copy(alpha = 0.22f),
                 modifier = Modifier
@@ -118,7 +121,7 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                 Column(Modifier.weight(1f)) {
                     Text(n.code, color = c.deep, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
                     Text(
-                        "${beach?.name ?: "Beach"} · found ${fmtDate(n.foundDate)}  ✎",
+                        "${beach?.name ?: s.beachWord} · ${s.foundWord} ${fmtDate(n.foundDate)}  ✎",
                         color = c.muted,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -143,7 +146,7 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                 ) {
                     Text(
-                        "⚠️  Needs a photo / precise location — tap to confirm",
+                        s.needsConfirm,
                         color = c.warn,
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.Bold,
@@ -157,7 +160,7 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                     Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
                         CountdownRing(day = nestDay(n), total = n.incubationDaysEst)
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            SectionLabel("Hatch window")
+                            SectionLabel(s.hatchWindow)
                             Text(
                                 hatchWindowLabel(n),
                                 color = c.deep,
@@ -167,7 +170,7 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                             if (n.predictedFemaleLow != null && n.predictedFemaleHigh != null) {
                                 SexRangeBar(n.predictedFemaleLow!!, n.predictedFemaleHigh!!)
                                 Text(
-                                    "predicted · regional model (Anamur 28.9°C)",
+                                    s.predictedModel,
                                     color = c.muted,
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
@@ -177,35 +180,35 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                     }
                     // Conditions strip.
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        ConditionChip("${exposureEmoji(n.exposure)} ${exposureLabel(n.exposure)}")
-                        n.airTempC?.let { ConditionChip("🌡️ ${it.toInt()}° air") }
-                        n.rainMm7d?.let { ConditionChip("🌧️ rain 7d · ${it.toInt()}mm") }
+                        ConditionChip("${exposureEmoji(n.exposure)} ${exposureLabel(n.exposure, s)}")
+                        n.airTempC?.let { ConditionChip("🌡️ ${it.toInt()}° ${s.airWord}") }
+                        n.rainMm7d?.let { ConditionChip("🌧️ ${s.rain7d} · ${it.toInt()}mm") }
                     }
                 }
             }
 
             // Timeline.
-            SectionLabel("Timeline · updates & comments")
+            SectionLabel(s.timeline)
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                n.updates.asReversed().forEach { u -> TimelineRow(u) }
+                n.updates.asReversed().forEach { u -> TimelineRow(u, s) }
             }
 
             // Add update / Comment.
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                GhostButton("＋ Add update", modifier = Modifier.weight(1f)) { sheet = DetailSheet.UPDATE }
-                GhostButton("💬 Comment", modifier = Modifier.weight(1f)) { sheet = DetailSheet.COMMENT }
+                GhostButton(s.addUpdate, modifier = Modifier.weight(1f)) { sheet = DetailSheet.UPDATE }
+                GhostButton(s.comment, modifier = Modifier.weight(1f)) { sheet = DetailSheet.COMMENT }
             }
 
             when (sheet) {
-                DetailSheet.UPDATE -> AddUpdateDialog(comment = false, onDismiss = { sheet = DetailSheet.NONE }) { body, cond, date ->
+                DetailSheet.UPDATE -> AddUpdateDialog(comment = false, s = s, onDismiss = { sheet = DetailSheet.NONE }) { body, cond, date ->
                     repo.addUpdate(n.id, UpdateKind.OBSERVATION, body, cond, obsDate = date)
                     sheet = DetailSheet.NONE
                 }
-                DetailSheet.COMMENT -> AddUpdateDialog(comment = true, onDismiss = { sheet = DetailSheet.NONE }) { body, _, date ->
+                DetailSheet.COMMENT -> AddUpdateDialog(comment = true, s = s, onDismiss = { sheet = DetailSheet.NONE }) { body, _, date ->
                     repo.addUpdate(n.id, UpdateKind.COMMENT, body, obsDate = date)
                     sheet = DetailSheet.NONE
                 }
-                DetailSheet.DATE -> EditFoundDateDialog(n.foundDate, onDismiss = { sheet = DetailSheet.NONE }) { d ->
+                DetailSheet.DATE -> EditFoundDateDialog(n.foundDate, s, onDismiss = { sheet = DetailSheet.NONE }) { d ->
                     repo.setFoundDate(n.id, d)
                     sheet = DetailSheet.NONE
                 }
@@ -214,15 +217,15 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
 
             // Excavation payoff — delicate work, gated to experienced volunteers & beach leaders.
             if (state.profile.canExcavate) {
-                PrimaryButton("⛏️ Excavation", onClick = onExcavate)
+                PrimaryButton(s.excavation, onClick = onExcavate)
             } else {
                 CarettaCard {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text("🔒", fontSize = 20.sp)
                         Column(Modifier.weight(1f)) {
-                            Text("Excavation", color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                            Text(s.excavation, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
                             Text(
-                                "Done by experienced volunteers & beach leaders — ask your beach leader.",
+                                s.excavationLockedSub,
                                 color = c.muted,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
@@ -250,12 +253,13 @@ private fun ConditionChip(text: String) {
 }
 
 @Composable
-private fun TimelineRow(u: NestUpdate) {
+private fun TimelineRow(u: NestUpdate, s: AppStrings) {
     val c = caretta
     val dot = dotColor(u)
     val isComment = u.kind == UpdateKind.COMMENT
-    val dateStr = u.obsDate?.let { fmtDate(it) } ?: u.dateLabel.ifBlank { "Today" }
-    val meta = "${u.author} · $dateStr${conditionSuffix(u)}"
+    val dateStr = u.obsDate?.let { fmtDate(it) }
+        ?: if (u.dateLabel.isBlank() || u.dateLabel == "Today") s.today else u.dateLabel
+    val meta = "${u.author} · $dateStr${conditionSuffix(u, s)}"
     Row(
         Modifier.fillMaxWidth().padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -297,16 +301,15 @@ private fun TimelineRow(u: NestUpdate) {
 }
 
 /** " · ⚠ predated" style suffix for notable observation conditions (OK stays clean). */
-private fun conditionSuffix(u: NestUpdate): String = when (u.condition) {
-    null, ObsCondition.OK -> ""
-    ObsCondition.HATCHING -> " · 🐣 hatching"
-    ObsCondition.HATCHED -> " · 🐢 hatched"
-    ObsCondition.DISTURBED -> " · ⚠ disturbed"
-    ObsCondition.PREDATED -> " · ⚠ predated"
-    ObsCondition.WASHED_OVER -> " · 🌊 washed over"
-    ObsCondition.POACHED -> " · ⚠ poached"
-    ObsCondition.RELOCATED -> " · ➡ relocated"
-    ObsCondition.OTHER -> ""
+private fun conditionSuffix(u: NestUpdate, s: AppStrings): String = when (u.condition) {
+    null, ObsCondition.OK, ObsCondition.OTHER -> ""
+    ObsCondition.HATCHING -> " · 🐣 ${s.condHatching.lowercase()}"
+    ObsCondition.HATCHED -> " · 🐢 ${s.condHatched.lowercase()}"
+    ObsCondition.DISTURBED -> " · ⚠ ${s.condDisturbed.lowercase()}"
+    ObsCondition.PREDATED -> " · ⚠ ${s.condPredated.lowercase()}"
+    ObsCondition.WASHED_OVER -> " · 🌊 ${s.condWashed.lowercase()}"
+    ObsCondition.POACHED -> " · ⚠ ${s.condPredated.lowercase()}"
+    ObsCondition.RELOCATED -> " · ➡"
 }
 
 // --- helpers -------------------------------------------------------------
@@ -329,11 +332,11 @@ private fun exposureEmoji(e: SunExposure?): String = when (e) {
     null -> "🌡️"
 }
 
-private fun exposureLabel(e: SunExposure?): String = when (e) {
-    SunExposure.FULL_SUN -> "full sun"
-    SunExposure.PARTIAL -> "partial"
-    SunExposure.SHADE -> "shade"
-    null -> "exposure ?"
+private fun exposureLabel(e: SunExposure?, s: AppStrings): String = when (e) {
+    SunExposure.FULL_SUN -> s.exFullSun
+    SunExposure.PARTIAL -> s.exPartial
+    SunExposure.SHADE -> s.exShade
+    null -> s.exUnknown
 }
 
 @Composable
@@ -375,6 +378,7 @@ private enum class DetailSheet { NONE, UPDATE, COMMENT, DATE }
 @Composable
 private fun AddUpdateDialog(
     comment: Boolean,
+    s: AppStrings,
     onDismiss: () -> Unit,
     onSave: (body: String, condition: ObsCondition?, obsDate: LocalDate) -> Unit,
 ) {
@@ -386,25 +390,25 @@ private fun AddUpdateDialog(
         Surface(shape = RoundedCornerShape(20.dp), color = c.surface) {
             Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text(
-                    if (comment) "💬 Comment" else "＋ Add update",
+                    if (comment) s.comment else s.addUpdate,
                     color = c.deep, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold,
                 )
                 OutlinedTextField(
                     value = body,
                     onValueChange = { body = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(if (comment) "Write a comment…" else "What did you observe?") },
+                    placeholder = { Text(if (comment) s.writeComment else s.whatObserved) },
                     minLines = 2,
                 )
                 if (!comment) {
-                    SectionLabel("Condition")
-                    ConditionPicker(condition) { condition = it }
+                    SectionLabel(s.condition)
+                    ConditionPicker(condition, s) { condition = it }
                 }
-                SectionLabel("Date")
-                DateStepper(date) { date = it }
+                SectionLabel(s.dateWord)
+                DateStepper(date, s) { date = it }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel", color = c.muted) }
-                    PrimaryButton("Save", modifier = Modifier.weight(1f), enabled = body.isNotBlank()) {
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(s.cancel, color = c.muted) }
+                    PrimaryButton(s.save, modifier = Modifier.weight(1f), enabled = body.isNotBlank()) {
                         onSave(body.trim(), if (comment) null else condition, date)
                     }
                 }
@@ -414,22 +418,21 @@ private fun AddUpdateDialog(
 }
 
 @Composable
-private fun EditFoundDateDialog(initial: LocalDate, onDismiss: () -> Unit, onSave: (LocalDate) -> Unit) {
+private fun EditFoundDateDialog(initial: LocalDate, s: AppStrings, onDismiss: () -> Unit, onSave: (LocalDate) -> Unit) {
     val c = caretta
     var date by remember { mutableStateOf(initial) }
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = RoundedCornerShape(20.dp), color = c.surface) {
             Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text("Nest found date", color = c.deep, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
+                Text(s.nestFoundDate, color = c.deep, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
                 Text(
-                    "Word-of-mouth it was found earlier but the photo arrived now? Set the real day — up to a " +
-                        "month back. The incubation day & hatch forecast recompute automatically.",
+                    s.backDateHelp,
                     color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium,
                 )
-                DateStepper(date) { date = it }
+                DateStepper(date, s) { date = it }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel", color = c.muted) }
-                    PrimaryButton("Save", modifier = Modifier.weight(1f)) { onSave(date) }
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(s.cancel, color = c.muted) }
+                    PrimaryButton(s.save, modifier = Modifier.weight(1f)) { onSave(date) }
                 }
             }
         }
@@ -437,14 +440,14 @@ private fun EditFoundDateDialog(initial: LocalDate, onDismiss: () -> Unit, onSav
 }
 
 @Composable
-private fun ConditionPicker(selected: ObsCondition, onSelect: (ObsCondition) -> Unit) {
+private fun ConditionPicker(selected: ObsCondition, s: AppStrings, onSelect: (ObsCondition) -> Unit) {
     val opts = listOf(
-        ObsCondition.OK to "OK",
-        ObsCondition.HATCHING to "Hatching",
-        ObsCondition.HATCHED to "Hatched",
-        ObsCondition.DISTURBED to "Disturbed",
-        ObsCondition.PREDATED to "Predated",
-        ObsCondition.WASHED_OVER to "Washed over",
+        ObsCondition.OK to s.condOk,
+        ObsCondition.HATCHING to s.condHatching,
+        ObsCondition.HATCHED to s.condHatched,
+        ObsCondition.DISTURBED to s.condDisturbed,
+        ObsCondition.PREDATED to s.condPredated,
+        ObsCondition.WASHED_OVER to s.condWashed,
     )
     Row(
         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -472,13 +475,13 @@ private fun SelectableChip(label: String, selected: Boolean, onClick: () -> Unit
 /** Date picker with no platform dialog: −/+ day steppers clamped to [today-[MAX_BACKDATE_DAYS], today].
  *  "3 days ago" is three taps on −. Identical on iOS & Android. */
 @Composable
-private fun DateStepper(date: LocalDate, onChange: (LocalDate) -> Unit) {
+private fun DateStepper(date: LocalDate, s: AppStrings, onChange: (LocalDate) -> Unit) {
     val minDate = today().minus(DatePeriod(days = MAX_BACKDATE_DAYS))
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         StepButton("−", date > minDate) { onChange(date.minus(DatePeriod(days = 1))) }
         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(fmtDate(date), color = caretta.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
-            Text(dayAgoLabel(date), color = caretta.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(dayAgoLabel(date, s), color = caretta.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
         StepButton("+", date < today()) { onChange(date.plus(DatePeriod(days = 1))) }
     }
@@ -500,8 +503,8 @@ private fun StepButton(symbol: String, enabled: Boolean, onClick: () -> Unit) {
     }
 }
 
-private fun dayAgoLabel(date: LocalDate): String = when (val d = date.daysUntil(today())) {
-    0 -> "today"
-    1 -> "yesterday"
-    else -> "$d days ago"
+private fun dayAgoLabel(date: LocalDate, s: AppStrings): String = when (val d = date.daysUntil(today())) {
+    0 -> s.today
+    1 -> s.yesterday
+    else -> s.daysAgo.replace("%d", d.toString())
 }
