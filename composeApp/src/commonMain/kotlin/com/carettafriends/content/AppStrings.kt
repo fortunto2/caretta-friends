@@ -226,6 +226,7 @@ data class AppStrings(
     val anonymousWord: String,
     val saveViolation: String,
     val filterViolations: String,
+    val timelapse: String,
 )
 
 private val EN = AppStrings(
@@ -314,7 +315,7 @@ private val EN = AppStrings(
     vkDog = "🐕 Dog", vkLitter = "🧺 Litter", vkOther = "⚠ Other",
     violationPrivateHint = "Kept private for the record — guests won't see who reported it.",
     anonymousWord = "Report anonymously", saveViolation = "Report violation ⛔",
-    filterViolations = "⛔ Violations",
+    filterViolations = "⛔ Violations", timelapse = "🎞️ Timelapse",
 )
 
 private val RU = AppStrings(
@@ -403,7 +404,7 @@ private val RU = AppStrings(
     vkDog = "🐕 Собака", vkLitter = "🧺 Мусор", vkOther = "⚠ Другое",
     violationPrivateHint = "Хранится приватно для жалобы — гости не увидят, кто сообщил.",
     anonymousWord = "Сообщить анонимно", saveViolation = "Сообщить о нарушении ⛔",
-    filterViolations = "⛔ Нарушения",
+    filterViolations = "⛔ Нарушения", timelapse = "🎞️ Таймлапс",
 )
 
 private val TR = AppStrings(
@@ -492,7 +493,7 @@ private val TR = AppStrings(
     vkDog = "🐕 Köpek", vkLitter = "🧺 Çöp", vkOther = "⚠ Diğer",
     violationPrivateHint = "Kayıt için gizli tutulur — misafirler kimin bildirdiğini görmez.",
     anonymousWord = "Anonim bildir", saveViolation = "İhlal bildir ⛔",
-    filterViolations = "⛔ İhlaller",
+    filterViolations = "⛔ İhlaller", timelapse = "🎞️ Zaman akışı",
 )
 
 /** The string bundle for [lang] ("ru" / "tr" / anything else → EN). */

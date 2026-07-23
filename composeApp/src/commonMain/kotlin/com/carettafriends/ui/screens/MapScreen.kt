@@ -18,12 +18,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.datetime.LocalDate
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,8 +61,22 @@ fun MapScreen(
     var tappedBeach by remember { mutableStateOf<String?>(null) }
     var airExpanded by remember { mutableStateOf(false) }
 
+    // Timelapse — scrub/play the season day-by-day; nests appear on their found date.
+    var timelapse by remember { mutableStateOf(false) }
+    var playing by remember { mutableStateOf(false) }
+    val todayDay = com.carettafriends.data.today().toEpochDays()
+    val firstDay = (state.nests.minOfOrNull { it.foundDate.toEpochDays() } ?: (todayDay - 14)).coerceAtMost(todayDay)
+    var tlDay by remember(firstDay, todayDay) { mutableStateOf(todayDay) }
+    LaunchedEffect(playing) {
+        while (playing) {
+            kotlinx.coroutines.delay(500)
+            if (tlDay >= todayDay) { playing = false } else tlDay += 1
+        }
+    }
+
     val markers = buildList {
         state.nests.filter { showNest(filter, it) }
+            .filter { !timelapse || it.foundDate.toEpochDays() <= tlDay }
             .forEach { add(MapMarker(it.id, it.point.lat, it.point.lng, isBeach = false)) }
         // Violations fade off the map after 14 days (they stay in the DB for complaints).
         val recentCutoff = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - 14L * 24 * 3600 * 1000
@@ -102,6 +119,14 @@ fun MapScreen(
                 FilterChip("hatching", s.filterHatching, filter) { filter = it }
                 FilterChip("trash", s.filterTrash, filter) { filter = it }
                 FilterChip("violations", s.filterViolations, filter) { filter = it }
+                Box(
+                    Modifier.clip(CircleShape).background(if (timelapse) c.sea else c.surface)
+                        .border(1.dp, c.line, CircleShape)
+                        .clickable { timelapse = !timelapse; if (!timelapse) playing = false }
+                        .padding(horizontal = 15.dp, vertical = 9.dp),
+                ) {
+                    Text(s.timelapse, color = if (timelapse) Color.White else c.deep, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+                }
             }
             Spacer(Modifier.height(10.dp))
             CoveragePill(state)
@@ -130,6 +155,36 @@ fun MapScreen(
         }
 
         // (Add-nest "+" moved to the centre of the bottom bar — no map FAB.)
+
+        // --- Timelapse control: play the season day-by-day (nests appear on their found date) ---
+        if (timelapse) {
+            val shownCount = state.nests.count { it.foundDate.toEpochDays() <= tlDay }
+            val d = LocalDate.fromEpochDays(tlDay)
+            Column(
+                Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                    .padding(horizontal = 14.dp).padding(bottom = 20.dp)
+                    .clip(RoundedCornerShape(16.dp)).background(c.surface)
+                    .border(1.dp, c.line, RoundedCornerShape(16.dp)).padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(
+                        Modifier.size(38.dp).clip(CircleShape).background(c.sea).clickable { playing = !playing },
+                        contentAlignment = Alignment.Center,
+                    ) { Text(if (playing) "⏸" else "▶", color = Color.White, fontSize = 15.sp) }
+                    Text(
+                        "${s.months[d.month.ordinal]} ${d.dayOfMonth}",
+                        color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f),
+                    )
+                    Text("$shownCount 🥚", color = c.sea, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+                }
+                Slider(
+                    value = tlDay.toFloat().coerceIn(firstDay.toFloat(), todayDay.toFloat()),
+                    onValueChange = { playing = false; tlDay = it.toInt() },
+                    valueRange = firstDay.toFloat()..todayDay.toFloat().coerceAtLeast(firstDay + 1f),
+                )
+            }
+        }
 
         // --- Beach tooltip (shown when a beach is tapped) ---
         tappedBeach?.let { id ->
