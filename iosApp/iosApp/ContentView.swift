@@ -134,6 +134,7 @@ struct MapTab: View {
     @State private var beaches: [MapPoint] = []
     @State private var communities: [MapPoint] = []
     @State private var beachPolygons: [BeachPolygon] = []
+    @State private var violations: [MapPoint] = []
     @State private var filter = "all"
     @StateObject private var patrol = PatrolRecorder()
     @StateObject private var deviceLoc = DeviceLocation()
@@ -191,6 +192,10 @@ struct MapTab: View {
                 title: p.title
             )
         }
+        // Recent violation reports — red dots (filter-gated at render time).
+        violations = IosEntryKt.violationPoints().map { p in
+            MapPoint(id: p.id, coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng), title: p.title)
+        }
         air = IosEntryKt.airStatus()
     }
 
@@ -198,7 +203,7 @@ struct MapTab: View {
         NavigationStack(path: $path) {
             ZStack(alignment: .top) {
                 MapLibreView(
-                    points: points,
+                    points: filter == "violations" ? [] : points,
                     beaches: beaches,
                     center: MapLibreView.gazipasa,
                     zoomLevel: 12,
@@ -210,7 +215,8 @@ struct MapTab: View {
                         path.append(Route.community(id.hasPrefix("cm:") ? String(id.dropFirst(3)) : id))
                     },
                     track: patrol.coords,
-                    beachPolygons: beachPolygons
+                    beachPolygons: beachPolygons,
+                    violations: filter == "violations" ? violations : []
                 )
                 .ignoresSafeArea()
 
@@ -222,6 +228,7 @@ struct MapTab: View {
                             chip("🥚 Nests", "nests")
                             chip("● Hatching", "hatching")
                             chip("🧺 Trash", "trash")
+                            chip("⛔ Violations", "violations")
                         }
                         .padding(.horizontal, 14)
                     }

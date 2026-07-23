@@ -82,6 +82,8 @@ struct MapLibreView: UIViewRepresentable {
     var track: [CLLocationCoordinate2D] = []
     /// Beach sand outlines (OSM polygons), coloured green (protected) / amber (unprotected).
     var beachPolygons: [BeachPolygon] = []
+    /// Recent rule-violation reports — red dots (shown only under the Violations filter).
+    var violations: [MapPoint] = []
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -110,6 +112,7 @@ struct MapLibreView: UIViewRepresentable {
         context.coordinator.applyBeachPolygons(beachPolygons)
         context.coordinator.applyBeachDots(beaches)
         context.coordinator.applyCommunities(communities)
+        context.coordinator.applyViolations(violations)
     }
 
     // MARK: Coordinator = MLNMapViewDelegate
@@ -122,6 +125,7 @@ struct MapLibreView: UIViewRepresentable {
         private var beachSource: MLNShapeSource?
         private var beachDotSource: MLNShapeSource?
         private var communitySource: MLNShapeSource?
+        private var violationSource: MLNShapeSource?
 
         init(_ parent: MapLibreView) { self.parent = parent }
 
@@ -171,9 +175,34 @@ struct MapLibreView: UIViewRepresentable {
             style.addLayer(cSym)
             communitySource = cSrc
 
+            // Violation reports — red circles on top (shown only under the Violations filter).
+            let vSrc = MLNShapeSource(identifier: "cf-violation-dots", shape: nil, options: nil)
+            style.addSource(vSrc)
+            let vDots = MLNCircleStyleLayer(identifier: "cf-violation-dots", source: vSrc)
+            vDots.circleRadius = NSExpression(forConstantValue: 8)
+            vDots.circleColor = NSExpression(forConstantValue: UIColor(red: 0.69, green: 0.0, blue: 0.13, alpha: 1))
+            vDots.circleStrokeColor = NSExpression(forConstantValue: UIColor.white)
+            vDots.circleStrokeWidth = NSExpression(forConstantValue: 2.5)
+            style.addLayer(vDots)
+            violationSource = vSrc
+
             applyBeachPolygons(parent.beachPolygons)
             applyBeachDots(parent.beaches)
             applyCommunities(parent.communities)
+            applyViolations(parent.violations)
+        }
+
+        /// Push recent violation dots (red). Filter-gating (only under the Violations filter) is done
+        /// by the caller passing an empty array when the filter is off.
+        func applyViolations(_ dots: [MapPoint]) {
+            guard let src = violationSource else { return }
+            let features: [MLNPointFeature] = dots.map { d in
+                let f = MLNPointFeature()
+                f.coordinate = d.coordinate
+                f.attributes = ["id": d.id]
+                return f
+            }
+            src.shape = MLNShapeCollectionFeature(shapes: features)
         }
 
         /// Push the current beach outlines into the shape source. Each feature carries `id` (for tap →

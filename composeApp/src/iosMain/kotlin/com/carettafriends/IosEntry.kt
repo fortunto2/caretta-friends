@@ -63,6 +63,16 @@ fun communityPoints(): List<IosMapPoint> {
     return s.allCommunities.map { IosMapPoint("cm:${it.id}", it.center.lat, it.center.lng, it.name, "community") }
 }
 
+/** Recent rule-violation reports (red dots) — only the last 14 days surface on the map (they stay in
+ *  the DB for CİMER complaints). Shown only under the map's Violations filter. */
+fun violationPoints(): List<IosMapPoint> {
+    val s = SharedRepo.repo.state.value
+    val cutoff = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - 14L * 24 * 3600 * 1000
+    return s.markers
+        .filter { it.type == com.carettafriends.domain.MarkerType.VIOLATION && it.createdEpochMillis >= cutoff }
+        .map { IosMapPoint("vi:${it.id}", it.point.lat, it.point.lng, it.violationKind?.name ?: "", "violation") }
+}
+
 /** A beach's OSM sand outline for the native map. [polygonCsv] = "lat,lng;lat,lng;…" (empty = no outline). */
 data class IosBeachShape(val id: String, val name: String, val isProtected: Boolean, val polygonCsv: String)
 
