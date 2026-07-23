@@ -40,6 +40,7 @@ import androidx.compose.ui.window.Dialog
 import com.carettafriends.content.AppStrings
 import com.carettafriends.content.appStrings
 import com.carettafriends.data.CarettaRepository
+import com.carettafriends.data.platformShareImage
 import com.carettafriends.data.MAX_BACKDATE_DAYS
 import com.carettafriends.data.nestDay
 import com.carettafriends.data.today
@@ -124,6 +125,21 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                     .clip(CircleShape)
                     .clickable { watching = !watching },
             )
+            // Share the photo (watermarked with the nest code · beach · date).
+            n.photos.firstOrNull()?.localUri?.let { path ->
+                Pill(
+                    "↗",
+                    fg = Color.White,
+                    bg = Color.White.copy(alpha = 0.22f),
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(10.dp)
+                        .clip(CircleShape)
+                        .clickable {
+                            platformShareImage(path, "${n.code} · ${beach?.name ?: ""} · ${fmtDate(n.foundDate, s)}")
+                        },
+                )
+            }
         }
 
         Column(

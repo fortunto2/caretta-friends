@@ -55,7 +55,13 @@ import com.carettafriends.ui.components.TopBar
 import com.carettafriends.ui.theme.caretta
 
 @Composable
-fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, onCamera: () -> Unit) {
+fun AddNestScreen(
+    repo: CarettaRepository,
+    state: AppState,
+    onDone: () -> Unit,
+    onCamera: () -> Unit,
+    onNestSaved: (String) -> Unit = { onDone() },
+) {
     val c = caretta
     val s = appStrings(state.profile.language)
 
@@ -264,10 +270,13 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                         anonymous = anonymous,
                         beachId = selectedBeach.id,
                     )
+                    onDone()
                 } else if (markerType == MarkerType.TRASH) {
                     repo.addSimpleMarker(MarkerType.TRASH, shownPoint, "")
+                    onDone()
                 } else {
-                    repo.addNest(
+                    // Open the just-created nest so you can act on it right away (add updates, excavate).
+                    val newId = repo.addNest(
                         point = shownPoint,
                         beachId = selectedBeach.id,
                         isNest = isNest,
@@ -279,8 +288,8 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                         locationSource = if (fixPoint != null) LocationSource.PHOTO_EXIF else LocationSource.NONE,
                         visibility = visibility,
                     )
+                    onNestSaved(newId)
                 }
-                onDone()
             }
         }
     }
