@@ -61,8 +61,12 @@ fun MapScreen(
     val markers = buildList {
         state.nests.filter { showNest(filter, it) }
             .forEach { add(MapMarker(it.id, it.point.lat, it.point.lng, isBeach = false)) }
-        state.markers.filter { showMarker(filter, it) }
-            .forEach { add(MapMarker(it.id, it.point.lat, it.point.lng, isBeach = false)) }
+        // Violations fade off the map after 14 days (they stay in the DB for complaints).
+        val recentCutoff = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - 14L * 24 * 3600 * 1000
+        state.markers
+            .filter { showMarker(filter, it) }
+            .filter { it.type != MarkerType.VIOLATION || it.createdEpochMillis >= recentCutoff }
+            .forEach { add(MapMarker(it.id, it.point.lat, it.point.lng, isBeach = false, isViolation = it.type == MarkerType.VIOLATION)) }
         // Baked-in: the official protected nesting beaches (loaded from the by-country data file) —
         // green dots, always shown (zoom out for the whole-country overview).
         state.protectedAreas.forEach {
@@ -82,7 +86,7 @@ fun MapScreen(
         OsmMap(
             Modifier.fillMaxSize(),
             markers,
-            onClick = { id -> onOpenNest(id) },
+            onClick = { id -> if (state.nest(id) != null) onOpenNest(id) },
             onBeachTap = { id -> tappedBeach = id },
             onCommunityTap = { id -> onOpenCommunity(id.removePrefix("cm:")) },
         )
@@ -97,6 +101,7 @@ fun MapScreen(
                 FilterChip("nests", s.filterNests, filter) { filter = it }
                 FilterChip("hatching", s.filterHatching, filter) { filter = it }
                 FilterChip("trash", s.filterTrash, filter) { filter = it }
+                FilterChip("violations", s.filterViolations, filter) { filter = it }
             }
             Spacer(Modifier.height(10.dp))
             CoveragePill(state)
@@ -188,8 +193,9 @@ private fun showNest(filter: String, nest: Nest): Boolean = when (filter) {
 }
 
 private fun showMarker(filter: String, marker: SimpleMarker): Boolean = when (filter) {
-    "all" -> true
+    "all" -> marker.type != MarkerType.VIOLATION // violations are filter-gated (hidden from casual view)
     "trash" -> marker.type == MarkerType.TRASH
+    "violations" -> marker.type == MarkerType.VIOLATION
     else -> false
 }
 

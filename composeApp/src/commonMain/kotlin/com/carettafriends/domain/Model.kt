@@ -4,7 +4,10 @@ import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 
 /** Enums mirror data-model.md (export-compatible with FWC / seaturtle.org). */
-enum class MarkerType { NEST, LANDMARK, TRASH, PREDATOR_SIGN, CRAWL, OBSTACLE, OTHER }
+enum class MarkerType { NEST, LANDMARK, TRASH, PREDATOR_SIGN, CRAWL, OBSTACLE, VIOLATION, OTHER }
+
+/** A rule violation category (banned on protected nesting beaches) — kept for CİMER complaints. */
+enum class ViolationKind { TENT, VEHICLE, LIGHT, NOISE, DOG, LITTER, OTHER }
 enum class NestStatus { INCUBATING, HATCHING, HATCHED, EXCAVATED, LOST, PREDATED, WASHED_OVER, POACHED, FALSE_CRAWL }
 enum class ObsCondition { OK, PREDATED, WASHED_OVER, DISTURBED, POACHED, HATCHING, HATCHED, RELOCATED, OTHER }
 enum class UpdateKind { FOUND, OBSERVATION, STATUS_CHANGE, COMMENT, HATCHED, RELOCATED, EXCAVATED }
@@ -102,7 +105,7 @@ data class PhotoRef(
     val exifLng: Double? = null,
 )
 
-/** A simple non-nest marker (landmark / trash / ...). */
+/** A simple non-nest marker (landmark / trash / violation / ...). */
 @Serializable
 data class SimpleMarker(
     val id: String,
@@ -111,6 +114,14 @@ data class SimpleMarker(
     val note: String = "",
     val beachId: String? = null,
     val createdBy: String = "you",
+    /** For a VIOLATION: what's banned (tents/cars/…). Ignored for other types. */
+    val violationKind: ViolationKind? = null,
+    /** PRIVATE violations are hidden from guests — protects volunteers from retaliation over fines. */
+    val visibility: Visibility = Visibility.PUBLIC,
+    /** true → the reporter's name isn't shown (anonymous violation report). */
+    val anonymous: Boolean = false,
+    /** When it was reported — violations fade off the map after a short window but stay in the DB. */
+    val createdEpochMillis: Long = 0L,
 )
 
 /** One entry in a nest's unified timeline (observation | comment | status change | hatch). */

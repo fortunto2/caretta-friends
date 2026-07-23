@@ -19,6 +19,8 @@ data class MapMarker(
     val protected: Boolean = false,
     /** A community hub (its registered city) → orange dot, tap opens the community. */
     val isCommunity: Boolean = false,
+    /** A rule-violation report → red dot (shown only under the Violations filter). */
+    val isViolation: Boolean = false,
 )
 
 /**

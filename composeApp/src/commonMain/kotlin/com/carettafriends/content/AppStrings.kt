@@ -212,6 +212,20 @@ data class AppStrings(
     val obNext: String,
     val obStart: String,
     val obSkip: String,
+    // violations
+    val segViolation: String,
+    val whatViolation: String,
+    val vkTent: String,
+    val vkVehicle: String,
+    val vkLight: String,
+    val vkNoise: String,
+    val vkDog: String,
+    val vkLitter: String,
+    val vkOther: String,
+    val violationPrivateHint: String,
+    val anonymousWord: String,
+    val saveViolation: String,
+    val filterViolations: String,
 )
 
 private val EN = AppStrings(
@@ -295,6 +309,12 @@ private val EN = AppStrings(
     ob3Title = "Every patrol counts 🙌",
     ob3Body = "Join your local community, keep the beach dark at night, and help hundreds of hatchlings make it to the waves. Ready?",
     obNext = "Next", obStart = "Let's go 🌊", obSkip = "Skip",
+    segViolation = "⛔ Violation", whatViolation = "What's the violation?",
+    vkTent = "⛺ Tent", vkVehicle = "🚗 Vehicle", vkLight = "🔦 Light", vkNoise = "🔊 Noise",
+    vkDog = "🐕 Dog", vkLitter = "🧺 Litter", vkOther = "⚠ Other",
+    violationPrivateHint = "Kept private for the record — guests won't see who reported it.",
+    anonymousWord = "Report anonymously", saveViolation = "Report violation ⛔",
+    filterViolations = "⛔ Violations",
 )
 
 private val RU = AppStrings(
@@ -378,6 +398,12 @@ private val RU = AppStrings(
     ob3Title = "Каждый патруль важен 🙌",
     ob3Body = "Присоединяйся к местному сообществу, держи пляж тёмным ночью и помоги сотням черепашат добраться до волн. Готов?",
     obNext = "Далее", obStart = "Поехали 🌊", obSkip = "Пропустить",
+    segViolation = "⛔ Нарушение", whatViolation = "Что за нарушение?",
+    vkTent = "⛺ Палатка", vkVehicle = "🚗 Машина", vkLight = "🔦 Свет", vkNoise = "🔊 Шум",
+    vkDog = "🐕 Собака", vkLitter = "🧺 Мусор", vkOther = "⚠ Другое",
+    violationPrivateHint = "Хранится приватно для жалобы — гости не увидят, кто сообщил.",
+    anonymousWord = "Сообщить анонимно", saveViolation = "Сообщить о нарушении ⛔",
+    filterViolations = "⛔ Нарушения",
 )
 
 private val TR = AppStrings(
@@ -461,6 +487,12 @@ private val TR = AppStrings(
     ob3Title = "Her devriye önemli 🙌",
     ob3Body = "Yerel topluluğuna katıl, geceleri plajı karanlık tut ve yüzlerce yavrunun dalgalara ulaşmasına yardım et. Hazır mısın?",
     obNext = "İleri", obStart = "Hadi başlayalım 🌊", obSkip = "Atla",
+    segViolation = "⛔ İhlal", whatViolation = "İhlal nedir?",
+    vkTent = "⛺ Çadır", vkVehicle = "🚗 Araç", vkLight = "🔦 Işık", vkNoise = "🔊 Gürültü",
+    vkDog = "🐕 Köpek", vkLitter = "🧺 Çöp", vkOther = "⚠ Diğer",
+    violationPrivateHint = "Kayıt için gizli tutulur — misafirler kimin bildirdiğini görmez.",
+    anonymousWord = "Anonim bildir", saveViolation = "İhlal bildir ⛔",
+    filterViolations = "⛔ İhlaller",
 )
 
 /** The string bundle for [lang] ("ru" / "tr" / anything else → EN). */

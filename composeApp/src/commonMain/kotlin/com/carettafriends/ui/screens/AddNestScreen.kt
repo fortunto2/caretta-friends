@@ -3,6 +3,7 @@ package com.carettafriends.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +40,7 @@ import com.carettafriends.domain.LocationSource
 import com.carettafriends.domain.MarkerType
 import com.carettafriends.domain.ProtectionLevel
 import com.carettafriends.domain.SunExposure
+import com.carettafriends.domain.ViolationKind
 import com.carettafriends.domain.Visibility
 import com.carettafriends.domain.distanceLabel
 import com.carettafriends.domain.distanceMeters
@@ -71,6 +74,9 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
     var showDetails by remember { mutableStateOf(false) }
     var protection by remember { mutableStateOf(ProtectionLevel.NONE) }
     var visibility by remember { mutableStateOf(Visibility.PUBLIC) }
+    var violationKind by remember { mutableStateOf(ViolationKind.TENT) }
+    var anonymous by remember { mutableStateOf(true) }
+    val isViolation = markerType == MarkerType.VIOLATION
     // Turtles nest on beaches → bind every nest to a beach (→ community). Default = nearest to the
     // photo location; the volunteer can override. Falls back to the first beach when there's no fix.
     var selectedBeach by remember {
@@ -81,6 +87,9 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
         )
     }
     val nearestDist = fixPoint?.let { distanceMeters(it, selectedBeach.center) }
+
+    // Violations default to private (hidden from guests) — protects volunteers from retaliation.
+    LaunchedEffect(markerType) { if (markerType == MarkerType.VIOLATION) visibility = Visibility.PRIVATE }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         TopBar(s.newMarker, onBack = onDone)
@@ -93,8 +102,8 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
             Segmented(
                 listOf(
                     SegOption(s.segNest, markerType == MarkerType.NEST) { markerType = MarkerType.NEST },
-                    SegOption(s.segLandmark, markerType == MarkerType.LANDMARK) { markerType = MarkerType.LANDMARK },
                     SegOption(s.segTrash, markerType == MarkerType.TRASH) { markerType = MarkerType.TRASH },
+                    SegOption(s.segViolation, markerType == MarkerType.VIOLATION) { markerType = MarkerType.VIOLATION },
                 ),
             )
 
@@ -107,6 +116,21 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                         SegOption(s.segFalseCrawl, !isNest) { isNest = false },
                     ),
                 )
+            }
+
+            // ── Violation category + anonymity (private by default) ────
+            if (isViolation) {
+                SectionLabel(s.whatViolation)
+                val vopts = listOf(
+                    ViolationKind.TENT to s.vkTent, ViolationKind.VEHICLE to s.vkVehicle,
+                    ViolationKind.LIGHT to s.vkLight, ViolationKind.NOISE to s.vkNoise,
+                    ViolationKind.DOG to s.vkDog, ViolationKind.LITTER to s.vkLitter,
+                )
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    vopts.forEach { (k, label) -> ChoiceChip(label, violationKind == k) { violationKind = k } }
+                }
+                Text(s.violationPrivateHint, color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                ToggleRow("🕶️", s.anonymousWord, anonymous) { anonymous = !anonymous }
             }
 
             // ── Photo ──────────────────────────────────────────────────
@@ -225,19 +249,37 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
 
             // ── Save ───────────────────────────────────────────────────
             Box(Modifier.size(4.dp))
-            PrimaryButton(if (isNest) s.saveNest else s.saveFalseCrawl) {
-                repo.addNest(
-                    point = shownPoint,
-                    beachId = selectedBeach.id,
-                    isNest = isNest,
-                    exposure = exposure,
-                    protection = protection,
-                    clutchSizeEst = null,
-                    hasPhoto = hasPhoto,
-                    photoPath = pending?.path,
-                    locationSource = if (fixPoint != null) LocationSource.PHOTO_EXIF else LocationSource.NONE,
-                    visibility = visibility,
-                )
+            val saveLabel = when {
+                isViolation -> s.saveViolation
+                isNest -> s.saveNest
+                else -> s.saveFalseCrawl
+            }
+            PrimaryButton(saveLabel) {
+                if (isViolation) {
+                    repo.addViolation(
+                        point = shownPoint,
+                        kind = violationKind,
+                        note = "",
+                        visibility = visibility,
+                        anonymous = anonymous,
+                        beachId = selectedBeach.id,
+                    )
+                } else if (markerType == MarkerType.TRASH) {
+                    repo.addSimpleMarker(MarkerType.TRASH, shownPoint, "")
+                } else {
+                    repo.addNest(
+                        point = shownPoint,
+                        beachId = selectedBeach.id,
+                        isNest = isNest,
+                        exposure = exposure,
+                        protection = protection,
+                        clutchSizeEst = null,
+                        hasPhoto = hasPhoto,
+                        photoPath = pending?.path,
+                        locationSource = if (fixPoint != null) LocationSource.PHOTO_EXIF else LocationSource.NONE,
+                        visibility = visibility,
+                    )
+                }
                 onDone()
             }
         }
@@ -317,6 +359,21 @@ private fun Segmented(options: List<SegOption>) {
                 )
             }
         }
+    }
+}
+
+/** Small selectable chip (violation category). */
+@Composable
+private fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    val c = caretta
+    Box(
+        Modifier.clip(RoundedCornerShape(12.dp))
+            .background(if (selected) c.sea else c.sand)
+            .border(1.dp, if (selected) c.sea else c.line, RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 13.dp, vertical = 9.dp),
+    ) {
+        Text(label, color = if (selected) Color.White else c.deep, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
     }
 }
 

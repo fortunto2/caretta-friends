@@ -46,6 +46,7 @@ private const val GREEN = "#2E9E5B"
 private const val AMBER = "#E0A82E"
 private const val NEST = "#E0533D"
 private const val COMMUNITY = "#F97316"
+private const val VIOLATION = "#B00020"
 private const val BEACH_SRC = "cf-beaches-src"
 private const val BEACH_FILL = "cf-beaches-fill"
 private const val BEACH_LINE = "cf-beaches-line"
@@ -195,6 +196,7 @@ private fun renderCircles(cm: CircleManager, points: List<MapMarker>) {
     points.forEach { m ->
         // Community hubs are square SymbolManager icons, not circles (handled separately).
         val color = when {
+            m.isViolation -> VIOLATION
             !m.isBeach -> NEST
             m.protected -> GREEN
             else -> AMBER

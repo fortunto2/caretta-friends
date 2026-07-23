@@ -346,6 +346,34 @@ class CarettaRepository {
         scope.launch { auth.ensureSession(); runCatching { cloud.pushMarker(marker, auth.currentUserId()) } }
     }
 
+    /** Report a rule violation (tents/cars/…). PRIVATE = hidden from guests + the reporter may stay
+     *  [anonymous] (protects volunteers from retaliation over fines). Kept in the DB for CİMER
+     *  complaints; only recent ones surface on the map (via the Violations filter). */
+    fun addViolation(
+        point: GeoPoint,
+        kind: com.carettafriends.domain.ViolationKind,
+        note: String,
+        visibility: Visibility,
+        anonymous: Boolean,
+        beachId: String? = null,
+    ) {
+        val s = _state.value
+        val marker = SimpleMarker(
+            id = nextId("m"),
+            type = MarkerType.VIOLATION,
+            point = point,
+            note = note,
+            beachId = beachId,
+            createdBy = if (anonymous) "anonymous" else s.profile.displayName,
+            violationKind = kind,
+            visibility = visibility,
+            anonymous = anonymous,
+            createdEpochMillis = nowMillis(),
+        )
+        _state.value = s.copy(markers = s.markers + marker)
+        scope.launch { auth.ensureSession(); runCatching { cloud.pushMarker(marker, auth.currentUserId()) } }
+    }
+
     /** Append a timeline entry. [obsDate] back-dates it (word-of-mouth / gallery-EXIF photo from the past);
      *  when it equals today it stays a live "Today" entry. [photoPath] attaches a photo, which also joins the
      *  nest's photo history. */
