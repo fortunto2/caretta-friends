@@ -149,7 +149,7 @@ private fun FeedItem(nest: Nest, s: AppStrings, onOpenNest: (String) -> Unit) {
                 StatusPill(nest.status, s)
             }
             Text(
-                last?.body?.ifBlank { "${s.dayWord} ${nestDay(nest)}" } ?: "${s.dayWord} ${nestDay(nest)}",
+                last?.let { timelineBody(it, nest, s) }?.ifBlank { "${s.dayWord} ${nestDay(nest)}" } ?: "${s.dayWord} ${nestDay(nest)}",
                 color = c.muted,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,

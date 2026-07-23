@@ -234,7 +234,7 @@ fun NestDetailScreen(
             // Timeline.
             SectionLabel(s.timeline)
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                n.updates.asReversed().forEach { u -> TimelineRow(u, s, onOpenMember) }
+                n.updates.asReversed().forEach { u -> TimelineRow(u, timelineBody(u, n, s), s, onOpenMember) }
             }
 
             // Add update / Comment / Photo.
@@ -313,8 +313,18 @@ private fun AuthorMeta(author: String, rest: String, onOpenMember: (String) -> U
     }
 }
 
+/** Localized body for an auto-generated timeline entry — derived from the nest so it stays in the
+ *  current language even for data stored (in English) before this screen existed. User-typed
+ *  observations/comments keep their own text. */
+internal fun timelineBody(u: NestUpdate, n: Nest, s: AppStrings): String = when (u.kind) {
+    UpdateKind.FOUND -> if (n.isNest) s.tlNestFound else s.tlFalseCrawl
+    UpdateKind.EXCAVATED ->
+        "${s.excavatedWord.replaceFirstChar { it.uppercase() }} · ${n.excavation?.hatchSuccessPct ?: 0}% ${s.tlHatchSuccess}"
+    else -> u.body
+}
+
 @Composable
-private fun TimelineRow(u: NestUpdate, s: AppStrings, onOpenMember: (String) -> Unit) {
+private fun TimelineRow(u: NestUpdate, body: String, s: AppStrings, onOpenMember: (String) -> Unit) {
     val c = caretta
     val dot = dotColor(u)
     val isComment = u.kind == UpdateKind.COMMENT
@@ -345,14 +355,14 @@ private fun TimelineRow(u: NestUpdate, s: AppStrings, onOpenMember: (String) -> 
                         .padding(horizontal = 12.dp, vertical = 9.dp),
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("“${u.body}”", color = c.ink, fontSize = 13.sp, fontStyle = FontStyle.Italic)
+                        Text("“$body”", color = c.ink, fontSize = 13.sp, fontStyle = FontStyle.Italic)
                         AuthorMeta(u.author, metaRest, onOpenMember)
                     }
                 }
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    if (u.body.isNotBlank()) {
-                        Text(u.body, color = c.ink, fontSize = 13.5.sp, fontWeight = FontWeight.Bold)
+                    if (body.isNotBlank()) {
+                        Text(body, color = c.ink, fontSize = 13.5.sp, fontWeight = FontWeight.Bold)
                     }
                     AuthorMeta(u.author, metaRest, onOpenMember)
                 }

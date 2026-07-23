@@ -274,6 +274,10 @@ data class AppStrings(
     val memberNestsSection: String,
     val memberNoNests: String,
     val memberLink: String,
+    // timeline auto-generated bodies (localized at render so stored data stays language-neutral)
+    val tlNestFound: String,
+    val tlFalseCrawl: String,
+    val tlHatchSuccess: String,
 )
 
 private val EN = AppStrings(
@@ -403,6 +407,9 @@ private val EN = AppStrings(
     memberNestsSection = "Nests",
     memberNoNests = "No nests logged yet.",
     memberLink = "Link",
+    tlNestFound = "Nest found",
+    tlFalseCrawl = "False crawl logged",
+    tlHatchSuccess = "hatch success",
 )
 
 private val RU = AppStrings(
@@ -532,6 +539,9 @@ private val RU = AppStrings(
     memberNestsSection = "Гнёзда",
     memberNoNests = "Пока нет гнёзд.",
     memberLink = "Ссылка",
+    tlNestFound = "Гнездо найдено",
+    tlFalseCrawl = "Отмечен ложный выход",
+    tlHatchSuccess = "успех вылупления",
 )
 
 private val TR = AppStrings(
@@ -661,6 +671,9 @@ private val TR = AppStrings(
     memberNestsSection = "Yuvalar",
     memberNoNests = "Henüz yuva yok.",
     memberLink = "Bağlantı",
+    tlNestFound = "Yuva bulundu",
+    tlFalseCrawl = "Yanlış çıkış kaydedildi",
+    tlHatchSuccess = "çıkış başarısı",
 )
 
 /** The string bundle for [lang] ("ru" / "tr" / anything else → EN). */
