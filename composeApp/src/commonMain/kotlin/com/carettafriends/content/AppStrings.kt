@@ -267,6 +267,8 @@ class AppStrings(private val m: Map<String, String>, val months: List<String>) {
     val excThanksRecord: String get() = m.getValue("excThanksRecord")
     val activityTitle: String get() = m.getValue("activityTitle")
     val moreDetails: String get() = m.getValue("moreDetails")
+    val addPhotoBtn: String get() = m.getValue("addPhotoBtn")
+    val noteHint: String get() = m.getValue("noteHint")
 }
 
 private fun enStrings() = AppStrings(
@@ -529,6 +531,8 @@ private fun enStrings() = AppStrings(
         "excThanksRecord" to "Every count matters — thank you for recording this nest 🐢",
         "activityTitle" to "Activity",
         "moreDetails" to "More details",
+        "addPhotoBtn" to "📷 Add photo",
+        "noteHint" to "Add a note (optional)",
     ),
     months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
 )
@@ -793,6 +797,8 @@ private fun ruStrings() = AppStrings(
         "excThanksRecord" to "Каждый учёт важен — спасибо, что записал это гнездо 🐢",
         "activityTitle" to "Активность",
         "moreDetails" to "Подробнее",
+        "addPhotoBtn" to "📷 Добавить фото",
+        "noteHint" to "Заметка (необязательно)",
     ),
     months = listOf("янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"),
 )
@@ -1057,6 +1063,8 @@ private fun trStrings() = AppStrings(
         "excThanksRecord" to "Her kayıt önemli — bu yuvayı kaydettiğin için teşekkürler 🐢",
         "activityTitle" to "Etkinlik",
         "moreDetails" to "Daha fazla",
+        "addPhotoBtn" to "📷 Fotoğraf ekle",
+        "noteHint" to "Not ekle (isteğe bağlı)",
     ),
     months = listOf("Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"),
 )

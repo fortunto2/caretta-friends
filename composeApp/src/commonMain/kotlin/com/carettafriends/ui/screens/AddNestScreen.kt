@@ -17,7 +17,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,8 +34,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.carettafriends.content.appStrings
 import com.carettafriends.data.CarettaRepository
+import com.carettafriends.data.MAX_BACKDATE_DAYS
+import com.carettafriends.data.today
+import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.daysUntil
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Beach
 import com.carettafriends.domain.GeoPoint
@@ -89,6 +100,10 @@ fun AddNestScreen(
     var visibility by remember { mutableStateOf(Visibility.PUBLIC) }
     var violationKind by remember { mutableStateOf(ViolationKind.TENT) }
     var anonymous by remember { mutableStateOf(true) }
+    var showPhotoMenu by remember { mutableStateOf(false) }
+    var fullscreen by remember { mutableStateOf(false) }
+    var noteText by remember { mutableStateOf("") }
+    var foundDate by remember { mutableStateOf(com.carettafriends.data.today()) }
     val isViolation = markerType == MarkerType.VIOLATION
     // Turtles nest on beaches → bind every nest to a beach (→ community). Default = nearest to the
     // photo location; the volunteer can override. Falls back to the first beach when there's no fix.
@@ -120,17 +135,6 @@ fun AddNestScreen(
                 ),
             )
 
-            // ── Nest vs false crawl (only for nests) ───────────────────
-            if (markerType == MarkerType.NEST) {
-                SectionLabel(s.nestOrFalse)
-                Segmented(
-                    listOf(
-                        SegOption(s.segNest, isNest) { isNest = true },
-                        SegOption(s.segFalseCrawl, !isNest) { isNest = false },
-                    ),
-                )
-            }
-
             // ── Violation category + anonymity (private by default) ────
             if (isViolation) {
                 SectionLabel(s.whatViolation)
@@ -146,18 +150,24 @@ fun AddNestScreen(
                 ToggleRow("🕶️", s.anonymousWord, anonymous) { anonymous = !anonymous }
             }
 
-            // ── Photo ──────────────────────────────────────────────────
+            // ── Photo ── one action: tap the photo to view full-screen, "⋮" to change (camera/gallery).
             SectionLabel(s.photo)
             if (photoPath != null) {
-                // Show the attached photo (camera capture or gallery pick) right here in the form.
-                LocalPhoto(
-                    photoPath,
-                    Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(14.dp)),
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                GhostButton(if (photoPath != null) s.retake else s.cameraBtn, Modifier.weight(1f)) { onCamera() }
-                GhostButton(s.gallery, Modifier.weight(1f)) { galleryPick() }
+                Box(Modifier.fillMaxWidth()) {
+                    LocalPhoto(
+                        photoPath,
+                        Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(14.dp))
+                            .clickable { fullscreen = true },
+                    )
+                    Box(
+                        Modifier.align(Alignment.TopEnd).padding(8.dp).size(32.dp)
+                            .clip(CircleShape).background(Color.Black.copy(alpha = 0.4f))
+                            .clickable { showPhotoMenu = true },
+                        contentAlignment = Alignment.Center,
+                    ) { Text("⋮", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold) }
+                }
+            } else {
+                GhostButton(s.addPhotoBtn, Modifier.fillMaxWidth()) { showPhotoMenu = true }
             }
 
             // ── Location ───────────────────────────────────────────────
@@ -248,6 +258,29 @@ fun AddNestScreen(
                         ),
                     )
                 }
+
+                // Note → becomes the first comment on the nest (optional).
+                OutlinedTextField(
+                    value = noteText,
+                    onValueChange = { noteText = it.take(200) },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    placeholder = { Text(s.noteHint) },
+                )
+                // Found date — back-date a nest found earlier but photographed for the first time now.
+                if (markerType == MarkerType.NEST) {
+                    SectionLabel(s.nestFoundDate)
+                    val minDate = today().minus(DatePeriod(days = MAX_BACKDATE_DAYS))
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        StepBtn("−") { if (foundDate > minDate) foundDate = foundDate.minus(DatePeriod(days = 1)) }
+                        Text(
+                            if (foundDate == today()) s.today else "${foundDate.dayOfMonth} ${s.months[foundDate.month.ordinal]}",
+                            color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.weight(1f),
+                        )
+                        StepBtn("+") { if (foundDate < today()) foundDate = foundDate.plus(DatePeriod(days = 1)) }
+                    }
+                }
             }
 
             // ── Save ───────────────────────────────────────────────────
@@ -284,12 +317,52 @@ fun AddNestScreen(
                         photoPath = photoPath,
                         locationSource = if (fixPoint != null) LocationSource.PHOTO_EXIF else LocationSource.NONE,
                         visibility = visibility,
+                        foundDate = foundDate,
+                        note = noteText,
                     )
                     onNestSaved(newId)
                 }
             }
         }
+
+        // Photo source chooser — one entry point, pick camera or gallery.
+        if (showPhotoMenu) {
+            AlertDialog(
+                onDismissRequest = { showPhotoMenu = false },
+                title = { Text(s.photo) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        GhostButton(s.cameraBtn, Modifier.fillMaxWidth()) { showPhotoMenu = false; onCamera() }
+                        GhostButton(s.gallery, Modifier.fillMaxWidth()) { showPhotoMenu = false; galleryPick() }
+                    }
+                },
+                confirmButton = { TextButton(onClick = { showPhotoMenu = false }) { Text(s.cancel) } },
+            )
+        }
+
+        // Full-screen photo viewer — tap anywhere to close.
+        if (fullscreen && photoPath != null) {
+            Dialog(
+                onDismissRequest = { fullscreen = false },
+                properties = DialogProperties(usePlatformDefaultWidth = false),
+            ) {
+                Box(
+                    Modifier.fillMaxSize().background(Color.Black).clickable { fullscreen = false },
+                    contentAlignment = Alignment.Center,
+                ) { LocalPhoto(photoPath, Modifier.fillMaxWidth()) }
+            }
+        }
     }
+}
+
+@Composable
+private fun StepBtn(label: String, onClick: () -> Unit) {
+    val c = caretta
+    Box(
+        Modifier.size(42.dp).clip(RoundedCornerShape(13.dp)).background(c.surface)
+            .border(1.dp, c.line, RoundedCornerShape(13.dp)).clickable { onClick() },
+        contentAlignment = Alignment.Center,
+    ) { Text(label, color = c.deep, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold) }
 }
 
 /** Coordinate trimmed to ~4 decimals (≈11 m) for display. */

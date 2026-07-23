@@ -371,8 +371,13 @@ class CarettaRepository {
         locationSource: LocationSource,
         visibility: Visibility,
         photoPath: String? = null,
+        /** Back-date for a nest found earlier but photographed for the first time now (null = today). */
+        foundDate: LocalDate? = null,
+        /** Optional note/description the volunteer adds at first sighting → first comment on the nest. */
+        note: String = "",
     ): String {
         val s = _state.value
+        val found = (foundDate ?: today()).coerceIn(today().minus(DatePeriod(days = MAX_BACKDATE_DAYS)), today())
         val (fLow, fHigh, inc) = predictTsd(exposure)
         val confirmed = hasPhoto && (locationSource == LocationSource.PHOTO_EXIF || locationSource == LocationSource.DEVICE_GPS)
         val id = nextId("nest")
@@ -386,7 +391,7 @@ class CarettaRepository {
             isNest = isNest,
             confidence = if (confirmed) NestConfidence.CONFIRMED else NestConfidence.UNCONFIRMED,
             visibility = visibility,
-            foundDate = today(),
+            foundDate = found,
             clutchSizeEst = clutchSizeEst,
             protection = protection,
             exposure = exposure,
@@ -400,9 +405,13 @@ class CarettaRepository {
             airTempC = null,
             rainMm7d = null,
             photos = photos,
-            updates = listOf(
-                NestUpdate(nextId("u"), UpdateKind.FOUND, body = if (isNest) "Nest found" else "False crawl logged", dateLabel = "Today"),
-            ),
+            updates = buildList {
+                val backDate = found.takeIf { it != today() }
+                add(NestUpdate(nextId("u"), UpdateKind.FOUND, body = if (isNest) "Nest found" else "False crawl logged", dateLabel = "Today", obsDate = backDate))
+                if (note.isNotBlank()) {
+                    add(NestUpdate(nextId("u"), UpdateKind.COMMENT, body = note.trim(), createdEpochMillis = nowMillis(), dateLabel = "Today"))
+                }
+            },
             temps = emptyList(),
             foundBy = s.profile.displayName,
             updatedAtMillis = nowMillis(),
