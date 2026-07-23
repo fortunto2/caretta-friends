@@ -77,7 +77,7 @@ fun MapScreen(
     val markers = buildList {
         state.nests.filter { showNest(filter, it) }
             .filter { !timelapse || it.foundDate.toEpochDays() <= tlDay }
-            .forEach { add(MapMarker(it.id, it.point.lat, it.point.lng, isBeach = false)) }
+            .forEach { add(MapMarker(it.id, it.point.lat, it.point.lng, isBeach = false, phase = com.carettafriends.data.nestMapPhase(it))) }
         // Violations fade off the map after 14 days (they stay in the DB for complaints).
         val recentCutoff = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - 14L * 24 * 3600 * 1000
         state.markers

@@ -15,7 +15,6 @@ import com.carettafriends.data.CarettaRepository
 import com.carettafriends.ui.Navigator
 import com.carettafriends.ui.PlatformBackHandler
 import com.carettafriends.ui.Screen
-import com.carettafriends.ui.isTab
 import com.carettafriends.ui.components.BottomBar
 import com.carettafriends.ui.components.EmptyHint
 import com.carettafriends.ui.components.NavItem
@@ -139,17 +138,14 @@ fun CarettaApp() {
                         )
                     }
                 }
-                // Only on the 4 root tabs — pushed screens (camera, add-nest, details) go full-height,
-                // matching iOS (which hides its tab bar on push). Fixes the bar breaking the dark camera
-                // and the centre "+" re-pushing AddNest while you're already on it.
-                if (current.isTab()) {
-                    BottomBar(
-                        current = tabKey(current),
-                        items = navItems(s),
-                        onSelect = { nav.selectTab(tabFromKey(it)) },
-                        onAdd = { nav.go(Screen.AddNest) },
-                    )
-                }
+                // ALWAYS visible (user pref) — tabs are the primary way to leave any screen, so you
+                // never depend on the top-left back arrow. Tapping a tab resets to that tab's root.
+                BottomBar(
+                    current = tabKey(current),
+                    items = navItems(s),
+                    onSelect = { nav.selectTab(tabFromKey(it)) },
+                    onAdd = { if (current !is Screen.AddNest) nav.go(Screen.AddNest) },
+                )
             }
         }
             // First-run intro — shown once until dismissed.

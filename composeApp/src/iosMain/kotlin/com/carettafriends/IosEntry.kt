@@ -41,7 +41,7 @@ data class IosMapPoint(val id: String, val lat: Double, val lng: Double, val tit
 /** Nest points for the native SwiftUI MapLibre map (read from the shared repo). */
 fun mapPoints(): List<IosMapPoint> {
     val s = SharedRepo.repo.state.value
-    return s.nests.map { IosMapPoint(it.id, it.point.lat, it.point.lng, it.code, it.status.name) }
+    return s.nests.map { IosMapPoint(it.id, it.point.lat, it.point.lng, it.code, com.carettafriends.data.nestMapPhase(it)) }
 }
 
 /** Timelapse bounds: the earliest nest found-day and today (epoch days). */
@@ -57,7 +57,7 @@ fun todayEpochDay(): Int = com.carettafriends.data.today().toEpochDays()
 fun mapPointsUpTo(day: Int): List<IosMapPoint> {
     val s = SharedRepo.repo.state.value
     return s.nests.filter { it.foundDate.toEpochDays() <= day }
-        .map { IosMapPoint(it.id, it.point.lat, it.point.lng, it.code, it.status.name) }
+        .map { IosMapPoint(it.id, it.point.lat, it.point.lng, it.code, com.carettafriends.data.nestMapPhase(it)) }
 }
 
 /** Beach points (name-labelled) for the native map. [status] encodes the dot colour:

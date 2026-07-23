@@ -14,6 +14,8 @@ struct MapPoint: Identifiable, Equatable {
     var protectedBeach: Bool? = nil
     /// A community beach (tap → beach card) vs a baked overview area (name callout only).
     var openable: Bool = false
+    /// Nest lifecycle phase → pin colour (incubating/soon/emerging/excavated/removed).
+    var phase: String = ""
 
     static func == (l: MapPoint, r: MapPoint) -> Bool {
         l.id == r.id &&
@@ -21,7 +23,8 @@ struct MapPoint: Identifiable, Equatable {
         l.coordinate.longitude == r.coordinate.longitude &&
         l.title == r.title &&
         l.protectedBeach == r.protectedBeach &&
-        l.openable == r.openable
+        l.openable == r.openable &&
+        l.phase == r.phase
     }
 }
 
@@ -52,6 +55,7 @@ struct TappedBeach: Identifiable, Equatable {
 final class IdentifiedAnnotation: MLNPointAnnotation {
     var pointID: String = ""
     var isBeach: Bool = false
+    var phase: String = ""
     /// true = protected (green dot), false = unprotected (amber dot); ignored for nests.
     var protectedBeach: Bool = true
     /// Community beach (tap opens the beach card) vs baked overview area (callout only).
@@ -84,6 +88,8 @@ struct MapLibreView: UIViewRepresentable {
     var beachPolygons: [BeachPolygon] = []
     /// Recent rule-violation reports — red dots (shown only under the Violations filter).
     var violations: [MapPoint] = []
+    /// Bumped by the "locate me" button → recenters on the user with a heading (compass) cone.
+    var recenterTick: Int = 0
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -92,6 +98,8 @@ struct MapLibreView: UIViewRepresentable {
         mapView.delegate = context.coordinator
         mapView.setCenter(center, zoomLevel: zoomLevel, animated: false)
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        // Show the volunteer's own position (blue dot); the heading cone appears when they tap "locate".
+        mapView.showsUserLocation = true
         // Keep OSM attribution reachable (required by the tile usage policy).
         mapView.attributionButton.isHidden = false
         // Tap on a beach dot/polygon (style layers, not annotations) → open its card. Recognise
@@ -107,6 +115,11 @@ struct MapLibreView: UIViewRepresentable {
 
     func updateUIView(_ mapView: MLNMapView, context: Context) {
         context.coordinator.parent = self          // keep closure/props fresh across SwiftUI updates
+        // "Locate me" tapped → center on the user and show the heading (compass) cone.
+        if recenterTick != context.coordinator.recenterTick {
+            context.coordinator.recenterTick = recenterTick
+            mapView.setUserTrackingMode(.followWithHeading, animated: true)
+        }
         context.coordinator.sync(nests: points, on: mapView)
         context.coordinator.syncTrack(track, on: mapView)
         context.coordinator.applyBeachPolygons(beachPolygons)
@@ -119,6 +132,7 @@ struct MapLibreView: UIViewRepresentable {
 
     final class Coordinator: NSObject, MLNMapViewDelegate, UIGestureRecognizerDelegate {
         var parent: MapLibreView
+        var recenterTick = 0
         private var currentIDs: Set<String> = []
         private var polyline: MLNPolyline?
         private var trackCount = -1
@@ -316,23 +330,48 @@ struct MapLibreView: UIViewRepresentable {
         /// Rebuild nest PIN annotations when the id set changes; keeps the polyline. Beaches are NOT
         /// annotations — they're style layers (see applyBeachDots / applyBeachPolygons).
         func sync(nests: [MapPoint], on mapView: MLNMapView) {
-            let ids = Set(nests.map(\.id))
-            guard ids != currentIDs else { return }
-            currentIDs = ids
+            // Signature includes phase so a status change (colour change) rebuilds, not just adds/removes.
+            let sig = Set(nests.map { "\($0.id)|\($0.phase)" })
+            guard sig != currentIDs else { return }
+            currentIDs = sig
             let toRemove = (mapView.annotations ?? []).filter { $0 is IdentifiedAnnotation }
             mapView.removeAnnotations(toRemove)
             let anns: [IdentifiedAnnotation] = nests.map { p in
                 let a = IdentifiedAnnotation()
-                a.pointID = p.id; a.isBeach = false
+                a.pointID = p.id; a.isBeach = false; a.phase = p.phase
                 a.coordinate = p.coordinate; a.title = p.title; a.subtitle = p.subtitle
                 return a
             }
             mapView.addAnnotations(anns)
         }
 
-        // Nests = built-in red pin (return nil → default). (Beaches are style-layer dots, not annotations.)
+        // Nest pin colour = lifecycle phase (incubating/soon/emerging/excavated/removed).
         func mapView(_ mapView: MLNMapView, imageFor annotation: MLNAnnotation) -> MLNAnnotationImage? {
-            return nil
+            guard let a = annotation as? IdentifiedAnnotation, !a.isBeach else { return nil }
+            let phase = a.phase.isEmpty ? "incubating" : a.phase
+            if let cached = mapView.dequeueReusableAnnotationImage(withIdentifier: "nest-\(phase)") { return cached }
+            return MLNAnnotationImage(image: Self.nestDot(phase: phase), reuseIdentifier: "nest-\(phase)")
+        }
+
+        /// A coloured dot (white ring) for a nest's lifecycle phase. Drawn once per phase, then cached.
+        static func nestDot(phase: String) -> UIImage {
+            let color: UIColor
+            switch phase {
+            case "soon": color = UIColor(red: 0.88, green: 0.66, blue: 0.18, alpha: 1)      // amber
+            case "emerging": color = UIColor(red: 0.13, green: 0.77, blue: 0.37, alpha: 1)   // vivid green — act on it
+            case "excavated": color = UIColor(red: 0.06, green: 0.48, blue: 0.51, alpha: 1)  // sea
+            case "removed": color = UIColor(red: 0.60, green: 0.65, blue: 0.64, alpha: 1)    // grey
+            default: color = UIColor(red: 0.88, green: 0.33, blue: 0.24, alpha: 1)           // coral (incubating)
+            }
+            let d: CGFloat = 20, ring: CGFloat = 2.5
+            let r = UIGraphicsImageRenderer(size: CGSize(width: d, height: d))
+            return r.image { ctx in
+                let c = ctx.cgContext
+                c.setFillColor(UIColor.white.cgColor)
+                c.fillEllipse(in: CGRect(x: 0, y: 0, width: d, height: d))
+                c.setFillColor(color.cgColor)
+                c.fillEllipse(in: CGRect(x: ring, y: ring, width: d - 2 * ring, height: d - 2 * ring))
+            }
         }
 
         func mapView(_ mapView: MLNMapView, annotationCanShowCallout annotation: MLNAnnotation) -> Bool {

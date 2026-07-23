@@ -47,6 +47,19 @@ private const val AMBER = "#E0A82E"
 private const val NEST = "#E0533D"
 private const val COMMUNITY = "#F97316"
 private const val VIOLATION = "#B00020"
+// Nest lifecycle dot colours (see nestMapPhase): soon=amber, emerging=vivid green (act on it!),
+// excavated=sea, removed(>2d / lost)=grey. incubating falls back to NEST.
+private const val EMERGING = "#22C55E"
+private const val EXCAVATED_COL = "#0F7A82"
+private const val REMOVED_COL = "#9AA5A3"
+
+private fun phaseColor(phase: String): String = when (phase) {
+    "soon" -> AMBER
+    "emerging" -> EMERGING
+    "excavated" -> EXCAVATED_COL
+    "removed" -> REMOVED_COL
+    else -> NEST
+}
 private const val BEACH_SRC = "cf-beaches-src"
 private const val BEACH_FILL = "cf-beaches-fill"
 private const val BEACH_LINE = "cf-beaches-line"
@@ -197,7 +210,7 @@ private fun renderCircles(cm: CircleManager, points: List<MapMarker>) {
         // Community hubs are square SymbolManager icons, not circles (handled separately).
         val color = when {
             m.isViolation -> VIOLATION
-            !m.isBeach -> NEST
+            !m.isBeach -> phaseColor(m.phase)
             m.protected -> GREEN
             else -> AMBER
         }

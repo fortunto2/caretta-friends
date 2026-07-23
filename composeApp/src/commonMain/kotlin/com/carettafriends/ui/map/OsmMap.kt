@@ -21,6 +21,8 @@ data class MapMarker(
     val isCommunity: Boolean = false,
     /** A rule-violation report → red dot (shown only under the Violations filter). */
     val isViolation: Boolean = false,
+    /** Nest lifecycle phase → dot colour (incubating/soon/emerging/excavated/removed). See nestMapPhase. */
+    val phase: String = "",
 )
 
 /**

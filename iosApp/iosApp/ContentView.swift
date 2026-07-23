@@ -30,7 +30,9 @@ private struct DetailScreen<Content: View>: View {
         content()
             .modifier(FullBleed(on: fullBleed))
             .toolbar(.hidden, for: .navigationBar)
-            // Keep the bottom tab bar visible on detail cards (per request).
+            // Keep the bottom tab bar visible on pushed detail screens (per request) — so you can
+            // leave via the tabs instead of the top-left back arrow.
+            .toolbar(fullBleed ? .hidden : .visible, for: .tabBar)
     }
 }
 
@@ -157,6 +159,7 @@ struct MapTab: View {
     @State private var beachPolygons: [BeachPolygon] = []
     @State private var violations: [MapPoint] = []
     @State private var filter = "all"
+    @State private var recenter = 0
     @State private var timelapse = false
     @State private var tlDay: Double = 0
     @State private var tlPlaying = false
@@ -166,7 +169,7 @@ struct MapTab: View {
     private var displayPoints: [MapPoint] {
         if timelapse {
             return IosEntryKt.mapPointsUpTo(day: Int32(tlDay)).map { p in
-                MapPoint(id: p.id, coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng), title: p.title)
+                MapPoint(id: p.id, coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng), title: p.title, phase: p.status)
             }
         }
         return filter == "violations" ? [] : points
@@ -230,7 +233,7 @@ struct MapTab: View {
         }
         // Recent violation reports — red dots (filter-gated at render time).
         violations = IosEntryKt.violationPoints().map { p in
-            MapPoint(id: p.id, coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng), title: p.title)
+            MapPoint(id: p.id, coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng), title: p.title, phase: p.status)
         }
         air = IosEntryKt.airStatus()
     }
@@ -257,11 +260,28 @@ struct MapTab: View {
                     },
                     track: patrol.coords,
                     beachPolygons: beachPolygons,
-                    violations: filter == "violations" ? violations : []
+                    violations: filter == "violations" ? violations : [],
+                    recenterTick: recenter
                 )
                 .ignoresSafeArea()
                 .overlay(alignment: .bottom) {
                     if timelapse { timelapseControl().padding(.bottom, 100) }
+                }
+                // "Locate me" — recenters on the volunteer's position with a heading (compass) cone.
+                .overlay(alignment: .bottomTrailing) {
+                    Button {
+                        recenter += 1
+                    } label: {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.cfSea)
+                            .frame(width: 46, height: 46)
+                            .background(.regularMaterial, in: Circle())
+                            .overlay(Circle().stroke(Color.black.opacity(0.06)))
+                            .shadow(color: .black.opacity(0.15), radius: 6, y: 2)
+                    }
+                    .padding(.trailing, 14)
+                    .padding(.bottom, 100)
                 }
 
                 // top overlays: filter chips + coverage pill

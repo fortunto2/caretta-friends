@@ -41,7 +41,9 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
 import kotlinx.datetime.minus
@@ -90,6 +92,29 @@ const val MAX_BACKDATE_DAYS = 31
 /** Days elapsed since the nest was found (incubation day). */
 fun nestDay(nest: Nest, today: LocalDate = today()): Int =
     nest.foundDate.daysUntil(today).coerceAtLeast(0)
+
+/**
+ * Lifecycle phase that drives the map dot colour, so volunteers read a beach at a glance:
+ *  - `incubating` — a normal nest, still deep in incubation
+ *  - `soon`       — hatch window is near (last ~5 days) — watch it
+ *  - `emerging`   — hatchlings have started coming out (status HATCHING) — excavate in 2-3 days to
+ *                   free any stragglers; the distinct colour flags "act on this one"
+ *  - `excavated`  — dug & counted (or hatched), still on the beach
+ *  - `removed`    — excavated >2 days ago (cleared from the location) OR a lost/predated nest → grey
+ */
+fun nestMapPhase(nest: Nest, today: LocalDate = today()): String = when (nest.status) {
+    NestStatus.HATCHING -> "emerging"
+    NestStatus.EXCAVATED -> {
+        val exMillis = nest.updates.lastOrNull { it.kind == UpdateKind.EXCAVATED }?.createdEpochMillis ?: 0L
+        val exDate = if (exMillis > 0)
+            Instant.fromEpochMilliseconds(exMillis).toLocalDateTime(TimeZone.currentSystemDefault()).date else null
+        if (exDate != null && exDate.daysUntil(today) > 2) "removed" else "excavated"
+    }
+    NestStatus.HATCHED -> "excavated"
+    NestStatus.INCUBATING -> if (nestDay(nest, today) >= nest.incubationDaysEst - 5) "soon" else "incubating"
+    NestStatus.LOST, NestStatus.PREDATED, NestStatus.WASHED_OVER, NestStatus.POACHED, NestStatus.FALSE_CRAWL -> "removed"
+    else -> "incubating"
+}
 
 /**
  * In-memory, offline-first repository. Single source of truth via StateFlow.
