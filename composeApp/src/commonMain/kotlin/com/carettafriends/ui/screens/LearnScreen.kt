@@ -63,7 +63,7 @@ fun LearnScreen(state: AppState, repo: CarettaRepository) {
     val fact = if (facts.isNotEmpty()) facts[factIndex % facts.size] else null
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        TopBar("Learn")
+        TopBar(com.carettafriends.content.appStrings(lang).navLearn)
         Column(
             Modifier.padding(horizontal = 15.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),

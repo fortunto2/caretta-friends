@@ -75,6 +75,14 @@ fun beachShapes(): List<IosBeachShape> {
 /** The id of our own (primary) community — for opening it from the Profile screen. */
 fun primaryCommunityId(): String = SharedRepo.repo.state.value.community.id
 
+/** Localized bottom-nav labels for the native iOS tab bar (follows Profile → Language). */
+data class IosNavLabels(val map: String, val beaches: String, val learn: String, val profile: String)
+
+fun navLabels(): IosNavLabels {
+    val s = com.carettafriends.content.appStrings(SharedRepo.repo.state.value.profile.language)
+    return IosNavLabels(s.navMap, s.navBeaches, s.navLearn, s.navProfile)
+}
+
 /** Current air quality for the native map's pill. level = GOOD/MODERATE/UNHEALTHY/DUST. null = no sensor. */
 data class IosAirSignal(val emoji: String, val label: String, val value: String)
 

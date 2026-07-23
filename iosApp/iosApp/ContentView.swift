@@ -443,9 +443,10 @@ struct ContentView: View {
     @State private var showAdd = false
 
     var body: some View {
+        let nav = IosEntryKt.navLabels()
         TabView(selection: $selection) {
             MapTab()
-                .tabItem { Label("Map", systemImage: "map.fill") }
+                .tabItem { Label(nav.map, systemImage: "map.fill") }
                 .tag(Tab.map)
 
             TabStack { path in
@@ -456,7 +457,7 @@ struct ContentView: View {
                     )
                 }
             }
-            .tabItem { Label("Beaches", systemImage: "beach.umbrella.fill") }
+            .tabItem { Label(nav.beaches, systemImage: "beach.umbrella.fill") }
             .tag(Tab.beaches)
 
             // Centre "+" — never shows its own content; the coral overlay button triggers the add
@@ -468,7 +469,7 @@ struct ContentView: View {
             TabStack { _ in
                 ComposeHost { IosEntryKt.LearnVC() }
             }
-            .tabItem { Label("Learn", systemImage: "book.fill") }
+            .tabItem { Label(nav.learn, systemImage: "book.fill") }
             .tag(Tab.learn)
 
             TabStack { path in
@@ -480,7 +481,7 @@ struct ContentView: View {
                     )
                 }
             }
-            .tabItem { Label("Profile", systemImage: "tortoise.fill") }
+            .tabItem { Label(nav.profile, systemImage: "tortoise.fill") }
             .tag(Tab.profile)
         }
         .tint(Color.cfCoral)
