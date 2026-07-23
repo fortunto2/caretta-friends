@@ -136,6 +136,20 @@ struct MapTab: View {
     @State private var beachPolygons: [BeachPolygon] = []
     @State private var violations: [MapPoint] = []
     @State private var filter = "all"
+    @State private var timelapse = false
+    @State private var tlDay: Double = 0
+    @State private var tlPlaying = false
+    @State private var tlTimer: Timer? = nil
+
+    /// Nest points to draw: timelapse day-filtered, else violation-filter-aware.
+    private var displayPoints: [MapPoint] {
+        if timelapse {
+            return IosEntryKt.mapPointsUpTo(day: Int32(tlDay)).map { p in
+                MapPoint(id: p.id, coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng), title: p.title)
+            }
+        }
+        return filter == "violations" ? [] : points
+    }
     @StateObject private var patrol = PatrolRecorder()
     @StateObject private var deviceLoc = DeviceLocation()
     @State private var savedPatrolId: String? = nil
@@ -203,7 +217,7 @@ struct MapTab: View {
         NavigationStack(path: $path) {
             ZStack(alignment: .top) {
                 MapLibreView(
-                    points: filter == "violations" ? [] : points,
+                    points: displayPoints,
                     beaches: beaches,
                     center: MapLibreView.gazipasa,
                     zoomLevel: 12,
@@ -219,6 +233,9 @@ struct MapTab: View {
                     violations: filter == "violations" ? violations : []
                 )
                 .ignoresSafeArea()
+                .overlay(alignment: .bottom) {
+                    if timelapse { timelapseControl().padding(.bottom, 100) }
+                }
 
                 // top overlays: filter chips + coverage pill
                 VStack(alignment: .leading, spacing: 10) {
@@ -229,6 +246,7 @@ struct MapTab: View {
                             chip("● Hatching", "hatching")
                             chip("🧺 Trash", "trash")
                             chip("⛔ Violations", "violations")
+                            timelapseChip()
                         }
                         .padding(.horizontal, 14)
                     }
@@ -439,6 +457,65 @@ struct MapTab: View {
             .clipShape(Capsule())
             .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
             .onTapGesture { filter = key }
+    }
+
+    private func timelapseChip() -> some View {
+        Text("🎞️ Timelapse")
+            .font(.caption.weight(.bold))
+            .foregroundColor(timelapse ? .white : .cfDeep)
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(timelapse ? Color.cfSea : Color.white.opacity(0.92))
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
+            .onTapGesture {
+                timelapse.toggle()
+                if timelapse { tlDay = Double(IosEntryKt.todayEpochDay()) } else { stopTimelapse() }
+            }
+    }
+
+    @ViewBuilder
+    private func timelapseControl() -> some View {
+        let first = Double(IosEntryKt.firstNestDay())
+        let today = Double(IosEntryKt.todayEpochDay())
+        let count = IosEntryKt.mapPointsUpTo(day: Int32(tlDay)).count
+        VStack(spacing: 4) {
+            HStack(spacing: 10) {
+                Button { toggleTlPlay() } label: {
+                    Image(systemName: tlPlaying ? "pause.fill" : "play.fill")
+                        .foregroundColor(.white).frame(width: 38, height: 38)
+                        .background(Color.cfSea).clipShape(Circle())
+                }
+                Text(tlDateLabel(tlDay)).font(.subheadline.weight(.heavy)).foregroundColor(.cfDeep)
+                Spacer()
+                Text("\(count) 🥚").font(.subheadline.weight(.bold)).foregroundColor(.cfSea)
+            }
+            Slider(value: $tlDay, in: first...max(today, first + 1)) { editing in if editing { stopTimelapse() } }
+                .tint(.cfSea)
+        }
+        .padding(12).background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
+        .padding(.horizontal, 14)
+    }
+
+    private func toggleTlPlay() {
+        if tlPlaying { stopTimelapse(); return }
+        tlPlaying = true
+        tlTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+            if tlDay >= Double(IosEntryKt.todayEpochDay()) { stopTimelapse() } else { tlDay += 1 }
+        }
+    }
+
+    private func stopTimelapse() {
+        tlPlaying = false
+        tlTimer?.invalidate()
+        tlTimer = nil
+    }
+
+    private func tlDateLabel(_ day: Double) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        return f.string(from: Date(timeIntervalSince1970: day * 86400))
     }
 }
 

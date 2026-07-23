@@ -41,6 +41,22 @@ fun mapPoints(): List<IosMapPoint> {
     return s.nests.map { IosMapPoint(it.id, it.point.lat, it.point.lng, it.code, it.status.name) }
 }
 
+/** Timelapse bounds: the earliest nest found-day and today (epoch days). */
+fun firstNestDay(): Int {
+    val s = SharedRepo.repo.state.value
+    val today = com.carettafriends.data.today().toEpochDays()
+    return (s.nests.minOfOrNull { it.foundDate.toEpochDays() } ?: (today - 14)).coerceAtMost(today)
+}
+
+fun todayEpochDay(): Int = com.carettafriends.data.today().toEpochDays()
+
+/** Nest points found on or before [day] (epoch days) — drives the map timelapse. */
+fun mapPointsUpTo(day: Int): List<IosMapPoint> {
+    val s = SharedRepo.repo.state.value
+    return s.nests.filter { it.foundDate.toEpochDays() <= day }
+        .map { IosMapPoint(it.id, it.point.lat, it.point.lng, it.code, it.status.name) }
+}
+
 /** Beach points (name-labelled) for the native map. [status] encodes the dot colour:
  *  "beach-green" = protected, "beach-amber" = unprotected. Tappable → opens the beach card. */
 fun beachPoints(): List<IosMapPoint> {
