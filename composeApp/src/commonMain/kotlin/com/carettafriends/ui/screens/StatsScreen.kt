@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.carettafriends.content.appStrings
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.NestStatus
 import com.carettafriends.ui.components.SectionLabel
@@ -62,38 +63,39 @@ fun StatsScreen(state: AppState, onBack: () -> Unit) {
     val shells = excavatedNests.sumOf { it.excavation!!.shells }
     val unhatched = excavatedNests.sumOf { it.excavation!!.unhatched + it.excavation!!.pipped }
 
+    val s = appStrings(state.profile.language)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        TopBar("Trends", onBack = onBack)
+        TopBar(s.trendsTitle, onBack = onBack)
         Column(
             Modifier.padding(horizontal = 15.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             // summary tiles
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatTile("$total", "nests", Modifier.weight(1f))
-                StatTile("$active", "active", Modifier.weight(1f))
-                StatTile("$hatched", "hatched", Modifier.weight(1f))
-                StatTile("$toSea", "🐢 to sea", Modifier.weight(1f))
+                StatTile("$total", s.nestsWord, Modifier.weight(1f))
+                StatTile("$active", s.activeWord, Modifier.weight(1f))
+                StatTile("$hatched", s.hatchedWord, Modifier.weight(1f))
+                StatTile("$toSea", s.toSea, Modifier.weight(1f))
             }
 
-            SectionLabel("Nests found · last 14 days")
+            SectionLabel(s.nestsFound14)
             BarChart(perDay, c.sea)
-            if (total == 0) EmptyNote("No nests logged yet — add some to see the trend.")
+            if (total == 0) EmptyNote(s.noNestsTrend)
 
-            SectionLabel("Hatch-window forecast · next 8 weeks")
+            SectionLabel(s.hatchForecast8)
             BarChart(forecast, c.warn)
             Text(
-                "When incubating nests are expected to start emerging (found date + ~incubation).",
+                s.hatchForecastSub,
                 color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Medium,
             )
 
-            SectionLabel("Excavation outcomes")
+            SectionLabel(s.excavationOutcomes)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatTile("${excavatedNests.size}", "excavated", Modifier.weight(1f))
-                StatTile("$shells", "hatched eggs", Modifier.weight(1f))
-                StatTile("$unhatched", "unhatched", Modifier.weight(1f))
+                StatTile("${excavatedNests.size}", s.excavatedWord, Modifier.weight(1f))
+                StatTile("$shells", s.hatchedEggs, Modifier.weight(1f))
+                StatTile("$unhatched", s.unhatchedWord, Modifier.weight(1f))
             }
-            if (excavatedNests.isEmpty()) EmptyNote("No excavations recorded yet.")
+            if (excavatedNests.isEmpty()) EmptyNote(s.noExcavations)
         }
     }
 }

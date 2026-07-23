@@ -53,6 +53,7 @@ fun MapScreen(
     onOpenCommunity: (String) -> Unit = {},
 ) {
     val c = caretta
+    val s = com.carettafriends.content.appStrings(state.profile.language)
     var filter by remember { mutableStateOf("all") }
     var tappedBeach by remember { mutableStateOf<String?>(null) }
     var airExpanded by remember { mutableStateOf(false) }
@@ -92,7 +93,6 @@ fun MapScreen(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                val s = com.carettafriends.content.appStrings(state.profile.language)
                 FilterChip("all", s.filterAll, filter) { filter = it }
                 FilterChip("nests", s.filterNests, filter) { filter = it }
                 FilterChip("hatching", s.filterHatching, filter) { filter = it }
@@ -102,7 +102,7 @@ fun MapScreen(
             CoveragePill(state)
             state.air?.let { air ->
                 Spacer(Modifier.height(8.dp))
-                AirPill(air) { airExpanded = !airExpanded }
+                AirPill(air, s) { airExpanded = !airExpanded }
                 if (airExpanded) {
                     Spacer(Modifier.height(6.dp))
                     AirDetail(air)
@@ -119,7 +119,7 @@ fun MapScreen(
                 .padding(horizontal = 14.dp, vertical = 9.dp),
         ) {
             Text(
-                if (patrolBlocked) "⚠ Dust — patrol not advised" else com.carettafriends.content.appStrings(state.profile.language).startPatrol,
+                if (patrolBlocked) s.dustNotAdvised else s.startPatrol,
                 color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
             )
         }
@@ -231,15 +231,15 @@ private fun CoveragePill(state: AppState) {
  *  reading exists; turns red on dust / unhealthy so volunteers know when patrolling isn't advisable.
  *  Tap to expand the extra signals (waves / fire / UV / …). */
 @Composable
-private fun AirPill(air: com.carettafriends.domain.AirStatus, onClick: () -> Unit) {
+private fun AirPill(air: com.carettafriends.domain.AirStatus, s: com.carettafriends.content.AppStrings, onClick: () -> Unit) {
     val amber = Color(0xFFE0A82E)
     val red = Color(0xFFE0533D)
     val green = Color(0xFF2E9E5B)
     val (bg, emoji, text) = when (air.level) {
-        com.carettafriends.domain.AirLevel.DUST -> Triple(red, "🌫️", "Dust · PM10 ${air.pm10.toInt()} — patrol not advised")
-        com.carettafriends.domain.AirLevel.UNHEALTHY -> Triple(red, "😷", "Unhealthy air · PM2.5 ${air.pm25.toInt()}")
-        com.carettafriends.domain.AirLevel.MODERATE -> Triple(amber, "🌤️", "Moderate air · PM2.5 ${air.pm25.toInt()}")
-        com.carettafriends.domain.AirLevel.GOOD -> Triple(green, "🍃", "Air clean · PM2.5 ${air.pm25.toInt()}")
+        com.carettafriends.domain.AirLevel.DUST -> Triple(red, "🌫️", "${s.airDustLabel} · PM10 ${air.pm10.toInt()} — ${s.patrolNotAdvised}")
+        com.carettafriends.domain.AirLevel.UNHEALTHY -> Triple(red, "😷", "${s.airUnhealthy} · PM2.5 ${air.pm25.toInt()}")
+        com.carettafriends.domain.AirLevel.MODERATE -> Triple(amber, "🌤️", "${s.airModerate} · PM2.5 ${air.pm25.toInt()}")
+        com.carettafriends.domain.AirLevel.GOOD -> Triple(green, "🍃", "${s.airCleanLabel} · PM2.5 ${air.pm25.toInt()}")
     }
     val comfortSuffix = air.comfort?.let { " · ☺ $it" } ?: ""
     val more = if (air.signals.isNotEmpty()) "  ›" else ""

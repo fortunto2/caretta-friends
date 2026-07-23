@@ -25,6 +25,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.carettafriends.content.AppStrings
+import com.carettafriends.content.appStrings
 import com.carettafriends.data.nestDay
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Beach
@@ -48,6 +50,7 @@ fun BeachDetailScreen(beach: Beach, state: AppState, onBack: () -> Unit, onOpenN
     // Card accent mirrors the map: green = official protected beach, amber = unprotected.
     val amber = Color(0xFFE0A82E)
     val accent = if (beach.protected) c.good else amber
+    val s = appStrings(state.profile.language)
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         // cover — tinted by protection so the card reads at a glance like the map dot/polygon.
@@ -61,7 +64,7 @@ fun BeachDetailScreen(beach: Beach, state: AppState, onBack: () -> Unit, onOpenN
             ) { Text("‹", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold) }
             Column(Modifier.align(Alignment.BottomStart).padding(start = 15.dp, bottom = 14.dp, end = 70.dp)) {
                 Text(beach.name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
-                Text(beach.city.ifBlank { "Beach" }, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp)
+                Text(beach.city.ifBlank { s.beachWord }, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp)
             }
         }
 
@@ -70,33 +73,29 @@ fun BeachDetailScreen(beach: Beach, state: AppState, onBack: () -> Unit, onOpenN
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                if (beach.protected) {
-                    "🛡️ Official protected nesting beach — night access banned in season."
-                } else {
-                    "🏖️ Not an official protected beach — nests logged here still count & sync."
-                },
+                if (beach.protected) s.protectedBeachBanner else s.unprotectedBeachBanner,
                 color = accent,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
             )
             if (beach.leaderName != null) {
-                Text("👑 ${beach.leaderAvatar} ${beach.leaderName} · beach leader", color = c.ink, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Text("👑 ${beach.leaderAvatar} ${beach.leaderName} · ${s.beachLeader}", color = c.ink, fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
 
             // stats
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatCard("${nests.size}", "nests", Modifier.weight(1f))
-                StatCard("$active", "active", Modifier.weight(1f))
-                StatCard("$hatched", "hatched", Modifier.weight(1f))
-                StatCard("$hatchlings", "🐢 to sea", Modifier.weight(1f))
+                StatCard("${nests.size}", s.nestsWord, Modifier.weight(1f))
+                StatCard("$active", s.activeWord, Modifier.weight(1f))
+                StatCard("$hatched", s.hatchedWord, Modifier.weight(1f))
+                StatCard("$hatchlings", s.toSea, Modifier.weight(1f))
             }
 
             // feed
-            SectionLabel("Feed")
+            SectionLabel(s.feed)
             if (nests.isEmpty()) {
-                Text("No nests logged here yet — be the first 🥚", color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Text(s.noNestsHereBeFirst, color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
             } else {
-                nests.forEach { nest -> FeedItem(nest, onOpenNest) }
+                nests.forEach { nest -> FeedItem(nest, s, onOpenNest) }
             }
         }
     }
@@ -118,7 +117,7 @@ private fun StatCard(value: String, label: String, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun FeedItem(nest: Nest, onOpenNest: (String) -> Unit) {
+private fun FeedItem(nest: Nest, s: AppStrings, onOpenNest: (String) -> Unit) {
     val c = caretta
     val last = nest.updates.lastOrNull()
     Row(
@@ -138,14 +137,14 @@ private fun FeedItem(nest: Nest, onOpenNest: (String) -> Unit) {
                 StatusPill(nest.status)
             }
             Text(
-                last?.body?.ifBlank { "Day ${nestDay(nest)}" } ?: "Day ${nestDay(nest)}",
+                last?.body?.ifBlank { "${s.dayWord} ${nestDay(nest)}" } ?: "${s.dayWord} ${nestDay(nest)}",
                 color = c.muted,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 2,
             )
         }
-        if (nest.photos.firstOrNull()?.localUri == null) Pill("Day ${nestDay(nest)}", c.sea)
+        if (nest.photos.firstOrNull()?.localUri == null) Pill("${s.dayWord} ${nestDay(nest)}", c.sea)
         Text("›", color = c.muted, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
     }
 }
