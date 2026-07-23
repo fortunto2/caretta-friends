@@ -44,10 +44,14 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 ## 🔜 Backlog (prioritised — do in order, each its own commit + build + install both platforms)
 
 ### C — Native navigation feel
-- **iOS native nav bar**: use `NavigationStack`'s bar (title + native back + swipe-back) instead of the Compose `TopBar`. Add `expect fun useNativeHeader(): Boolean` (Android=false, iOS=true); Compose `TopBar` renders nothing on iOS; thread per-route titles to `.navigationTitle` in `ContentView.destinationView` (no screen uses TopBar `trailing`). Android keeps the Material `TopBar`.
-- **Swipe between tabs** (Instagram-style): HorizontalPager (Android) / paged content (iOS) under the persistent bottom bar.
-- **My location = compass arrow, not a dot** (avoid confusion with nest dots); **remove the bottom-right locate button** — show heading "like a navigator" (custom `MLNUserLocationAnnotationView` triangle, or `showsUserHeadingIndicator`).
-- **Android map my-location**: MapLibre `LocationComponent` (iOS has it; Android pending).
+- ✅ **Android map my-location** — done: MapLibre `LocationComponent` in `OsmMap.android` (default engine,
+  runtime `ACCESS_FINE_LOCATION` request, `RenderMode.COMPASS` heading arrow, `CameraMode.NONE`). Compiles +
+  runs clean; the arrow needs a real GPS fix to render (emulator mock-GPS→FusedLocation is unreliable) — confirm on device.
+- ✅ **iOS heading indicator** — done: `mapView.showsUserHeadingIndicator = true` (heading cone on the user
+  dot). Confirm the "navigator" feel on device (needs a real compass).
+- **iOS native nav bar** (⏳ needs device): use `NavigationStack`'s bar (title + native back + swipe-back) instead of the Compose `TopBar`. Add `expect fun useNativeHeader(): Boolean` (Android=false, iOS=true); Compose `TopBar` renders nothing on iOS; thread per-route titles to `.navigationTitle` in `ContentView.destinationView`. Larger refactor + swipe-back needs on-device verification.
+- **Swipe between tabs** (⏳): HorizontalPager (Android) / paged content (iOS) under the persistent bottom bar. Gesture-conflict risk with the map pan — verify carefully.
+- **Locate button / full compass-triangle** (⏳ needs device): optionally drop the iOS bottom-right locate button and/or use a custom `MLNUserLocationAnnotationView` triangle once the heading feel is confirmed on device.
 
 ### Other pending
 - **Photo cloud sync (offline-first, V2)**: nest *metadata* already syncs to Supabase; **photo files** do not — upload to Supabase Storage (→ Cloudflare R2 later, behind `CloudBackend`). Android durability: also save captures to a public MediaStore album (iOS done).

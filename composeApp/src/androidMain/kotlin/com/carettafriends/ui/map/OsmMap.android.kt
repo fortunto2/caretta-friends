@@ -1,5 +1,7 @@
 package com.carettafriends.ui.map
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -13,11 +15,18 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
+import org.maplibre.android.location.LocationComponentActivationOptions
+import org.maplibre.android.location.modes.CameraMode
+import org.maplibre.android.location.modes.RenderMode
 import com.google.gson.JsonPrimitive
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -86,6 +95,24 @@ actual fun OsmMap(
     var symbolManager by remember { mutableStateOf<SymbolManager?>(null) }
     var mapStyle by remember { mutableStateOf<Style?>(null) }
     var mapRef by remember { mutableStateOf<MapLibreMap?>(null) }
+
+    // My-location: show the volunteer's position as a heading arrow (RenderMode.COMPASS), matching iOS.
+    var locationGranted by remember {
+        mutableStateOf(ctx.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
+    }
+    val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        locationGranted = granted
+    }
+    LaunchedEffect(Unit) {
+        if (!locationGranted) permLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+    LaunchedEffect(mapRef, mapStyle, locationGranted) {
+        val map = mapRef
+        val style = mapStyle
+        if (map != null && style != null && locationGranted) {
+            runCatching { enableUserLocation(ctx, map, style) }
+        }
+    }
 
     DisposableEffect(lifecycleOwner) {
         val obs = LifecycleEventObserver { _, e ->
@@ -252,6 +279,19 @@ private fun updateBeachPolygons(style: Style, beaches: List<MapMarker>) {
         }
     }
     src.setGeoJson(FeatureCollection.fromFeatures(features))
+}
+
+/** Turn on the MapLibre LocationComponent as a heading arrow (COMPASS) without hijacking the camera.
+ *  Caller must have checked ACCESS_FINE_LOCATION (guarded), hence @SuppressLint. */
+@SuppressLint("MissingPermission")
+private fun enableUserLocation(ctx: Context, map: MapLibreMap, style: Style) {
+    val lc = map.locationComponent
+    lc.activateLocationComponent(
+        LocationComponentActivationOptions.builder(ctx, style).useDefaultLocationEngine(true).build(),
+    )
+    lc.isLocationComponentEnabled = true
+    lc.renderMode = RenderMode.COMPASS   // a heading arrow, not a plain dot
+    lc.cameraMode = CameraMode.NONE      // show me, but don't seize the camera
 }
 
 private fun centerCamera(map: MapLibreMap, points: List<MapMarker>) {

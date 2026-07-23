@@ -102,8 +102,10 @@ struct MapLibreView: UIViewRepresentable {
         mapView.delegate = context.coordinator
         mapView.setCenter(center, zoomLevel: zoomLevel, animated: false)
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        // Show the volunteer's own position (blue dot); the heading cone appears when they tap "locate".
+        // Show the volunteer's own position with a heading (compass) cone — reads "like a navigator"
+        // so it isn't confused with the nest dots.
         mapView.showsUserLocation = true
+        mapView.showsUserHeadingIndicator = true
         // Keep OSM attribution reachable (required by the tile usage policy).
         mapView.attributionButton.isHidden = false
         // Tap on a beach dot/polygon (style layers, not annotations) → open its card. Recognise
