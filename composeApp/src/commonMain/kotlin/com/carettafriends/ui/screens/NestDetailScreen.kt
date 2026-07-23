@@ -22,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -90,6 +91,14 @@ fun NestDetailScreen(
     val s = appStrings(state.profile.language)
     val watching = n.id in state.profile.watchedNestIds
     var sheet by remember { mutableStateOf(DetailSheet.NONE) }
+
+    // Context-aware bottom "+" (B3): when the shell requests an add-update for THIS nest, open the dialog.
+    LaunchedEffect(state.addUpdateFor) {
+        if (state.addUpdateFor == n.id) {
+            sheet = DetailSheet.UPDATE
+            repo.clearAddUpdate()
+        }
+    }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         TopBar(n.code, onBack = onBack)

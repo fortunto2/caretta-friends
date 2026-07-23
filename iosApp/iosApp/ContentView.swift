@@ -58,6 +58,9 @@ private func destinationView(_ route: Route, path: Binding<NavigationPath>, rout
                 )
             }
         }
+        // Track "a nest is the top screen" so the global "+" adds an update to THIS nest (B3).
+        .onAppear { router.currentNestId = id }
+        .onDisappear { if router.currentNestId == id { router.currentNestId = nil } }
     case .excavation(let id):
         DetailScreen(fullBleed: false) {
             ComposeHost { IosEntryKt.ExcavationVC(nestId: id, onBack: { path.wrappedValue.removeLast() }) }
@@ -593,6 +596,8 @@ final class AppRouter: ObservableObject {
     @Published var selection: AppTab = .map
     /// Bumped to ask the Map tab to read `IosEntryKt.takeMapFocus()` and centre on it.
     @Published var focusTick: Int = 0
+    /// The nest id currently shown as the top pushed screen, or nil. Drives the context-aware "+" (B3).
+    @Published var currentNestId: String? = nil
 
     /// Switch to the Map tab and request it to consume the pending map focus.
     func focusMap() { selection = .map; focusTick += 1 }
@@ -603,6 +608,15 @@ struct ContentView: View {
     @State private var prior: AppTab = .map
     @State private var showAdd = false
     @State private var showOnboarding = false
+
+    /// Context-aware "+" (B3): on a nest detail → add an update to THAT nest; elsewhere → new-nest flow.
+    private func handlePlus() {
+        if let nid = router.currentNestId {
+            IosEntryKt.requestAddUpdate(nestId: nid)
+        } else {
+            showAdd = true
+        }
+    }
 
     var body: some View {
         let nav = IosEntryKt.navLabels()
@@ -652,7 +666,7 @@ struct ContentView: View {
         // Prominent coral "+" over the centre tab (Android has the same). Sits on top of the
         // sentinel .add tab; tapping either opens the add flow.
         .overlay(alignment: .bottom) {
-            Button { showAdd = true } label: {
+            Button { handlePlus() } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 26, weight: .heavy))
                     .foregroundColor(.white)

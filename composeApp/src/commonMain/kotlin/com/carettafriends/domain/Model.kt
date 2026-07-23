@@ -297,6 +297,9 @@ data class AppState(
      *  serialized, so it can't survive a relaunch and re-focus the map. Set via [focusMap], consumed
      *  via [takeMapFocus]. */
     @Transient val mapFocus: GeoPoint? = null,
+    /** One-shot "open add-update for this nest" request from the context-aware bottom "+" (B3). The
+     *  nest detail on screen opens its AddUpdate dialog when this matches its id. Transient. */
+    @Transient val addUpdateFor: String? = null,
 ) {
     fun beach(id: String): Beach? = beaches.firstOrNull { it.id == id }
     fun nest(id: String): Nest? = nests.firstOrNull { it.id == id }

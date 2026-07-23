@@ -289,6 +289,11 @@ class CarettaRepository {
     fun takeMapFocus(): GeoPoint? =
         _state.value.mapFocus.also { if (it != null) _state.value = _state.value.copy(mapFocus = null) }
 
+    /** Ask the on-screen nest detail to open its "add update" dialog (context-aware bottom "+", B3). */
+    fun requestAddUpdate(nestId: String) { _state.value = _state.value.copy(addUpdateFor = nestId) }
+    /** Clear the pending add-update request once the dialog has been opened. */
+    fun clearAddUpdate() { if (_state.value.addUpdateFor != null) _state.value = _state.value.copy(addUpdateFor = null) }
+
     /** Set the volunteer's display name (offline, no login needed — used as the nest/patrol author). */
     fun setDisplayName(name: String) {
         val clean = name.trim().take(40)

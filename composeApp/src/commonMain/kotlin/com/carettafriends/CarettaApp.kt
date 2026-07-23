@@ -147,7 +147,14 @@ fun CarettaApp() {
                     current = tabKey(current),
                     items = navItems(s),
                     onSelect = { nav.selectTab(tabFromKey(it)) },
-                    onAdd = { if (current !is Screen.AddNest) nav.go(Screen.AddNest) },
+                    // Context-aware "+": on a nest → add an update to THAT nest; elsewhere → new nest (B3).
+                    onAdd = {
+                        when (val cur = current) {
+                            is Screen.NestDetail -> repo.requestAddUpdate(cur.nestId)
+                            is Screen.AddNest -> {}
+                            else -> nav.go(Screen.AddNest)
+                        }
+                    },
                 )
             }
         }

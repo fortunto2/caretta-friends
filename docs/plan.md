@@ -25,6 +25,11 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
   openstreetmap.org. Android reactive (Compose `OsmMap.animateCamera`); iOS via `AppRouter` env-object
   → native `MapLibreView` focus. Focus is `@Transient` (one-shot, never persisted). Plan/spec:
   `docs/plan/b1-map-focus_20260724/`.
+- **B3 — contextual "+"**: the bottom "+" is context-aware — on a nest detail it adds an update to
+  THAT nest (opens the AddUpdate dialog), elsewhere it starts a new nest. Transient
+  `AppState.addUpdateFor` → `repo.requestAddUpdate()`/`clearAddUpdate()`; the on-screen `NestDetailScreen`
+  opens its dialog via `LaunchedEffect`. iOS tracks the top nest in `AppRouter.currentNestId`
+  (set/clear on `.nest` appear/disappear); the coral "+" routes through `handlePlus()`.
 - **Photo durability (iOS)**: capture also saved to a **"Caretta Friends" Photos album** (`PhotoAlbumSaver`) so photos survive reinstall.
 - **Crash fixes**: iOS photo-share (dropped fragile CoreGraphics watermark); AppStrings 255-field VerifyError (Map-backed).
 - Empty states (encouraging CTA, not big "0"); excavation celebration (or supportive msg when 0); watch persists (`Profile.watchedNestIds`).
@@ -32,12 +37,6 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 ---
 
 ## 🔜 Backlog (prioritised — do in order, each its own commit + build + install both platforms)
-
-### B3 — Contextual "+" (unify capture)
-The bottom "+" should be context-aware: on the map/home → new nest; on a nest detail → add update to THAT nest.
-- New `Screen.AddUpdate(nestId)` + iOS `Route.addUpdate` + VC, OR reuse the AddUpdateDialog surfaced from the bar.
-- Android `CarettaApp.onAdd`: `if (current is Screen.NestDetail) → add-update to that nest, else → AddNest`.
-- iOS: the native "+" overlay must know the top pushed screen (nest) to route correctly.
 
 ### C — Native navigation feel
 - **iOS native nav bar**: use `NavigationStack`'s bar (title + native back + swipe-back) instead of the Compose `TopBar`. Add `expect fun useNativeHeader(): Boolean` (Android=false, iOS=true); Compose `TopBar` renders nothing on iOS; thread per-route titles to `.navigationTitle` in `ContentView.destinationView` (no screen uses TopBar `trailing`). Android keeps the Material `TopBar`.

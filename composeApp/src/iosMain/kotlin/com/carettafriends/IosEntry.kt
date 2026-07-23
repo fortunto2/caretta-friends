@@ -148,6 +148,9 @@ data class IosGeo(val lat: Double, val lng: Double)
 /** Read-and-clear a pending "centre the map here" request (set by a nest's geo card). null = none. */
 fun takeMapFocus(): IosGeo? = SharedRepo.repo.takeMapFocus()?.let { IosGeo(it.lat, it.lng) }
 
+/** Context-aware "+" (B3): ask the on-screen nest detail to open its add-update dialog for [nestId]. */
+fun requestAddUpdate(nestId: String) = SharedRepo.repo.requestAddUpdate(nestId)
+
 /** Save a recorded patrol from the Swift GPS recorder. trackCsv = "lat,lng;lat,lng;…". Returns the id.
  *  On-device only until [publishPatrol] — the walk is never shared live. */
 fun savePatrol(meters: Int, seconds: Int, trackCsv: String): String {
