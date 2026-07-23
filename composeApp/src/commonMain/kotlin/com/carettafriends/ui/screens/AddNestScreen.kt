@@ -209,29 +209,26 @@ fun AddNestScreen(
                 BeachPicker(state.beaches, selectedBeach, fixPoint) { selectedBeach = it; beachManual = true }
             }
 
-            // ── Nest-only fields ───────────────────────────────────────
-            if (markerType == MarkerType.NEST) {
-                SectionLabel(s.protection)
-                Segmented(
-                    listOf(
-                        SegOption(s.protNone, protection == ProtectionLevel.NONE) { protection = ProtectionLevel.NONE },
-                        SegOption(s.protReed, protection == ProtectionLevel.MARKED) { protection = ProtectionLevel.MARKED },
-                        SegOption(s.protCage, protection == ProtectionLevel.CAGED) { protection = ProtectionLevel.CAGED },
-                    ),
-                )
-                Text(
-                    s.protectionHelp,
-                    color = c.muted,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                )
-                // Sun exposure is optional (feeds the sex prediction; defaults to Partial) — tucked away.
-                Text(
-                    (if (showDetails) "▾ " else "▸ ") + s.optionalSun,
-                    color = c.sea, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { showDetails = !showDetails }.padding(vertical = 4.dp),
-                )
-                if (showDetails) {
+            // ── Details (optional) ─────────────────────────────────────
+            // Smart defaults keep the common case one-tap ("photograph & save"): a nest starts NOT
+            // protected (you just found it) and PUBLIC. Protection / sun / visibility hide behind this.
+            Text(
+                (if (showDetails) "▾ " else "▸ ") + s.moreDetails,
+                color = c.sea, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { showDetails = !showDetails }.padding(vertical = 6.dp),
+            )
+            if (showDetails) {
+                if (markerType == MarkerType.NEST) {
+                    SectionLabel(s.protection)
+                    Segmented(
+                        listOf(
+                            SegOption(s.protNone, protection == ProtectionLevel.NONE) { protection = ProtectionLevel.NONE },
+                            SegOption(s.protReed, protection == ProtectionLevel.MARKED) { protection = ProtectionLevel.MARKED },
+                            SegOption(s.protCage, protection == ProtectionLevel.CAGED) { protection = ProtectionLevel.CAGED },
+                        ),
+                    )
+                    Text(s.protectionHelp, color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                    SectionLabel(s.optionalSun)
                     Segmented(
                         listOf(
                             SegOption(s.segSun, exposure == SunExposure.FULL_SUN) { exposure = SunExposure.FULL_SUN },
@@ -240,16 +237,18 @@ fun AddNestScreen(
                         ),
                     )
                 }
+                // Violations manage their audience via the anonymous toggle (forced private), so the
+                // public/private switch only appears here for nests & landmarks.
+                if (!isViolation) {
+                    SectionLabel(s.visibility)
+                    Segmented(
+                        listOf(
+                            SegOption(s.visPublic, visibility == Visibility.PUBLIC) { visibility = Visibility.PUBLIC },
+                            SegOption(s.visPrivate, visibility == Visibility.PRIVATE) { visibility = Visibility.PRIVATE },
+                        ),
+                    )
+                }
             }
-
-            // ── Visibility ─────────────────────────────────────────────
-            SectionLabel(s.visibility)
-            Segmented(
-                listOf(
-                    SegOption(s.visPublic, visibility == Visibility.PUBLIC) { visibility = Visibility.PUBLIC },
-                    SegOption(s.visPrivate, visibility == Visibility.PRIVATE) { visibility = Visibility.PRIVATE },
-                ),
-            )
 
             // ── Save ───────────────────────────────────────────────────
             Box(Modifier.size(4.dp))

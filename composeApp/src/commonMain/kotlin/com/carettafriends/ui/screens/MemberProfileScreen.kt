@@ -62,10 +62,6 @@ fun MemberProfileScreen(
     val hatchlings = nests.sumOf { it.excavation?.hatchlingsToSea ?: 0 }
     val badges = state.earnedBadgesFor(member)
     val homeBeach = member.homeBeach?.let { name -> state.beaches.firstOrNull { it.name == name } }
-    val photos = nests
-        .sortedByDescending { it.updatedAtMillis }
-        .flatMap { n -> n.photos.mapNotNull { ph -> ph.localUri?.let { uriStr -> uriStr to n.id } } }
-        .take(9)
 
     val roleTint = when (member.role) {
         MemberRole.ADMIN -> c.coral
@@ -85,16 +81,15 @@ fun MemberProfileScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // identity — avatar + name + role, home beach chip (tappable)
+            // Identity — the name is already in the header (TopBar / native nav title), so here we show
+            // just the avatar + role (no duplicate name).
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(
                     Modifier.size(64.dp).clip(RoundedCornerShape(20.dp))
                         .background(Brush.linearGradient(listOf(roleTint.copy(alpha = 0.85f), c.deep))),
                     contentAlignment = Alignment.Center,
                 ) { Text(member.avatar, fontSize = 30.sp) }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(member.name, color = c.deep, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
-                    Pill(roleText, roleTint)
-                }
+                Pill(roleText, roleTint)
             }
 
             if (homeBeach != null) {
@@ -150,32 +145,13 @@ fun MemberProfileScreen(
                 }
             }
 
-            // their nests — photo grid (tap → nest) + code chips for photo-less nests
-            SectionLabel(s.memberNestsSection)
-            if (nests.isEmpty()) {
+            // Activity — their trail (photo + what happened, tied to a nest). One shared feed component.
+            SectionLabel(s.activityTitle)
+            val feed = activityFeed(state, s, member = member)
+            if (feed.isEmpty()) {
                 Text(s.memberNoNests, color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
             } else {
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    nests.forEach { n ->
-                        Box(Modifier.clickable { onOpenNest(n.id) }) { Pill("🥚 ${n.code}", c.sea) }
-                    }
-                }
-                if (photos.isNotEmpty()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        photos.chunked(3).forEach { rowPhotos ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                rowPhotos.forEach { (photoUri, nestId) ->
-                                    LocalPhoto(
-                                        photoUri,
-                                        Modifier.weight(1f).aspectRatio(1f).clip(RoundedCornerShape(10.dp))
-                                            .clickable { onOpenNest(nestId) },
-                                    )
-                                }
-                                repeat(3 - rowPhotos.size) { Box(Modifier.weight(1f)) }
-                            }
-                        }
-                    }
-                }
+                ActivityFeed(feed, onOpenNest)
             }
         }
     }

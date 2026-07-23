@@ -265,6 +265,8 @@ class AppStrings(private val m: Map<String, String>, val months: List<String>) {
     val impactZeroCta: String get() = m.getValue("impactZeroCta")
     val excZeroHint: String get() = m.getValue("excZeroHint")
     val excThanksRecord: String get() = m.getValue("excThanksRecord")
+    val activityTitle: String get() = m.getValue("activityTitle")
+    val moreDetails: String get() = m.getValue("moreDetails")
 }
 
 private fun enStrings() = AppStrings(
@@ -525,6 +527,8 @@ private fun enStrings() = AppStrings(
         "impactZeroCta" to "Log your first nest to start your impact 🐣",
         "excZeroHint" to "Count what you find below ↓",
         "excThanksRecord" to "Every count matters — thank you for recording this nest 🐢",
+        "activityTitle" to "Activity",
+        "moreDetails" to "More details",
     ),
     months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
 )
@@ -787,6 +791,8 @@ private fun ruStrings() = AppStrings(
         "impactZeroCta" to "Отметь первое гнездо — и счёт пойдёт 🐣",
         "excZeroHint" to "Считай находки ниже ↓",
         "excThanksRecord" to "Каждый учёт важен — спасибо, что записал это гнездо 🐢",
+        "activityTitle" to "Активность",
+        "moreDetails" to "Подробнее",
     ),
     months = listOf("янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"),
 )
@@ -1049,6 +1055,8 @@ private fun trStrings() = AppStrings(
         "impactZeroCta" to "İlk yuvanı işaretle, katkın başlasın 🐣",
         "excZeroHint" to "Bulduklarını aşağıda say ↓",
         "excThanksRecord" to "Her kayıt önemli — bu yuvayı kaydettiğin için teşekkürler 🐢",
+        "activityTitle" to "Etkinlik",
+        "moreDetails" to "Daha fazla",
     ),
     months = listOf("Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"),
 )

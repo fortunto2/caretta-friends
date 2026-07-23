@@ -72,11 +72,6 @@ fun ProfileScreen(
     val visitedIds = (state.patrols.map { it.beachId } + state.nests.filter { it.foundBy == p.displayName }.map { it.beachId }).toSet()
     val visited = state.beaches.filter { it.id in visitedIds }
     val home = p.homeBeachId?.let { state.beach(it) }
-    // Latest photos across this volunteer's nests → an Instagram-style grid.
-    val myPhotos = state.nests
-        .sortedByDescending { it.updatedAtMillis }
-        .flatMap { n -> n.photos.mapNotNull { ph -> ph.localUri?.let { uri -> uri to n.id } } }
-        .take(9)
     val earnedBadges = state.badges.filter { it.earned }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -240,32 +235,12 @@ fun ProfileScreen(
                 }
             }
 
-            // my photos — recent nest photos as a square grid (tap opens the nest).
-            if (myPhotos.isNotEmpty()) {
-                SectionLabel(s.myPhotos)
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    myPhotos.chunked(3).forEach { rowPhotos ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            rowPhotos.forEach { (uri, nestId) ->
-                                LocalPhoto(
-                                    uri,
-                                    Modifier.weight(1f).aspectRatio(1f).clip(RoundedCornerShape(10.dp))
-                                        .clickable { onOpenNest(nestId) },
-                                )
-                            }
-                            repeat(3 - rowPhotos.size) { Box(Modifier.weight(1f)) }
-                        }
-                    }
-                }
-            }
-
-            // watching — nests this volunteer follows (the persisted hatch-watch hook), tap to open.
-            val watched = state.nests.filter { it.id in p.watchedNestIds }
-            if (watched.isNotEmpty()) {
-                SectionLabel(s.watching)
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    watched.forEach { n -> Box(Modifier.clickable { onOpenNest(n.id) }) { Pill("🥚 ${n.code}", c.sea) } }
-                }
+            // Activity — your trail (photo + what happened per nest), the same feed used on member,
+            // beach and community screens. Replaces the bare photo grid / nest-code lists.
+            val feed = activityFeed(state, s, member = state.meAsMember)
+            if (feed.isNotEmpty()) {
+                SectionLabel(s.activityTitle)
+                ActivityFeed(feed, onOpenNest)
             }
 
             // trends / charts

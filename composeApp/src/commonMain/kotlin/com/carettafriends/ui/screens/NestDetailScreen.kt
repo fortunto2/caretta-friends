@@ -446,7 +446,7 @@ private fun conditionSuffix(u: NestUpdate, s: AppStrings): String = when (u.cond
 
 // --- helpers -------------------------------------------------------------
 
-private fun fmtDate(d: LocalDate, s: AppStrings): String = "${s.months[d.month.ordinal]} ${d.dayOfMonth}"
+internal fun fmtDate(d: LocalDate, s: AppStrings): String = "${s.months[d.month.ordinal]} ${d.dayOfMonth}"
 
 private fun hatchWindowLabel(n: Nest, s: AppStrings): String {
     if (n.incubationDaysEst <= 0) return "—"
