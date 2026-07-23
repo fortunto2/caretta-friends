@@ -16,6 +16,9 @@ sealed interface Screen {
     data class NestDetail(val nestId: String) : Screen
     data class Excavation(val nestId: String) : Screen
     data class BeachDetail(val beachId: String) : Screen
+    /** A read-only profile of any volunteer. [memberKey] = a Member id, a stored name
+     *  (nest.foundBy / update.author / beach.leaderName), or "you". Resolved via AppState.resolveMember. */
+    data class Member(val memberKey: String) : Screen
 }
 
 fun Screen.isTab(): Boolean =

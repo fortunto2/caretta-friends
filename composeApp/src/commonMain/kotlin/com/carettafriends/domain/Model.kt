@@ -299,4 +299,44 @@ data class AppState(
 
     fun communityOrPrimary(id: String): Community =
         allCommunities.firstOrNull { it.id == id } ?: community
+
+    /** The signed-in user projected as a [Member], so the whole people-graph (avatars, names,
+     *  the leaderboard, timeline authors) links to one MemberProfile screen — including yourself. */
+    val meAsMember: Member
+        get() = Member(
+            id = "you",
+            name = profile.displayName,
+            role = profile.memberRole,
+            avatar = profile.avatar,
+            homeBeach = profile.homeBeachId?.let { beach(it)?.name },
+            link = profile.link,
+        )
+
+    /** Resolve a person reference — a [Member] id, a stored name (nest.foundBy / update.author /
+     *  beach.leaderName), or "you" — to a [Member]. Unknown names synthesize a bare volunteer so the
+     *  profile stays reachable (still shows their nests). Never null → every person is navigable. */
+    fun resolveMember(key: String): Member {
+        if (key == "you" || key.equals(profile.displayName, ignoreCase = true)) return meAsMember
+        members.firstOrNull { it.id == key }?.let { return it }
+        members.firstOrNull { it.name.equals(key, ignoreCase = true) }?.let { return it }
+        return Member(id = key, name = key, role = MemberRole.VOLUNTEER)
+    }
+
+    /** Nests this member found (matched by name; "you" also matches the default "you" author). */
+    fun nestsBy(m: Member): List<Nest> = nests.filter { n ->
+        if (m.id == "you") n.foundBy == "you" || n.foundBy.equals(profile.displayName, ignoreCase = true)
+        else n.foundBy.equals(m.name, ignoreCase = true)
+    }
+
+    /** Badges a member has earned, derived from their nest activity (V1 keeps no per-member badge store). */
+    fun earnedBadgesFor(m: Member): List<Badge> {
+        val ns = nestsBy(m)
+        val hatchlings = ns.sumOf { it.excavation?.hatchlingsToSea ?: 0 }
+        return buildList {
+            if (ns.isNotEmpty()) add(Badge("first_nest", "🥚", "First nest", true))
+            if (ns.any { it.excavation != null }) add(Badge("first_dig", "⛏️", "First excavation", true))
+            if (hatchlings > 0) add(Badge("rescuer", "🐢", "Rescuer", true))
+            if (hatchlings >= 50) add(Badge("season50", "👑", "Season 50", true))
+        }
+    }
 }

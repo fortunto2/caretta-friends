@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.carettafriends.content.appStrings
 import com.carettafriends.data.CarettaRepository
 import com.carettafriends.domain.Excavation
 import com.carettafriends.domain.Nest
@@ -36,8 +37,9 @@ import com.carettafriends.ui.components.TopBar
 import com.carettafriends.ui.theme.caretta
 
 @Composable
-fun ExcavationScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit) {
+fun ExcavationScreen(nest: Nest, repo: CarettaRepository, lang: String, onBack: () -> Unit) {
     val c = caretta
+    val s = appStrings(lang)
     val seed = nest.excavation
 
     // Start at 0 — volunteers count up what they actually find (no demo pre-fill).
@@ -56,26 +58,26 @@ fun ExcavationScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit) {
     )
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        TopBar("Nest excavation", onBack = onBack)
+        TopBar(s.excavationTitle, onBack = onBack)
         Column(
             Modifier.padding(horizontal = 15.dp).padding(bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("${nest.code} · FWC count", color = c.muted, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Text("${nest.code} · ${s.excFinalCount}", color = c.muted, fontSize = 13.sp, fontWeight = FontWeight.Bold)
 
             // glove-friendly stepper rows
-            SectionLabel("Count what you find")
-            CountRow("🥚", "Hatched / empty shells", shells, onDec = { if (shells > 0) shells-- }, onInc = { shells++ })
-            CountRow("🟤", "Unhatched / whole eggs", unhatched, onDec = { if (unhatched > 0) unhatched-- }, onInc = { unhatched++ })
-            CountRow("🐣", "Pipped / in egg", pipped, onDec = { if (pipped > 0) pipped-- }, onInc = { pipped++ })
-            CountRow("🕳️", "In nest / stuck", inNest, onDec = { if (inNest > 0) inNest-- }, onInc = { inNest++ })
-            CountRow("🐢", "Helped out 🐢 / rescued", helpedOut, onDec = { if (helpedOut > 0) helpedOut-- }, onInc = { helpedOut++ })
+            SectionLabel(s.excCountWhatYouFind)
+            CountRow("🥚", s.excShells, shells, onDec = { if (shells > 0) shells-- }, onInc = { shells++ })
+            CountRow("🟤", s.excUnhatched, unhatched, onDec = { if (unhatched > 0) unhatched-- }, onInc = { unhatched++ })
+            CountRow("🐣", s.excPipped, pipped, onDec = { if (pipped > 0) pipped-- }, onInc = { pipped++ })
+            CountRow("🕳️", s.excInNest, inNest, onDec = { if (inNest > 0) inNest-- }, onInc = { inNest++ })
+            CountRow("🐢", s.excHelpedOut, helpedOut, onDec = { if (helpedOut > 0) helpedOut-- }, onInc = { helpedOut++ })
 
             // auto-computed success tiles
-            SectionLabel("Success")
+            SectionLabel(s.excSuccessLabel)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SuccessTile("${exc.hatchSuccessPct ?: 0}%", "Hatching success", c.good, Modifier.weight(1f))
-                SuccessTile("${exc.emergenceSuccessPct ?: 0}%", "Emergence success", c.sea, Modifier.weight(1f))
+                SuccessTile("${exc.hatchSuccessPct ?: 0}%", s.excHatchingSuccess, c.good, Modifier.weight(1f))
+                SuccessTile("${exc.emergenceSuccessPct ?: 0}%", s.excEmergenceSuccess, c.sea, Modifier.weight(1f))
             }
 
             // celebratory north-star tile
@@ -86,11 +88,11 @@ fun ExcavationScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit) {
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("${exc.hatchlingsToSea}", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.ExtraBold)
-                    Text("hatchlings reached the sea 🌊", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
+                    Text(s.hatchlingsReached, color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
                 }
             }
 
-            PrimaryButton("Finish & celebrate 🎉") {
+            PrimaryButton(s.excFinish) {
                 repo.setExcavation(nest.id, exc)
                 onBack()
             }

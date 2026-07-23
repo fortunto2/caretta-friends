@@ -18,6 +18,8 @@ enum Route: Hashable {
     case community(String)
     case beach(String)
     case stats
+    /// Read-only profile of a volunteer, keyed by a Member id or a stored name ("you" = self).
+    case member(String)
 }
 
 /// A pushed Compose screen: native swipe-back, no tab bar, hidden nav bar.
@@ -48,7 +50,8 @@ private func destinationView(_ route: Route, path: Binding<NavigationPath>) -> s
                 IosEntryKt.NestDetailVC(
                     nestId: id,
                     onBack: { path.wrappedValue.removeLast() },
-                    onExcavate: { nid in path.wrappedValue.append(Route.excavation(nid)) }
+                    onExcavate: { nid in path.wrappedValue.append(Route.excavation(nid)) },
+                    onOpenMember: { key in path.wrappedValue.append(Route.member(key)) }
                 )
             }
         }
@@ -80,7 +83,13 @@ private func destinationView(_ route: Route, path: Binding<NavigationPath>) -> s
         }
     case .community(let id):
         DetailScreen(fullBleed: false) {
-            ComposeHost { IosEntryKt.CommunityVC(communityId: id, onBack: { path.wrappedValue.removeLast() }) }
+            ComposeHost {
+                IosEntryKt.CommunityVC(
+                    communityId: id,
+                    onBack: { path.wrappedValue.removeLast() },
+                    onOpenMember: { key in path.wrappedValue.append(Route.member(key)) }
+                )
+            }
         }
     case .beach(let id):
         DetailScreen(fullBleed: false) {
@@ -88,13 +97,25 @@ private func destinationView(_ route: Route, path: Binding<NavigationPath>) -> s
                 IosEntryKt.BeachDetailVC(
                     beachId: id,
                     onBack: { path.wrappedValue.removeLast() },
-                    onOpenNest: { nid in path.wrappedValue.append(Route.nest(nid)) }
+                    onOpenNest: { nid in path.wrappedValue.append(Route.nest(nid)) },
+                    onOpenMember: { key in path.wrappedValue.append(Route.member(key)) }
                 )
             }
         }
     case .stats:
         DetailScreen(fullBleed: false) {
             ComposeHost { IosEntryKt.StatsVC(onBack: { path.wrappedValue.removeLast() }) }
+        }
+    case .member(let key):
+        DetailScreen(fullBleed: false) {
+            ComposeHost {
+                IosEntryKt.MemberVC(
+                    memberKey: key,
+                    onBack: { path.wrappedValue.removeLast() },
+                    onOpenNest: { nid in path.wrappedValue.append(Route.nest(nid)) },
+                    onOpenBeach: { bid in path.wrappedValue.append(Route.beach(bid)) }
+                )
+            }
         }
     }
 }
@@ -159,6 +180,7 @@ struct MapTab: View {
     @State private var airExpanded = false
 
     private func reload() {
+        strings = IosEntryKt.currentStrings()
         points = IosEntryKt.mapPoints().map { p in
             MapPoint(
                 id: p.id,
@@ -213,6 +235,11 @@ struct MapTab: View {
         air = IosEntryKt.airStatus()
     }
 
+    /// Localized native-chrome strings (map chips, tooltip, patrol dialog), cached so a body re-render
+    /// (once/second during a patrol) never re-crosses the KMP bridge. Refreshed in `reload()` on appear,
+    /// which fires when the tab returns to front after a Profile → Language change.
+    @State private var strings = IosEntryKt.currentStrings()
+
     var body: some View {
         NavigationStack(path: $path) {
             ZStack(alignment: .top) {
@@ -241,11 +268,11 @@ struct MapTab: View {
                 VStack(alignment: .leading, spacing: 10) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            chip("All", "all")
-                            chip("🥚 Nests", "nests")
-                            chip("● Hatching", "hatching")
-                            chip("🧺 Trash", "trash")
-                            chip("⛔ Violations", "violations")
+                            chip(strings.filterAll, "all")
+                            chip(strings.filterNests, "nests")
+                            chip(strings.filterHatching, "hatching")
+                            chip(strings.filterTrash, "trash")
+                            chip(strings.filterViolations, "violations")
                             timelapseChip()
                         }
                         .padding(.horizontal, 14)
@@ -351,11 +378,11 @@ struct MapTab: View {
                 onCancel: { showCamera = false }
             )
         }
-        .alert("Publish this patrol?", isPresented: $showPublish) {
-            Button("Keep private", role: .cancel) {}
-            Button("Publish") { if let id = savedPatrolId { IosEntryKt.publishPatrol(id: id) } }
+        .alert(strings.patrolPublishTitle, isPresented: $showPublish) {
+            Button(strings.patrolKeepPrivate, role: .cancel) {}
+            Button(strings.patrolPublish) { if let id = savedPatrolId { IosEntryKt.publishPatrol(id: id) } }
         } message: {
-            Text("Your walk is saved on your phone. Publish to share the route with your community — your live location is never shared.")
+            Text(strings.patrolPublishBody)
         }
     }
 
@@ -416,9 +443,9 @@ struct MapTab: View {
                 .fill(tb.isProtected ? Color.cfGood : Color.cfAmber)
                 .frame(width: 14, height: 14)
             VStack(alignment: .leading, spacing: 2) {
-                Text(tb.name.isEmpty ? "Beach" : tb.name)
+                Text(tb.name.isEmpty ? strings.beachWord : tb.name)
                     .font(.subheadline.weight(.bold)).foregroundColor(.cfDeep)
-                Text(tb.isProtected ? "🛡️ Protected nesting beach" : "Beach")
+                Text(tb.isProtected ? strings.protectedBeachLabel : strings.beachWord)
                     .font(.caption).foregroundColor(.secondary)
             }
             Spacer()
@@ -428,7 +455,7 @@ struct MapTab: View {
                     tappedBeach = nil
                     path.append(Route.beach(id))
                 } label: {
-                    Text("Open ›").font(.subheadline.weight(.bold)).foregroundColor(.white)
+                    Text("\(strings.openWord) ›").font(.subheadline.weight(.bold)).foregroundColor(.white)
                         .padding(.horizontal, 12).padding(.vertical, 7)
                         .background(Color.cfSea).clipShape(Capsule())
                 }
@@ -460,7 +487,7 @@ struct MapTab: View {
     }
 
     private func timelapseChip() -> some View {
-        Text("🎞️ Timelapse")
+        Text(strings.timelapse)
             .font(.caption.weight(.bold))
             .foregroundColor(timelapse ? .white : .cfDeep)
             .padding(.horizontal, 12).padding(.vertical, 7)
@@ -564,7 +591,8 @@ struct ContentView: View {
                     IosEntryKt.ProfileVC(
                         onOpenCommunity: { path.wrappedValue.append(Route.community(IosEntryKt.primaryCommunityId())) },
                         onOpenStats: { path.wrappedValue.append(Route.stats) },
-                        onOpenNest: { path.wrappedValue.append(Route.nest($0)) }
+                        onOpenNest: { path.wrappedValue.append(Route.nest($0)) },
+                        onOpenBeach: { path.wrappedValue.append(Route.beach($0)) }
                     )
                 }
             }

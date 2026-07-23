@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.window.ComposeUIViewController
+import com.carettafriends.content.AppStrings
+import com.carettafriends.content.appStrings
 import com.carettafriends.data.CarettaRepository
 import com.carettafriends.data.PendingPhoto
 import com.carettafriends.domain.GeoPoint
@@ -17,6 +19,7 @@ import com.carettafriends.ui.screens.CommunityScreen
 import com.carettafriends.ui.screens.ExcavationScreen
 import com.carettafriends.ui.screens.LearnScreen
 import com.carettafriends.ui.screens.MapScreen
+import com.carettafriends.ui.screens.MemberProfileScreen
 import com.carettafriends.ui.screens.NestDetailScreen
 import com.carettafriends.ui.screens.OnboardingScreen
 import com.carettafriends.ui.screens.ProfileScreen
@@ -106,9 +109,14 @@ fun primaryCommunityId(): String = SharedRepo.repo.state.value.community.id
 data class IosNavLabels(val map: String, val beaches: String, val learn: String, val profile: String)
 
 fun navLabels(): IosNavLabels {
-    val s = com.carettafriends.content.appStrings(SharedRepo.repo.state.value.profile.language)
+    val s = appStrings(SharedRepo.repo.state.value.profile.language)
     return IosNavLabels(s.navMap, s.navBeaches, s.navLearn, s.navProfile)
 }
+
+/** The current localized string catalog for the native iOS chrome (map chips, beach tooltip, patrol
+ *  dialog, camera). Swift reads fields directly (`currentStrings().filterAll`, `.protectedBeachLabel`…)
+ *  so no per-string bridge struct has to grow. Follows Profile → Language, same as [navLabels]. */
+fun currentStrings(): AppStrings = appStrings(SharedRepo.repo.state.value.profile.language)
 
 /** Current air quality for the native map's pill. level = GOOD/MODERATE/UNHEALTHY/DUST. null = no sensor. */
 data class IosAirSignal(val emoji: String, val label: String, val value: String)
@@ -174,10 +182,15 @@ fun BeachesVC(onOpenNest: (String) -> Unit, onOpenBeach: (String) -> Unit): UIVi
     BeachesScreen(state, onOpenNest, onOpenBeach)
 }
 
-fun BeachDetailVC(beachId: String, onBack: () -> Unit, onOpenNest: (String) -> Unit): UIViewController = host {
+fun BeachDetailVC(
+    beachId: String,
+    onBack: () -> Unit,
+    onOpenNest: (String) -> Unit,
+    onOpenMember: (String) -> Unit,
+): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
     val b = state.beach(beachId)
-    if (b != null) BeachDetailScreen(b, state, onBack, onOpenNest) else EmptyHint("🏖️", "Beach not found")
+    if (b != null) BeachDetailScreen(b, state, onBack, onOpenNest, onOpenMember) else EmptyHint("🏖️", appStrings(state.profile.language).beachNotFound)
 }
 
 fun LearnVC(): UIViewController = host {
@@ -185,9 +198,14 @@ fun LearnVC(): UIViewController = host {
     LearnScreen(state, SharedRepo.repo)
 }
 
-fun ProfileVC(onOpenCommunity: () -> Unit, onOpenStats: () -> Unit, onOpenNest: (String) -> Unit): UIViewController = host {
+fun ProfileVC(
+    onOpenCommunity: () -> Unit,
+    onOpenStats: () -> Unit,
+    onOpenNest: (String) -> Unit,
+    onOpenBeach: (String) -> Unit,
+): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
-    ProfileScreen(SharedRepo.repo, state, onOpenCommunity, onOpenStats, onOpenNest)
+    ProfileScreen(SharedRepo.repo, state, onOpenCommunity, onOpenStats, onOpenNest, onOpenBeach)
 }
 
 fun StatsVC(onBack: () -> Unit): UIViewController = host {
@@ -208,27 +226,46 @@ fun AddNestVC(onDone: () -> Unit, onCamera: () -> Unit, onNestSaved: (String) ->
     AddNestScreen(SharedRepo.repo, state, onDone, onCamera, onNestSaved)
 }
 
-fun NestDetailVC(nestId: String, onBack: () -> Unit, onExcavate: (String) -> Unit): UIViewController = host {
+fun NestDetailVC(
+    nestId: String,
+    onBack: () -> Unit,
+    onExcavate: (String) -> Unit,
+    onOpenMember: (String) -> Unit,
+): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
     val n = state.nest(nestId)
     if (n != null) {
-        NestDetailScreen(n, SharedRepo.repo, onBack) { onExcavate(n.id) }
+        NestDetailScreen(n, SharedRepo.repo, onBack, { onExcavate(n.id) }, onOpenMember)
     } else {
-        EmptyHint("🐢", "Nest not found")
+        EmptyHint("🐢", appStrings(state.profile.language).nestNotFound)
     }
 }
 
 fun ExcavationVC(nestId: String, onBack: () -> Unit): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
     val n = state.nest(nestId)
-    if (n != null) ExcavationScreen(n, SharedRepo.repo, onBack) else EmptyHint("🐢", "Nest not found")
+    if (n != null) {
+        ExcavationScreen(n, SharedRepo.repo, state.profile.language, onBack)
+    } else {
+        EmptyHint("🐢", appStrings(state.profile.language).nestNotFound)
+    }
 }
 
 fun CameraVC(onBack: () -> Unit, onCaptured: () -> Unit): UIViewController = host {
-    CameraScreen(onBack, onCaptured)
+    CameraScreen(SharedRepo.repo.state.value.profile.language, onBack, onCaptured)
 }
 
-fun CommunityVC(communityId: String, onBack: () -> Unit): UIViewController = host {
+fun CommunityVC(communityId: String, onBack: () -> Unit, onOpenMember: (String) -> Unit): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
-    CommunityScreen(state.communityOrPrimary(communityId), state, onBack)
+    CommunityScreen(state.communityOrPrimary(communityId), state, onBack, onOpenMember)
+}
+
+fun MemberVC(
+    memberKey: String,
+    onBack: () -> Unit,
+    onOpenNest: (String) -> Unit,
+    onOpenBeach: (String) -> Unit,
+): UIViewController = host {
+    val state by SharedRepo.repo.state.collectAsState()
+    MemberProfileScreen(state.resolveMember(memberKey), state, onBack, onOpenNest, onOpenBeach)
 }

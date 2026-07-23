@@ -1,5 +1,6 @@
 package com.carettafriends.data
 
+import com.carettafriends.ui.topmostViewController
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
 import platform.CoreGraphics.CGRectMake
@@ -7,7 +8,6 @@ import platform.Foundation.NSString
 import platform.UIKit.NSFontAttributeName
 import platform.UIKit.NSForegroundColorAttributeName
 import platform.UIKit.UIActivityViewController
-import platform.UIKit.UIApplication
 import platform.UIKit.UIColor
 import platform.UIKit.UIFont
 import platform.UIKit.UIGraphicsBeginImageContextWithOptions
@@ -20,7 +20,7 @@ import platform.UIKit.popoverPresentationController
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun platformShareImage(srcPath: String, caption: String) {
-    val root = UIApplication.sharedApplication.keyWindow?.rootViewController ?: return
+    val root = topmostViewController() ?: return
     val base = UIImage(contentsOfFile = srcPath)
     val shareItem: Any = if (base != null) watermark(base, caption) else caption
     val vc = UIActivityViewController(activityItems = listOf(shareItem, caption), applicationActivities = null)
@@ -54,7 +54,7 @@ private fun watermark(img: UIImage, caption: String): UIImage {
 
 actual fun platformShare(text: String) {
     val vc = UIActivityViewController(activityItems = listOf(text), applicationActivities = null)
-    val root = UIApplication.sharedApplication.keyWindow?.rootViewController ?: return
+    val root = topmostViewController() ?: return
     vc.popoverPresentationController?.sourceView = root.view
     root.presentViewController(vc, animated = true, completion = null)
 }

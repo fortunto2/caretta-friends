@@ -22,6 +22,7 @@ import CoreLocation
 import ImageIO
 import UniformTypeIdentifiers
 import UIKit
+import ComposeApp
 
 // MARK: - Public entry point
 
@@ -149,7 +150,7 @@ struct CameraCaptureView: View {
                 .foregroundColor(.white.opacity(0.8))
                 .padding(.horizontal, 40)
             if camera.permissionDenied {
-                Button("Open Settings") {
+                Button(IosEntryKt.currentStrings().openSettings) {
                     if let url = URL(string: UIApplication.openSettingsURLString) {
                         UIApplication.shared.open(url)
                     }

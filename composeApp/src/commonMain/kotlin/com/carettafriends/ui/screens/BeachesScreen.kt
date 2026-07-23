@@ -77,7 +77,7 @@ fun BeachesScreen(state: AppState, onOpenNest: (String) -> Unit, onOpenBeach: (S
                 }
                 val ordered = if (me != null) scoped.sortedBy { distanceMeters(me, it.center) } else scoped
                 if (ordered.isEmpty()) {
-                    EmptyHint("🏖️", "No beaches in $cityScope yet.")
+                    EmptyHint("🏖️", s.noBeachesInCity.replace("%s", cityScope.orEmpty()))
                 } else {
                     ordered.forEach { beach ->
                         val nests = state.nests.filter { it.beachId == beach.id }

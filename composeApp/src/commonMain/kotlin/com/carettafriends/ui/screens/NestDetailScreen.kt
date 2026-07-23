@@ -73,7 +73,13 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 
 @Composable
-fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, onExcavate: () -> Unit) {
+fun NestDetailScreen(
+    nest: Nest,
+    repo: CarettaRepository,
+    onBack: () -> Unit,
+    onExcavate: () -> Unit,
+    onOpenMember: (String) -> Unit = {},
+) {
     val c = caretta
     // React to repo updates (Add update / Comment) so the timeline stays live.
     val state by repo.state.collectAsState()
@@ -164,7 +170,7 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                 StatusPill(n.status, s)
             }
 
-            // Unconfirmed banner.
+            // Unconfirmed banner (informational — a nest is confirmed by adding a photo/observation).
             if (n.confidence == NestConfidence.UNCONFIRMED) {
                 Box(
                     Modifier
@@ -172,7 +178,6 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                         .clip(RoundedCornerShape(14.dp))
                         .background(c.warn.copy(alpha = 0.16f))
                         .border(1.dp, c.warn.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-                        .clickable { }
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                 ) {
                     Text(
@@ -183,6 +188,15 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                     )
                 }
             }
+
+            // Who found this nest — tap through to their profile.
+            Text(
+                "🔎 ${s.foundByWord} ${n.foundBy} ›",
+                color = c.sea,
+                fontSize = 12.5.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { onOpenMember(n.foundBy) },
+            )
 
             // Countdown + hatch window + predicted sex range + conditions.
             CarettaCard {
@@ -220,7 +234,7 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
             // Timeline.
             SectionLabel(s.timeline)
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                n.updates.asReversed().forEach { u -> TimelineRow(u, s) }
+                n.updates.asReversed().forEach { u -> TimelineRow(u, s, onOpenMember) }
             }
 
             // Add update / Comment / Photo.
@@ -283,14 +297,30 @@ private fun ConditionChip(text: String) {
     }
 }
 
+/** Timeline meta line — the author name is tappable (→ their profile), followed by date/condition. */
 @Composable
-private fun TimelineRow(u: NestUpdate, s: AppStrings) {
+private fun AuthorMeta(author: String, rest: String, onOpenMember: (String) -> Unit) {
+    val c = caretta
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            author,
+            color = c.sea,
+            fontSize = 10.5.sp,
+            fontWeight = FontWeight.ExtraBold,
+            modifier = Modifier.clickable { onOpenMember(author) },
+        )
+        Text(rest, color = c.muted, fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun TimelineRow(u: NestUpdate, s: AppStrings, onOpenMember: (String) -> Unit) {
     val c = caretta
     val dot = dotColor(u)
     val isComment = u.kind == UpdateKind.COMMENT
     val dateStr = u.obsDate?.let { fmtDate(it, s) }
         ?: if (u.dateLabel.isBlank() || u.dateLabel == "Today") s.today else u.dateLabel
-    val meta = "${u.author} · $dateStr${conditionSuffix(u, s)}"
+    val metaRest = " · $dateStr${conditionSuffix(u, s)}"
     Row(
         Modifier.fillMaxWidth().padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -316,7 +346,7 @@ private fun TimelineRow(u: NestUpdate, s: AppStrings) {
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text("“${u.body}”", color = c.ink, fontSize = 13.sp, fontStyle = FontStyle.Italic)
-                        Text(meta, color = c.muted, fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+                        AuthorMeta(u.author, metaRest, onOpenMember)
                     }
                 }
             } else {
@@ -324,7 +354,7 @@ private fun TimelineRow(u: NestUpdate, s: AppStrings) {
                     if (u.body.isNotBlank()) {
                         Text(u.body, color = c.ink, fontSize = 13.5.sp, fontWeight = FontWeight.Bold)
                     }
-                    Text(meta, color = c.muted, fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+                    AuthorMeta(u.author, metaRest, onOpenMember)
                 }
             }
         }

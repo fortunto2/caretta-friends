@@ -39,8 +39,9 @@ import com.carettafriends.ui.theme.caretta
  * Always dark regardless of the app theme (night-patrol friendly).
  */
 @Composable
-fun CameraScreen(onBack: () -> Unit, onCaptured: () -> Unit) {
+fun CameraScreen(lang: String, onBack: () -> Unit, onCaptured: () -> Unit) {
     val c = caretta
+    val s = com.carettafriends.content.appStrings(lang)
     // fixed dark chrome so this screen stays dark in any app theme
     val chrome = Color(0xFF06100F)
     val glass = Color.White.copy(alpha = 0.14f)
@@ -91,7 +92,7 @@ fun CameraScreen(onBack: () -> Unit, onCaptured: () -> Unit) {
                 ) { Text("🥚", fontSize = 108.sp) }
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "Frame the nest",
+                    s.cameraFrameHint,
                     color = Color.White.copy(alpha = 0.75f),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,

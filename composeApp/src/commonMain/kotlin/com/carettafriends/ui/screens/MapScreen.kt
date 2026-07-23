@@ -191,6 +191,7 @@ fun MapScreen(
             val beach = state.beaches.firstOrNull { it.id == id }
             val protectedFlag = beach?.protected ?: id.startsWith("pa:")
             BeachTooltip(
+                s = s,
                 name = beach?.name ?: id.removePrefix("pa:"),
                 protectedBeach = protectedFlag,
                 official = id.startsWith("pa:"),
@@ -208,6 +209,7 @@ private val unprotectedAmber = Color(0xFFE0A82E)
 
 @Composable
 private fun BeachTooltip(
+    s: com.carettafriends.content.AppStrings,
     name: String,
     protectedBeach: Boolean,
     official: Boolean,
@@ -230,13 +232,13 @@ private fun BeachTooltip(
         Column(Modifier.weight(1f)) {
             Text(name, color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
             Text(
-                if (protectedBeach) "🛡️ Protected nesting beach" else "Beach",
+                if (protectedBeach) s.protectedBeachLabel else s.beachWord,
                 color = accent,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
             )
         }
-        if (canOpen) Text("Open ›", color = c.sea, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+        if (canOpen) Text("${s.openWord} ›", color = c.sea, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
         Text("✕", color = c.muted, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.clickable { onDismiss() })
     }
 }

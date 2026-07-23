@@ -36,6 +36,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.carettafriends.content.appStrings
+import com.carettafriends.content.badgeName
 import com.carettafriends.data.CarettaRepository
 import com.carettafriends.data.platformShare
 import com.carettafriends.domain.AppState
@@ -54,6 +55,7 @@ fun ProfileScreen(
     onOpenCommunity: () -> Unit,
     onOpenStats: () -> Unit = {},
     onOpenNest: (String) -> Unit = {},
+    onOpenBeach: (String) -> Unit = {},
 ) {
     val c = caretta
     val p = state.profile
@@ -167,6 +169,7 @@ fun ProfileScreen(
             // community — shown directly (a volunteer usually belongs to 1–3), tap to open.
             SectionLabel(s.community)
             CommunityCard(
+                s = s,
                 name = state.community.name,
                 tagline = state.community.taglineFor(p.language),
                 members = state.members.size,
@@ -184,7 +187,7 @@ fun ProfileScreen(
             if (visited.isNotEmpty()) {
                 Text(s.patrolled, color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    visited.forEach { Pill("🏖️ ${it.name}", c.sea) }
+                    visited.forEach { b -> Box(Modifier.clickable { onOpenBeach(b.id) }) { Pill("🏖️ ${b.name}", c.sea) } }
                 }
             }
             if (pickingBeach) {
@@ -218,7 +221,7 @@ fun ProfileScreen(
                 )
             } else {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                    earnedBadges.forEach { b -> BadgeCell(b) }
+                    earnedBadges.forEach { b -> BadgeCell(s, b) }
                 }
             }
 
@@ -268,7 +271,7 @@ fun ProfileScreen(
 private val LANGUAGES = listOf("en" to "🇬🇧 English", "ru" to "🇷🇺 Русский", "tr" to "🇹🇷 Türkçe")
 
 @Composable
-private fun CommunityCard(name: String, tagline: String, members: Int, onOpen: () -> Unit) {
+private fun CommunityCard(s: com.carettafriends.content.AppStrings, name: String, tagline: String, members: Int, onOpen: () -> Unit) {
     val c = caretta
     CarettaCard(modifier = Modifier.clickable { onOpen() }) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -279,7 +282,7 @@ private fun CommunityCard(name: String, tagline: String, members: Int, onOpen: (
             Column(Modifier.weight(1f)) {
                 Text(name, color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
                 Text(
-                    tagline.ifBlank { "Your community" } + if (members > 0) " · $members volunteers" else "",
+                    tagline.ifBlank { s.yourCommunity } + if (members > 0) " · $members ${s.volunteersWord}" else "",
                     color = c.muted,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
@@ -445,14 +448,15 @@ private fun EmailAuthDialog(repo: CarettaRepository, s: com.carettafriends.conte
 }
 
 @Composable
-private fun BadgeCell(b: Badge) {
+private fun BadgeCell(s: com.carettafriends.content.AppStrings, b: Badge) {
     val c = caretta
+    val label = s.badgeName(b.code)
     Column(Modifier.width(68.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier.size(56.dp).clip(RoundedCornerShape(15.dp))
                 .background(c.sunlit.copy(alpha = 0.22f)).border(1.dp, c.line, RoundedCornerShape(15.dp)),
             contentAlignment = Alignment.Center,
         ) { Text(b.emoji, fontSize = 22.sp) }
-        Text(b.name, color = c.muted, fontSize = 8.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Text(label, color = c.muted, fontSize = 8.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }

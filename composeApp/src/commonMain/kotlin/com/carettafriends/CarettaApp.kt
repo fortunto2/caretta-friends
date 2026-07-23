@@ -26,6 +26,7 @@ import com.carettafriends.ui.screens.CommunityScreen
 import com.carettafriends.ui.screens.ExcavationScreen
 import com.carettafriends.ui.screens.LearnScreen
 import com.carettafriends.ui.screens.MapScreen
+import com.carettafriends.ui.screens.MemberProfileScreen
 import com.carettafriends.ui.screens.NestDetailScreen
 import com.carettafriends.ui.screens.OnboardingScreen
 import com.carettafriends.ui.screens.ProfileScreen
@@ -62,6 +63,7 @@ fun CarettaApp() {
         val nav = remember { Navigator() }
         val state by repo.state.collectAsState()
         val current = nav.current
+        val s = com.carettafriends.content.appStrings(state.profile.language)
 
         PlatformBackHandler(enabled = nav.canGoBack) { nav.back() }
 
@@ -88,40 +90,57 @@ fun CarettaApp() {
                             onOpenCommunity = { nav.go(Screen.Community(state.community.id)) },
                             onOpenStats = { nav.go(Screen.Stats) },
                             onOpenNest = { nav.go(Screen.NestDetail(it)) },
+                            onOpenBeach = { nav.go(Screen.BeachDetail(it)) },
                         )
                         is Screen.Stats -> StatsScreen(state) { nav.back() }
                         is Screen.AddNest -> AddNestScreen(
                             repo, state, { nav.back() }, { nav.go(Screen.Camera) },
                             onNestSaved = { nav.back(); nav.go(Screen.NestDetail(it)) },
                         )
-                        is Screen.Camera -> CameraScreen({ nav.back() }, { nav.back() })
-                        is Screen.Community -> CommunityScreen(state.communityOrPrimary(current.communityId), state) { nav.back() }
+                        is Screen.Camera -> CameraScreen(state.profile.language, { nav.back() }, { nav.back() })
+                        is Screen.Community -> CommunityScreen(
+                            state.communityOrPrimary(current.communityId), state,
+                            onBack = { nav.back() },
+                            onOpenMember = { nav.go(Screen.Member(it)) },
+                        )
                         is Screen.NestDetail -> {
                             val n = state.nest(current.nestId)
                             if (n != null) {
-                                NestDetailScreen(n, repo, { nav.back() }, { nav.go(Screen.Excavation(n.id)) })
+                                NestDetailScreen(
+                                    n, repo, { nav.back() }, { nav.go(Screen.Excavation(n.id)) },
+                                    onOpenMember = { nav.go(Screen.Member(it)) },
+                                )
                             } else {
-                                EmptyHint("🐢", "Nest not found")
+                                EmptyHint("🐢", s.nestNotFound)
                             }
                         }
                         is Screen.Excavation -> {
                             val n = state.nest(current.nestId)
-                            if (n != null) ExcavationScreen(n, repo) { nav.back() } else EmptyHint("🐢", "Nest not found")
+                            if (n != null) ExcavationScreen(n, repo, state.profile.language) { nav.back() } else EmptyHint("🐢", s.nestNotFound)
                         }
                         is Screen.BeachDetail -> {
                             val b = state.beach(current.beachId)
                             if (b != null) {
-                                BeachDetailScreen(b, state, { nav.back() }, { nav.go(Screen.NestDetail(it)) })
+                                BeachDetailScreen(
+                                    b, state, { nav.back() }, { nav.go(Screen.NestDetail(it)) },
+                                    onOpenMember = { nav.go(Screen.Member(it)) },
+                                )
                             } else {
-                                EmptyHint("🏖️", "Beach not found")
+                                EmptyHint("🏖️", s.beachNotFound)
                             }
                         }
+                        is Screen.Member -> MemberProfileScreen(
+                            state.resolveMember(current.memberKey), state,
+                            onBack = { nav.back() },
+                            onOpenNest = { nav.go(Screen.NestDetail(it)) },
+                            onOpenBeach = { nav.go(Screen.BeachDetail(it)) },
+                        )
                     }
                 }
                 // Always visible — tabs switch, the centre + adds a nest from anywhere.
                 BottomBar(
                     current = tabKey(current),
-                    items = navItems(com.carettafriends.content.appStrings(state.profile.language)),
+                    items = navItems(s),
                     onSelect = { nav.selectTab(tabFromKey(it)) },
                     onAdd = { nav.go(Screen.AddNest) },
                 )

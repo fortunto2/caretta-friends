@@ -39,7 +39,12 @@ import com.carettafriends.ui.components.SectionLabel
 import com.carettafriends.ui.theme.caretta
 
 @Composable
-fun CommunityScreen(community: Community, state: AppState, onBack: () -> Unit) {
+fun CommunityScreen(
+    community: Community,
+    state: AppState,
+    onBack: () -> Unit,
+    onOpenMember: (String) -> Unit = {},
+) {
     val c = caretta
     val uri = LocalUriHandler.current
     val s = appStrings(state.profile.language)
@@ -92,13 +97,13 @@ fun CommunityScreen(community: Community, state: AppState, onBack: () -> Unit) {
 
                 // ── Team (admins & volunteers) ──────────────────────────
                 SectionLabel(s.team)
-                state.members.sortedBy { it.role.ordinal }.forEach { m -> MemberRow(m, s) }
+                state.members.sortedBy { it.role.ordinal }.forEach { m -> MemberRow(m, s, onOpenMember) }
                 MemberRow(
                     Member(
                         "you", "${state.profile.displayName} (${s.youWord})", state.profile.memberRole,
                         state.profile.avatar, link = state.profile.link,
                     ),
-                    s,
+                    s, onOpenMember,
                 )
             } else {
                 // STUB: a real local group not on Caretta Friends yet — show contacts + a claim CTA.
@@ -154,7 +159,7 @@ fun CommunityScreen(community: Community, state: AppState, onBack: () -> Unit) {
                     modifier = Modifier.padding(vertical = 4.dp),
                 )
             } else {
-                board.take(10).forEachIndexed { i, r -> BoardRow(i + 1, r) }
+                board.take(10).forEachIndexed { i, r -> BoardRow(i + 1, r, onOpenMember) }
             }
         }
     }
@@ -183,19 +188,19 @@ private fun roleLabel(role: MemberRole, s: AppStrings): String = when (role) {
 }
 
 @Composable
-private fun MemberRow(m: Member, s: AppStrings) {
+private fun MemberRow(m: Member, s: AppStrings, onOpenMember: (String) -> Unit) {
     val c = caretta
-    val uri = LocalUriHandler.current
     val hasLink = m.link.isNotBlank()
     val tint = when (m.role) {
         MemberRole.ADMIN -> c.coral
         MemberRole.BEACH_LEADER -> c.sea
         MemberRole.VOLUNTEER -> c.muted
     }
-    val base = Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(c.surface)
-        .border(1.dp, c.line, RoundedCornerShape(15.dp))
+    // Whole row opens the volunteer's profile (badges + nests); the external link lives there.
     Row(
-        (if (hasLink) base.clickable { runCatching { uri.openUri(m.link) } } else base).padding(12.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(c.surface)
+            .border(1.dp, c.line, RoundedCornerShape(15.dp))
+            .clickable { onOpenMember(m.id) }.padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -211,6 +216,7 @@ private fun MemberRow(m: Member, s: AppStrings) {
             }
         }
         Pill(roleLabel(m.role, s), tint)
+        Text("›", color = c.muted, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
     }
 }
 
@@ -219,11 +225,12 @@ private fun linkHost(link: String): String =
     link.removePrefix("https://").removePrefix("http://").removePrefix("www.").trimEnd('/')
 
 @Composable
-private fun BoardRow(rank: Int, r: Ranked) {
+private fun BoardRow(rank: Int, r: Ranked, onOpenMember: (String) -> Unit) {
     val c = caretta
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.surface)
-            .border(1.dp, c.line, RoundedCornerShape(14.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
+            .border(1.dp, c.line, RoundedCornerShape(14.dp))
+            .clickable { onOpenMember(r.name) }.padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {

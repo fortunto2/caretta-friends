@@ -41,7 +41,13 @@ import com.carettafriends.ui.theme.caretta
 
 /** Beach card: stats + a feed of its nests (photos, status, latest update). */
 @Composable
-fun BeachDetailScreen(beach: Beach, state: AppState, onBack: () -> Unit, onOpenNest: (String) -> Unit) {
+fun BeachDetailScreen(
+    beach: Beach,
+    state: AppState,
+    onBack: () -> Unit,
+    onOpenNest: (String) -> Unit,
+    onOpenMember: (String) -> Unit = {},
+) {
     val c = caretta
     val nests = state.nests.filter { it.beachId == beach.id }.sortedByDescending { it.updatedAtMillis }
     val active = nests.count { it.status == NestStatus.INCUBATING || it.status == NestStatus.HATCHING }
@@ -79,7 +85,13 @@ fun BeachDetailScreen(beach: Beach, state: AppState, onBack: () -> Unit, onOpenN
                 fontWeight = FontWeight.Bold,
             )
             if (beach.leaderName != null) {
-                Text("👑 ${beach.leaderAvatar} ${beach.leaderName} · ${s.beachLeader}", color = c.ink, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "👑 ${beach.leaderAvatar} ${beach.leaderName} · ${s.beachLeader} ›",
+                    color = c.sea,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable { onOpenMember(beach.leaderName!!) },
+                )
             }
 
             // stats

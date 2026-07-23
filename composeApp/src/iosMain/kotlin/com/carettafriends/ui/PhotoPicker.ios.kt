@@ -18,7 +18,6 @@ import platform.PhotosUI.PHPickerFilter
 import platform.PhotosUI.PHPickerResult
 import platform.PhotosUI.PHPickerViewController
 import platform.PhotosUI.PHPickerViewControllerDelegateProtocol
-import platform.UIKit.UIApplication
 import platform.darwin.NSObject
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
@@ -34,8 +33,7 @@ actual fun rememberGalleryPicker(onPicked: (PickedPhoto?) -> Unit): () -> Unit {
         config.filter = PHPickerFilter.imagesFilter()
         val picker = PHPickerViewController(configuration = config)
         picker.delegate = delegate
-        UIApplication.sharedApplication.keyWindow?.rootViewController
-            ?.presentViewController(picker, animated = true, completion = null)
+        topmostViewController()?.presentViewController(picker, animated = true, completion = null)
     }
 }
 
