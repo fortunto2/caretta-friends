@@ -441,6 +441,7 @@ struct ContentView: View {
     @State private var selection: Tab = .map
     @State private var prior: Tab = .map
     @State private var showAdd = false
+    @State private var showOnboarding = false
 
     var body: some View {
         let nav = IosEntryKt.navLabels()
@@ -509,6 +510,11 @@ struct ContentView: View {
         }
         .fullScreenCover(isPresented: $showAdd) {
             AddFlow(onClose: { showAdd = false })
+        }
+        .onAppear { showOnboarding = !IosEntryKt.isOnboarded() }
+        .fullScreenCover(isPresented: $showOnboarding) {
+            ComposeHost { IosEntryKt.OnboardingVC(onDone: { showOnboarding = false }) }
+                .ignoresSafeArea()
         }
     }
 }

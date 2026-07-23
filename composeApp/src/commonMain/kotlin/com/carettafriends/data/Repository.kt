@@ -219,6 +219,11 @@ class CarettaRepository {
         _state.value = _state.value.copy(profile = _state.value.profile.copy(language = lang))
     }
 
+    /** Mark the first-run onboarding as seen (persists → shown only once). */
+    fun setOnboarded() {
+        _state.value = _state.value.copy(profile = _state.value.profile.copy(onboarded = true))
+    }
+
     /** Save the anonymous volunteer's account under an email (same owner_id → their nests & impact are
      *  kept). [onResult] gets null on success, or a human-readable error. */
     fun linkEmail(email: String, password: String, onResult: (String?) -> Unit) {

@@ -202,6 +202,16 @@ data class AppStrings(
     val statusFalseCrawl: String,
     val dayLabel: String,
     val months: List<String>,
+    // onboarding (3 pages)
+    val ob1Title: String,
+    val ob1Body: String,
+    val ob2Title: String,
+    val ob2Body: String,
+    val ob3Title: String,
+    val ob3Body: String,
+    val obNext: String,
+    val obStart: String,
+    val obSkip: String,
 )
 
 private val EN = AppStrings(
@@ -278,6 +288,13 @@ private val EN = AppStrings(
     statusExcavated = "Excavated", statusPredated = "Predated", statusWashedOver = "Washed over",
     statusPoached = "Poached", statusLost = "Lost", statusFalseCrawl = "False crawl", dayLabel = "DAY",
     months = listOf("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"),
+    ob1Title = "Welcome to Caretta Friends 🐢",
+    ob1Body = "We protect loggerhead sea-turtle nests together — one beach, one nest, one hatchling at a time.",
+    ob2Title = "Found a nest? Add it 📍",
+    ob2Body = "Snap a photo on the beach and mark the nest. Then patrol, log updates, and watch the hatch forecast until the hatchlings reach the sea.",
+    ob3Title = "Every patrol counts 🙌",
+    ob3Body = "Join your local community, keep the beach dark at night, and help hundreds of hatchlings make it to the waves. Ready?",
+    obNext = "Next", obStart = "Let's go 🌊", obSkip = "Skip",
 )
 
 private val RU = AppStrings(
@@ -354,6 +371,13 @@ private val RU = AppStrings(
     statusExcavated = "Вскрыто", statusPredated = "Хищник", statusWashedOver = "Смыло",
     statusPoached = "Разорено", statusLost = "Потеряно", statusFalseCrawl = "Ложный выход", dayLabel = "ДЕНЬ",
     months = listOf("янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"),
+    ob1Title = "Добро пожаловать в Caretta Friends 🐢",
+    ob1Body = "Мы вместе защищаем гнёзда морских черепах-логгерхедов — по одному пляжу, гнезду и черепашонку.",
+    ob2Title = "Нашёл гнездо? Добавь 📍",
+    ob2Body = "Сделай фото на пляже и отметь гнездо. Потом патрулируй, добавляй апдейты и следи за прогнозом вылупления, пока черепашата не доберутся до моря.",
+    ob3Title = "Каждый патруль важен 🙌",
+    ob3Body = "Присоединяйся к местному сообществу, держи пляж тёмным ночью и помоги сотням черепашат добраться до волн. Готов?",
+    obNext = "Далее", obStart = "Поехали 🌊", obSkip = "Пропустить",
 )
 
 private val TR = AppStrings(
@@ -430,6 +454,13 @@ private val TR = AppStrings(
     statusExcavated = "Kazıldı", statusPredated = "Avlandı", statusWashedOver = "Su bastı",
     statusPoached = "Yağmalandı", statusLost = "Kayıp", statusFalseCrawl = "Boş çıkış", dayLabel = "GÜN",
     months = listOf("Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"),
+    ob1Title = "Caretta Friends'e hoş geldin 🐢",
+    ob1Body = "Deniz kaplumbağası (caretta) yuvalarını birlikte koruyoruz — her plaj, her yuva, her yavru için.",
+    ob2Title = "Yuva mı buldun? Ekle 📍",
+    ob2Body = "Plajda bir fotoğraf çek ve yuvayı işaretle. Sonra devriye gez, güncelleme ekle ve yavrular denize ulaşana kadar çıkış tahminini izle.",
+    ob3Title = "Her devriye önemli 🙌",
+    ob3Body = "Yerel topluluğuna katıl, geceleri plajı karanlık tut ve yüzlerce yavrunun dalgalara ulaşmasına yardım et. Hazır mısın?",
+    obNext = "İleri", obStart = "Hadi başlayalım 🌊", obSkip = "Atla",
 )
 
 /** The string bundle for [lang] ("ru" / "tr" / anything else → EN). */

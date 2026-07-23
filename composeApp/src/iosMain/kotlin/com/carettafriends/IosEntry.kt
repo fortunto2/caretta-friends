@@ -18,6 +18,7 @@ import com.carettafriends.ui.screens.ExcavationScreen
 import com.carettafriends.ui.screens.LearnScreen
 import com.carettafriends.ui.screens.MapScreen
 import com.carettafriends.ui.screens.NestDetailScreen
+import com.carettafriends.ui.screens.OnboardingScreen
 import com.carettafriends.ui.screens.ProfileScreen
 import com.carettafriends.ui.screens.StatsScreen
 import com.carettafriends.ui.theme.CarettaTheme
@@ -166,6 +167,14 @@ fun ProfileVC(onOpenCommunity: () -> Unit, onOpenStats: () -> Unit, onOpenNest: 
 fun StatsVC(onBack: () -> Unit): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
     StatsScreen(state, onBack)
+}
+
+/** True if the first-run intro was already dismissed. */
+fun isOnboarded(): Boolean = SharedRepo.repo.state.value.profile.onboarded
+
+fun OnboardingVC(onDone: () -> Unit): UIViewController = host {
+    val state by SharedRepo.repo.state.collectAsState()
+    OnboardingScreen(state) { SharedRepo.repo.setOnboarded(); onDone() }
 }
 
 fun AddNestVC(onDone: () -> Unit, onCamera: () -> Unit): UIViewController = host {

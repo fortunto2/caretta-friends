@@ -27,6 +27,7 @@ import com.carettafriends.ui.screens.ExcavationScreen
 import com.carettafriends.ui.screens.LearnScreen
 import com.carettafriends.ui.screens.MapScreen
 import com.carettafriends.ui.screens.NestDetailScreen
+import com.carettafriends.ui.screens.OnboardingScreen
 import com.carettafriends.ui.screens.ProfileScreen
 import com.carettafriends.ui.screens.StatsScreen
 import com.carettafriends.ui.theme.CarettaTheme
@@ -64,6 +65,7 @@ fun CarettaApp() {
 
         PlatformBackHandler(enabled = nav.canGoBack) { nav.back() }
 
+        Box(modifier = Modifier.fillMaxSize()) {
         Surface(modifier = Modifier.fillMaxSize(), color = caretta.sand) {
             Column(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -120,6 +122,11 @@ fun CarettaApp() {
                     onSelect = { nav.selectTab(tabFromKey(it)) },
                     onAdd = { nav.go(Screen.AddNest) },
                 )
+            }
+        }
+            // First-run intro — shown once until dismissed.
+            if (!state.profile.onboarded) {
+                OnboardingScreen(state) { repo.setOnboarded() }
             }
         }
     }

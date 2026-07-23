@@ -383,7 +383,8 @@ private fun AddUpdateDialog(
     val c = caretta
     var body by remember { mutableStateOf("") }
     var condition by remember { mutableStateOf(ObsCondition.OK) }
-    var date by remember { mutableStateOf(today()) }
+    // Updates & comments are always "now" — back-dating belongs to the photo step (old gallery photo),
+    // not to a live note. The nest's found date is editable separately (tap "found ✎").
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = RoundedCornerShape(20.dp), color = c.surface) {
             Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -402,12 +403,10 @@ private fun AddUpdateDialog(
                     SectionLabel(s.condition)
                     ConditionPicker(condition, s) { condition = it }
                 }
-                SectionLabel(s.dateWord)
-                DateStepper(date, s) { date = it }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(s.cancel, color = c.muted) }
                     PrimaryButton(s.save, modifier = Modifier.weight(1f), enabled = body.isNotBlank()) {
-                        onSave(body.trim(), if (comment) null else condition, date)
+                        onSave(body.trim(), if (comment) null else condition, today())
                     }
                 }
             }
