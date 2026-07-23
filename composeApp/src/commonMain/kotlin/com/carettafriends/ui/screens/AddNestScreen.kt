@@ -115,14 +115,19 @@ fun AddNestScreen(
         )
     }
     val nearestDist = fixPoint?.let { distanceMeters(it, selectedBeach.center) }
+    // The point the nest/marker will be saved at (photo EXIF fix, else the chosen beach centre).
+    // Hoisted to function scope so the pinned Save footer can read it too.
+    val shownPoint = fixPoint ?: selectedBeach.center
 
     // Violations default to private (hidden from guests) — protects volunteers from retaliation.
     LaunchedEffect(markerType) { if (markerType == MarkerType.VIOLATION) visibility = Visibility.PRIVATE }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+    Column(Modifier.fillMaxSize()) {
         TopBar(s.newMarker, onBack = onDone)
+        // Scrollable form; the Save button is pinned in a footer below so it's always reachable.
         Column(
-            Modifier.padding(horizontal = 15.dp).padding(bottom = 24.dp),
+            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+                .padding(horizontal = 15.dp).padding(bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             // ── Type selector ──────────────────────────────────────────
@@ -171,7 +176,6 @@ fun AddNestScreen(
             }
 
             // ── Location ───────────────────────────────────────────────
-            val shownPoint = fixPoint ?: selectedBeach.center
             SectionLabel(s.location)
             CarettaCard {
                 Row(
@@ -283,13 +287,15 @@ fun AddNestScreen(
                 }
             }
 
-            // ── Save ───────────────────────────────────────────────────
-            Box(Modifier.size(4.dp))
-            val saveLabel = when {
-                isViolation -> s.saveViolation
-                isNest -> s.saveNest
-                else -> s.saveFalseCrawl
-            }
+        }
+
+        // ── Save — pinned footer (always visible without scrolling) ──────
+        val saveLabel = when {
+            isViolation -> s.saveViolation
+            isNest -> s.saveNest
+            else -> s.saveFalseCrawl
+        }
+        Box(Modifier.fillMaxWidth().padding(horizontal = 15.dp).padding(top = 8.dp, bottom = 14.dp)) {
             PrimaryButton(saveLabel) {
                 if (isViolation) {
                     repo.addViolation(
