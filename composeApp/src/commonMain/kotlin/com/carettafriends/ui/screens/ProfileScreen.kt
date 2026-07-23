@@ -41,6 +41,7 @@ import com.carettafriends.data.CarettaRepository
 import com.carettafriends.data.platformShare
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Badge
+import com.carettafriends.domain.MemberRole
 import com.carettafriends.ui.components.CarettaCard
 import com.carettafriends.ui.components.LocalPhoto
 import com.carettafriends.ui.components.Pill
@@ -102,7 +103,12 @@ fun ProfileScreen(
                         Text(p.displayName, color = c.deep, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                         Text("✎", color = c.muted, fontSize = 15.sp)
                     }
-                    Text(p.role, color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    val roleText = when (p.memberRole) {
+                        MemberRole.ADMIN -> s.roleAdmin
+                        MemberRole.BEACH_LEADER -> s.roleLeader
+                        MemberRole.VOLUNTEER -> s.roleVolunteer
+                    }
+                    Text(roleText, color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
             if (editingName) {
