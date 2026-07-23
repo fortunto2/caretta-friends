@@ -62,6 +62,7 @@ import com.carettafriends.ui.components.SectionLabel
 import com.carettafriends.ui.components.SexRangeBar
 import com.carettafriends.ui.components.StatusPill
 import com.carettafriends.ui.components.TopBar
+import com.carettafriends.ui.PickedPhoto
 import com.carettafriends.ui.rememberGalleryPicker
 import com.carettafriends.ui.theme.caretta
 import kotlinx.datetime.DatePeriod
@@ -90,16 +91,6 @@ fun NestDetailScreen(
     val uri = LocalUriHandler.current
     val watching = n.id in state.profile.watchedNestIds
     var sheet by remember { mutableStateOf(DetailSheet.NONE) }
-    // Gallery photo → a timeline update; an old photo's EXIF date back-dates it (capped a month).
-    val pickPhoto = rememberGalleryPicker { picked ->
-        if (picked != null) {
-            val obsDate = picked.exifEpochMillis?.let { millis ->
-                Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.currentSystemDefault()).date
-                    .coerceIn(today().minus(DatePeriod(days = MAX_BACKDATE_DAYS)), today())
-            }
-            repo.addUpdate(n.id, UpdateKind.OBSERVATION, "", obsDate = obsDate, photoPath = picked.path)
-        }
-    }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         TopBar(n.code, onBack = onBack)
@@ -284,20 +275,12 @@ fun NestDetailScreen(
                 n.updates.asReversed().forEach { u -> TimelineRow(u, timelineBody(u, n, s), s, onOpenMember) }
             }
 
-            // Add update / Comment / Photo.
-            Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                GhostButton(s.addUpdate, modifier = Modifier.weight(1f)) { sheet = DetailSheet.UPDATE }
-                GhostButton(s.comment, modifier = Modifier.weight(1f)) { sheet = DetailSheet.COMMENT }
-            }
-            GhostButton(s.addPhoto, modifier = Modifier.fillMaxWidth()) { pickPhoto() }
+            // ONE "add update" — photo + note + condition in a single entity (was 3 buttons).
+            GhostButton(s.addUpdate, modifier = Modifier.fillMaxWidth()) { sheet = DetailSheet.UPDATE }
 
             when (sheet) {
-                DetailSheet.UPDATE -> AddUpdateDialog(comment = false, s = s, onDismiss = { sheet = DetailSheet.NONE }) { body, cond, date ->
-                    repo.addUpdate(n.id, UpdateKind.OBSERVATION, body, cond, obsDate = date)
-                    sheet = DetailSheet.NONE
-                }
-                DetailSheet.COMMENT -> AddUpdateDialog(comment = true, s = s, onDismiss = { sheet = DetailSheet.NONE }) { body, _, date ->
-                    repo.addUpdate(n.id, UpdateKind.COMMENT, body, obsDate = date)
+                DetailSheet.UPDATE -> AddUpdateDialog(s = s, onDismiss = { sheet = DetailSheet.NONE }) { body, cond, photoPath, date ->
+                    repo.addUpdate(n.id, UpdateKind.OBSERVATION, body, cond, obsDate = date, photoPath = photoPath)
                     sheet = DetailSheet.NONE
                 }
                 DetailSheet.DATE -> EditFoundDateDialog(n.foundDate, s, onDismiss = { sheet = DetailSheet.NONE }) { d ->
@@ -503,42 +486,51 @@ private fun statusColor(status: NestStatus?, fallback: Color): Color {
 // --- add-update / back-date dialogs --------------------------------------
 
 /** Which bottom dialog is open on the nest detail (none / add update / comment / edit found-date). */
-private enum class DetailSheet { NONE, UPDATE, COMMENT, DATE }
+private enum class DetailSheet { NONE, UPDATE, DATE }
 
 @Composable
 private fun AddUpdateDialog(
-    comment: Boolean,
     s: AppStrings,
     onDismiss: () -> Unit,
-    onSave: (body: String, condition: ObsCondition?, obsDate: LocalDate) -> Unit,
+    onSave: (body: String, condition: ObsCondition?, photoPath: String?, obsDate: LocalDate) -> Unit,
 ) {
     val c = caretta
     var body by remember { mutableStateOf("") }
     var condition by remember { mutableStateOf(ObsCondition.OK) }
-    // Updates & comments are always "now" — back-dating belongs to the photo step (old gallery photo),
-    // not to a live note. The nest's found date is editable separately (tap "found ✎").
+    var photo by remember { mutableStateOf<PickedPhoto?>(null) }
+    val pick = rememberGalleryPicker { picked -> if (picked != null) photo = picked }
+    // An old gallery photo back-dates the update via its EXIF (capped a month); a live note = today.
+    val obsDate = photo?.exifEpochMillis?.let { millis ->
+        Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.currentSystemDefault()).date
+            .coerceIn(today().minus(DatePeriod(days = MAX_BACKDATE_DAYS)), today())
+    } ?: today()
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = RoundedCornerShape(20.dp), color = c.surface) {
             Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(
-                    if (comment) s.comment else s.addUpdate,
-                    color = c.deep, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold,
-                )
+                Text(s.addUpdate, color = c.deep, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
+                // Photo (optional) — one add-update entity: a photo, a note, and/or a status change.
+                val p = photo
+                if (p != null) {
+                    LocalPhoto(
+                        p.path,
+                        Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(13.dp)).clickable { pick() },
+                    )
+                } else {
+                    GhostButton(s.addPhoto, modifier = Modifier.fillMaxWidth()) { pick() }
+                }
                 OutlinedTextField(
                     value = body,
                     onValueChange = { body = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(if (comment) s.writeComment else s.whatObserved) },
+                    placeholder = { Text(s.whatObserved) },
                     minLines = 2,
                 )
-                if (!comment) {
-                    SectionLabel(s.condition)
-                    ConditionPicker(condition, s) { condition = it }
-                }
+                SectionLabel(s.condition)
+                ConditionPicker(condition, s) { condition = it }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(s.cancel, color = c.muted) }
-                    PrimaryButton(s.save, modifier = Modifier.weight(1f), enabled = body.isNotBlank()) {
-                        onSave(body.trim(), if (comment) null else condition, today())
+                    PrimaryButton(s.save, modifier = Modifier.weight(1f), enabled = body.isNotBlank() || photo != null) {
+                        onSave(body.trim(), condition, photo?.path, obsDate)
                     }
                 }
             }
