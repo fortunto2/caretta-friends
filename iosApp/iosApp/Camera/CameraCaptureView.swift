@@ -192,6 +192,9 @@ struct CameraCaptureView: View {
             let lines = OverlayFormatter.lines(author: author, date: date, location: loc)
             let burned = ImageMetadataWriter.burn(lines: lines, on: image)
             let url = ImageMetadataWriter.writeJPEG(burned, location: loc, author: author, date: date)
+            // Durability: also save the finished photo to the user's Photos, in a "Caretta Friends"
+            // album — so nest photos survive an app reinstall and are theirs to keep (like FaceAlarm).
+            if let url { PhotoAlbumSaver.save(fileURL: url) }
             DispatchQueue.main.async {
                 isProcessing = false
                 if let url {
@@ -597,4 +600,42 @@ enum ImageMetadataWriter {
         f.dateFormat = "yyyy:MM:dd"
         return f
     }()
+}
+
+// MARK: - Save to the user's Photos library (durable, survives app reinstall)
+
+enum PhotoAlbumSaver {
+    static let albumName = "Caretta Friends"
+
+    /// Add a finished JPEG (already written to [fileURL]) into the user's Photos, in a
+    /// "Caretta Friends" album. Best-effort & silent on failure — the app copy in Documents still
+    /// works; this is the durable, user-owned backup.
+    static func save(fileURL: URL) {
+        PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
+            guard status == .authorized || status == .limited else { return }
+            let album = findOrCreateAlbum()
+            PHPhotoLibrary.shared().performChanges({
+                guard let req = PHAssetCreationRequest.creationRequestForAssetFromImage(atFileURL: fileURL) else { return }
+                if let album, let placeholder = req.placeholderForCreatedAsset {
+                    let change = PHAssetCollectionChangeRequest(for: album)
+                    change?.addAssets([placeholder] as NSArray)
+                }
+            }, completionHandler: nil)
+        }
+    }
+
+    private static func findOrCreateAlbum() -> PHAssetCollection? {
+        let opts = PHFetchOptions()
+        opts.predicate = NSPredicate(format: "title = %@", albumName)
+        if let existing = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: opts).firstObject {
+            return existing
+        }
+        var placeholder: PHObjectPlaceholder?
+        try? PHPhotoLibrary.shared().performChangesAndWait {
+            let req = PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: albumName)
+            placeholder = req.placeholderForCreatedAssetCollection
+        }
+        guard let id = placeholder?.localIdentifier else { return nil }
+        return PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [id], options: nil).firstObject
+    }
 }

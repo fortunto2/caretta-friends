@@ -36,5 +36,7 @@
     <string>Caretta Friends uses the camera to photograph a nest.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Caretta Friends attaches a nest photo from your library.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Caretta Friends saves your nest photos to a "Caretta Friends" album so they’re kept in your Photos.</string>
 </dict>
 </plist>
