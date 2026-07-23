@@ -90,6 +90,10 @@ struct MapLibreView: UIViewRepresentable {
     var violations: [MapPoint] = []
     /// Bumped by the "locate me" button → recenters on the user with a heading (compass) cone.
     var recenterTick: Int = 0
+    /// A one-shot "centre the map here" point (e.g. a nest's geo card). Applied when [focusTick] bumps.
+    var focus: CLLocationCoordinate2D? = nil
+    /// Bumped alongside [focus] to trigger a single camera move onto [focus].
+    var focusTick: Int = 0
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -120,6 +124,13 @@ struct MapLibreView: UIViewRepresentable {
             context.coordinator.recenterTick = recenterTick
             mapView.setUserTrackingMode(.followWithHeading, animated: true)
         }
+        // A nest's geo card requested this exact spot → zoom onto it once.
+        if focusTick != context.coordinator.focusTick {
+            context.coordinator.focusTick = focusTick
+            if let f = focus {
+                mapView.setCenter(f, zoomLevel: 17, animated: true)
+            }
+        }
         context.coordinator.sync(nests: points, on: mapView)
         context.coordinator.syncTrack(track, on: mapView)
         context.coordinator.applyBeachPolygons(beachPolygons)
@@ -133,6 +144,7 @@ struct MapLibreView: UIViewRepresentable {
     final class Coordinator: NSObject, MLNMapViewDelegate, UIGestureRecognizerDelegate {
         var parent: MapLibreView
         var recenterTick = 0
+        var focusTick = 0
         private var currentIDs: Set<String> = []
         private var polyline: MLNPolyline?
         private var trackCount = -1

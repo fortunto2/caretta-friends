@@ -60,28 +60,29 @@ Reactive focus → camera animation on the Compose map.
 Thread the tab switch through the SwiftUI shell; native map reads the focus over the bridge.
 
 ### Tasks
-- [ ] Task 3.1: In `iosMain/.../IosEntry.kt`, add `data class IosGeo(val lat: Double, val lng: Double)`
+- [x] Task 3.1: In `iosMain/.../IosEntry.kt`, add `data class IosGeo(val lat: Double, val lng: Double)`
       and `fun takeMapFocus(): IosGeo? = SharedRepo.repo.takeMapFocus()?.let { IosGeo(it.lat, it.lng) }`.
       Add `onOpenMap: () -> Unit` param to `NestDetailVC` and forward it to `NestDetailScreen`.
-- [ ] Task 3.2: In `iosApp/.../Map/MapLibreView.swift`, add `var focus: CLLocationCoordinate2D? = nil`
-      and `var focusTick: Int = 0`; in the coordinator track `lastFocusTick`; in `updateUIView`, when
+- [x] Task 3.2: In `iosApp/.../Map/MapLibreView.swift`, add `var focus: CLLocationCoordinate2D? = nil`
+      and `var focusTick: Int = 0`; coordinator tracks `focusTick`; in `updateUIView`, when
       `focusTick` changed and `focus != nil`, `mapView.setCenter(focus, zoomLevel: 17, animated: true)`.
-- [ ] Task 3.3: In `iosApp/.../ContentView.swift`, add `final class AppRouter: ObservableObject`
-      (`@Published var selection: Tab`, `@Published var focusTick: Int`); hoist `Tab` out of
-      `ContentView` (or reference it from the router). `ContentView` owns `@StateObject router`, binds
+- [x] Task 3.3: In `iosApp/.../ContentView.swift`, add `final class AppRouter: ObservableObject`
+      (`@Published var selection: AppTab`, `@Published var focusTick: Int`, `func focusMap()`); hoisted
+      `Tab` → top-level `AppTab`. `ContentView` owns `@StateObject router`, binds
       `TabView(selection: $router.selection)`, injects `.environmentObject(router)`.
-- [ ] Task 3.4: Thread `router` into `destinationView(_:path:router:)`; in the `.nest` case pass
-      `onOpenMap: { router.selection = .map; router.focusTick += 1 }`. Add `@EnvironmentObject var router`
-      to `TabStack`, `MapTab`, `AddFlow` (the three `destinationView` call sites).
-- [ ] Task 3.5: In `MapTab`, add `@State focusCoord`/`@State focusApplyTick`; `.onChange(of: router.focusTick)`
-      → `if let g = IosEntryKt.takeMapFocus() { focusCoord = CLLocationCoordinate2D(latitude: g.lat, longitude: g.lng); focusApplyTick += 1; path = NavigationPath() }`;
-      pass `focus: focusCoord, focusTick: focusApplyTick` into `MapLibreView(...)`.
+- [x] Task 3.4: Threaded `router` into `destinationView(_:path:router:)`; `.nest` case passes
+      `onOpenMap: { router.focusMap() }`. Added `@EnvironmentObject var router` to `TabStack`, `MapTab`,
+      `AddFlow` (+ explicit `.environmentObject(router)` on the AddFlow cover — covers don't always inherit).
+- [x] Task 3.5: In `MapTab`, added `@State focusCoord`/`@State focusApplyTick`; `.onChange(of: router.focusTick)`
+      → `if let g = IosEntryKt.takeMapFocus() { pop path; focusCoord = …; focusApplyTick += 1 }`;
+      passes `focus: focusCoord, focusTick: focusApplyTick` into `MapLibreView(...)`.
 
 ### Verification
-- [ ] `./gradlew :composeApp:compileKotlinIosSimulatorArm64` passes.
-- [ ] iOS device build succeeds (`xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp … build`).
-- [ ] On device: nest → tap geo card → Map tab comes forward centred on the nest (from a nest opened
-      on the Map tab, and from one opened on Beaches/Profile).
+- [x] `./gradlew :composeApp:compileKotlinIosSimulatorArm64` passes.
+- [x] iOS build succeeds (`xcodebuild … -destination 'generic/platform=iOS Simulator' build` → **BUILD SUCCEEDED**);
+      app installs + launches on iPhone 17 sim with no crash (AppRouter/`@EnvironmentObject` wiring sound).
+- [ ] Interactive geo-card tap on iOS — pending MANUAL confirm (simulator has no CLI tap; canonical test
+      is on Rust's iPhone). Mechanism is identical to the Android path, which is verified end-to-end.
 
 ## Phase 4: Docs & Cleanup
 

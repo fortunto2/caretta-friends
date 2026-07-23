@@ -142,6 +142,12 @@ fun airStatus(): IosAir? {
 /** Report the device's current location (one-shot from the native map) for "beaches near me". */
 fun setDeviceLocation(lat: Double, lng: Double) = SharedRepo.repo.setDeviceLocation(lat, lng)
 
+/** A map-focus request coordinate for the native map (bridged from [CarettaRepository.takeMapFocus]). */
+data class IosGeo(val lat: Double, val lng: Double)
+
+/** Read-and-clear a pending "centre the map here" request (set by a nest's geo card). null = none. */
+fun takeMapFocus(): IosGeo? = SharedRepo.repo.takeMapFocus()?.let { IosGeo(it.lat, it.lng) }
+
 /** Save a recorded patrol from the Swift GPS recorder. trackCsv = "lat,lng;lat,lng;…". Returns the id.
  *  On-device only until [publishPatrol] — the walk is never shared live. */
 fun savePatrol(meters: Int, seconds: Int, trackCsv: String): String {
@@ -232,11 +238,12 @@ fun NestDetailVC(
     onBack: () -> Unit,
     onExcavate: (String) -> Unit,
     onOpenMember: (String) -> Unit,
+    onOpenMap: () -> Unit,
 ): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
     val n = state.nest(nestId)
     if (n != null) {
-        NestDetailScreen(n, SharedRepo.repo, onBack, { onExcavate(n.id) }, onOpenMember)
+        NestDetailScreen(n, SharedRepo.repo, onBack, { onExcavate(n.id) }, onOpenMember, onOpenMap)
     } else {
         EmptyHint("🐢", appStrings(state.profile.language).nestNotFound)
     }

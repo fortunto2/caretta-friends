@@ -44,7 +44,7 @@ private struct FullBleed: ViewModifier {
 }
 
 @ViewBuilder
-private func destinationView(_ route: Route, path: Binding<NavigationPath>) -> some View {
+private func destinationView(_ route: Route, path: Binding<NavigationPath>, router: AppRouter) -> some View {
     switch route {
     case .nest(let id):
         DetailScreen(fullBleed: false) {
@@ -53,7 +53,8 @@ private func destinationView(_ route: Route, path: Binding<NavigationPath>) -> s
                     nestId: id,
                     onBack: { path.wrappedValue.removeLast() },
                     onExcavate: { nid in path.wrappedValue.append(Route.excavation(nid)) },
-                    onOpenMember: { key in path.wrappedValue.append(Route.member(key)) }
+                    onOpenMember: { key in path.wrappedValue.append(Route.member(key)) },
+                    onOpenMap: { router.focusMap() }
                 )
             }
         }
@@ -125,6 +126,7 @@ private func destinationView(_ route: Route, path: Binding<NavigationPath>) -> s
 /// A tab owning its navigation stack of Compose screens. Root content is inset above the
 /// native (Liquid Glass) tab bar; detail pushes hide the tab bar for a full sub-flow.
 struct TabStack<Root: View>: View {
+    @EnvironmentObject private var router: AppRouter
     @State private var path = NavigationPath()
     @ViewBuilder let root: (Binding<NavigationPath>) -> Root
 
@@ -133,7 +135,7 @@ struct TabStack<Root: View>: View {
             root($path)
                 .toolbar(.hidden, for: .navigationBar)
                 .navigationDestination(for: Route.self) { route in
-                    destinationView(route, path: $path)
+                    destinationView(route, path: $path, router: router)
                 }
         }
     }
@@ -151,8 +153,11 @@ extension Color {
 /// after capture the photo + GPS go to the shared layer and the add-nest form is pushed; tapping a
 /// nest pin opens its detail.
 struct MapTab: View {
+    @EnvironmentObject private var router: AppRouter
     @State private var path = NavigationPath()
     @State private var showCamera = false
+    @State private var focusCoord: CLLocationCoordinate2D? = nil
+    @State private var focusApplyTick = 0
     @State private var points: [MapPoint] = []
     @State private var beaches: [MapPoint] = []
     @State private var communities: [MapPoint] = []
@@ -261,7 +266,9 @@ struct MapTab: View {
                     track: patrol.coords,
                     beachPolygons: beachPolygons,
                     violations: filter == "violations" ? violations : [],
-                    recenterTick: recenter
+                    recenterTick: recenter,
+                    focus: focusCoord,
+                    focusTick: focusApplyTick
                 )
                 .ignoresSafeArea()
                 .overlay(alignment: .bottom) {
@@ -364,7 +371,7 @@ struct MapTab: View {
                         }
                     }
                 } else {
-                    destinationView(route, path: $path)
+                    destinationView(route, path: $path, router: router)
                 }
             }
         }
@@ -382,6 +389,15 @@ struct MapTab: View {
             }
         }
         .onChange(of: path.count) { _ in reload() }
+        // A nest's geo card asked to centre the map here → pop any pushed detail, consume the focus,
+        // and drive MapLibreView onto the point.
+        .onChange(of: router.focusTick) { _ in
+            if let g = IosEntryKt.takeMapFocus() {
+                if !path.isEmpty { path = NavigationPath() }
+                focusCoord = CLLocationCoordinate2D(latitude: g.lat, longitude: g.lng)
+                focusApplyTick += 1
+            }
+        }
         .fullScreenCover(isPresented: $showCamera) {
             CameraCaptureView(
                 author: "You",
@@ -566,22 +582,34 @@ struct MapTab: View {
     }
 }
 
-struct ContentView: View {
-    // Tab tags. `.add` is a sentinel centre tab: selecting it opens the add-a-nest flow
-    // (from ANY tab) and immediately reverts to the previously-selected tab.
-    private enum Tab: Hashable { case map, beaches, add, learn, profile }
+/// Tab tags. `.add` is a sentinel centre tab: selecting it opens the add-a-nest flow
+/// (from ANY tab) and immediately reverts to the previously-selected tab.
+enum AppTab: Hashable { case map, beaches, add, learn, profile }
 
-    @State private var selection: Tab = .map
-    @State private var prior: Tab = .map
+/// Shared shell router: drives which tab is selected and signals the map to consume a pending
+/// focus (e.g. a nest's geo card → open the map centred on that nest). Injected as an
+/// `@EnvironmentObject` so any pushed Compose screen's closures can reach it.
+final class AppRouter: ObservableObject {
+    @Published var selection: AppTab = .map
+    /// Bumped to ask the Map tab to read `IosEntryKt.takeMapFocus()` and centre on it.
+    @Published var focusTick: Int = 0
+
+    /// Switch to the Map tab and request it to consume the pending map focus.
+    func focusMap() { selection = .map; focusTick += 1 }
+}
+
+struct ContentView: View {
+    @StateObject private var router = AppRouter()
+    @State private var prior: AppTab = .map
     @State private var showAdd = false
     @State private var showOnboarding = false
 
     var body: some View {
         let nav = IosEntryKt.navLabels()
-        TabView(selection: $selection) {
+        TabView(selection: $router.selection) {
             MapTab()
                 .tabItem { Label(nav.map, systemImage: "map.fill") }
-                .tag(Tab.map)
+                .tag(AppTab.map)
 
             TabStack { path in
                 ComposeHost {
@@ -592,19 +620,19 @@ struct ContentView: View {
                 }
             }
             .tabItem { Label(nav.beaches, systemImage: "beach.umbrella.fill") }
-            .tag(Tab.beaches)
+            .tag(AppTab.beaches)
 
             // Centre "+" — never shows its own content; the coral overlay button triggers the add
             // flow. Empty tab item (blank space, no icon) so nothing peeks from under the coral button.
             Color.clear
                 .tabItem { Text(" ") }
-                .tag(Tab.add)
+                .tag(AppTab.add)
 
             TabStack { _ in
                 ComposeHost { IosEntryKt.LearnVC() }
             }
             .tabItem { Label(nav.learn, systemImage: "book.fill") }
-            .tag(Tab.learn)
+            .tag(AppTab.learn)
 
             TabStack { path in
                 ComposeHost {
@@ -618,7 +646,7 @@ struct ContentView: View {
                 }
             }
             .tabItem { Label(nav.profile, systemImage: "tortoise.fill") }
-            .tag(Tab.profile)
+            .tag(AppTab.profile)
         }
         .tint(Color.cfCoral)
         // Prominent coral "+" over the centre tab (Android has the same). Sits on top of the
@@ -635,16 +663,18 @@ struct ContentView: View {
             }
             .offset(y: -14)
         }
-        .onChange(of: selection) { newValue in
+        .environmentObject(router)
+        .onChange(of: router.selection) { newValue in
             if newValue == .add {
                 showAdd = true
-                selection = prior          // bounce back so the empty tab never shows
+                router.selection = prior   // bounce back so the empty tab never shows
             } else {
                 prior = newValue
             }
         }
         .fullScreenCover(isPresented: $showAdd) {
             AddFlow(onClose: { showAdd = false })
+                .environmentObject(router)   // covers don't always inherit the shell's environment
         }
         .onAppear { showOnboarding = !IosEntryKt.isOnboarded() }
         .fullScreenCover(isPresented: $showOnboarding) {
@@ -657,6 +687,7 @@ struct ContentView: View {
 /// The global add-a-nest flow launched from the centre "+" tab: native camera → Compose AddNest
 /// form. Mirrors the map FAB flow but works from any tab (Android has the same centre "+").
 private struct AddFlow: View {
+    @EnvironmentObject private var router: AppRouter
     let onClose: () -> Void
     @State private var path = NavigationPath()
     @State private var showCamera = false
@@ -677,7 +708,7 @@ private struct AddFlow: View {
                             }
                         }
                     } else {
-                        destinationView(route, path: $path)
+                        destinationView(route, path: $path, router: router)
                     }
                 }
                 .fullScreenCover(isPresented: $showCamera) {
