@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.carettafriends.content.appStrings
 import com.carettafriends.data.CarettaRepository
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Beach
@@ -53,6 +54,7 @@ import com.carettafriends.ui.theme.caretta
 @Composable
 fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, onCamera: () -> Unit) {
     val c = caretta
+    val s = appStrings(state.profile.language)
 
     // Photo captured by the native camera (iOS) lands here, prefilling the form.
     val pending = remember { repo.takePendingPhoto() }
@@ -81,34 +83,34 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
     val nearestDist = fixPoint?.let { distanceMeters(it, selectedBeach.center) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        TopBar("New marker", onBack = onDone)
+        TopBar(s.newMarker, onBack = onDone)
         Column(
             Modifier.padding(horizontal = 15.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             // ── Type selector ──────────────────────────────────────────
-            SectionLabel("What did you find?")
+            SectionLabel(s.whatFound)
             Segmented(
                 listOf(
-                    SegOption("🥚 Nest", markerType == MarkerType.NEST) { markerType = MarkerType.NEST },
-                    SegOption("🚩 Landmark", markerType == MarkerType.LANDMARK) { markerType = MarkerType.LANDMARK },
-                    SegOption("🧺 Trash", markerType == MarkerType.TRASH) { markerType = MarkerType.TRASH },
+                    SegOption(s.segNest, markerType == MarkerType.NEST) { markerType = MarkerType.NEST },
+                    SegOption(s.segLandmark, markerType == MarkerType.LANDMARK) { markerType = MarkerType.LANDMARK },
+                    SegOption(s.segTrash, markerType == MarkerType.TRASH) { markerType = MarkerType.TRASH },
                 ),
             )
 
             // ── Nest vs false crawl (only for nests) ───────────────────
             if (markerType == MarkerType.NEST) {
-                SectionLabel("Nest or false crawl?")
+                SectionLabel(s.nestOrFalse)
                 Segmented(
                     listOf(
-                        SegOption("🥚 Nest", isNest) { isNest = true },
-                        SegOption("🌀 False crawl", !isNest) { isNest = false },
+                        SegOption(s.segNest, isNest) { isNest = true },
+                        SegOption(s.segFalseCrawl, !isNest) { isNest = false },
                     ),
                 )
             }
 
             // ── Photo ──────────────────────────────────────────────────
-            SectionLabel("Photo")
+            SectionLabel(s.photo)
             if (pending?.path != null) {
                 // Show the just-captured photo right here in the form.
                 LocalPhoto(
@@ -117,8 +119,8 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                GhostButton(if (pending?.path != null) "📷 Retake" else "📷 Camera", Modifier.weight(1f)) { onCamera() }
-                GhostButton("🖼️ Gallery", Modifier.weight(1f)) { hasPhoto = true }
+                GhostButton(if (pending?.path != null) s.retake else s.cameraBtn, Modifier.weight(1f)) { onCamera() }
+                GhostButton(s.gallery, Modifier.weight(1f)) { hasPhoto = true }
             }
             if (hasPhoto && pending?.path == null) {
                 Row(
@@ -126,13 +128,13 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text("✅", fontSize = 13.sp)
-                    Text("Photo added", color = c.good, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(s.photoAdded, color = c.good, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
             // ── Location ───────────────────────────────────────────────
             val shownPoint = fixPoint ?: selectedBeach.center
-            SectionLabel("Location")
+            SectionLabel(s.location)
             CarettaCard {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -142,18 +144,18 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                     Column(Modifier.weight(1f)) {
                         Text("${coord(shownPoint.lat)}, ${coord(shownPoint.lng)}", color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
                         Text(
-                            if (fixPoint != null) "From photo · EXIF" else "No GPS in photo — set to the beach",
+                            if (fixPoint != null) s.fromExif else s.noGpsInPhoto,
                             color = c.muted,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                         )
                     }
-                    if (fixPoint != null) Pill("Confirmed ✓", c.good) else Pill("Unconfirmed", c.muted)
+                    if (fixPoint != null) Pill(s.confirmed, c.good) else Pill(s.unconfirmed, c.muted)
                 }
             }
 
             // ── Beach — auto-detected from the location; manual pick only if unrecognized ──
-            SectionLabel("Beach")
+            SectionLabel(s.beachWord)
             val autoDetected = fixPoint != null && nearestDist != null && nearestDist <= 1500
             if (autoDetected && !beachManual) {
                 Box(
@@ -164,66 +166,66 @@ fun AddNestScreen(repo: CarettaRepository, state: AppState, onDone: () -> Unit, 
                         Text("📍", fontSize = 18.sp)
                         Column(Modifier.weight(1f)) {
                             Text(selectedBeach.name, color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
-                            Text("Detected from your location · ${nearestDist!!.toInt()} m", color = c.muted, fontSize = 11.sp)
+                            Text("${s.detectedFrom} · ${nearestDist!!.toInt()} m", color = c.muted, fontSize = 11.sp)
                         }
-                        Text("Change", color = c.sea, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
+                        Text(s.changePlain, color = c.sea, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
                             modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { beachManual = true }.padding(6.dp))
                     }
                 }
             } else {
                 if (fixPoint == null) {
-                    Text("No location yet — take a photo on-site or pick the beach.", color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(s.noLocationYet, color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 } else if (nearestDist != null && nearestDist > 1500) {
-                    Text("🌊 Not recognized as a known nesting beach — pick the right one.", color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(s.notRecognizedBeach, color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
                 BeachPicker(state.beaches, selectedBeach, fixPoint) { selectedBeach = it; beachManual = true }
             }
 
             // ── Nest-only fields ───────────────────────────────────────
             if (markerType == MarkerType.NEST) {
-                SectionLabel("Protection")
+                SectionLabel(s.protection)
                 Segmented(
                     listOf(
-                        SegOption("None", protection == ProtectionLevel.NONE) { protection = ProtectionLevel.NONE },
-                        SegOption("🌾 Reed", protection == ProtectionLevel.MARKED) { protection = ProtectionLevel.MARKED },
-                        SegOption("🛡️ Cage", protection == ProtectionLevel.CAGED) { protection = ProtectionLevel.CAGED },
+                        SegOption(s.protNone, protection == ProtectionLevel.NONE) { protection = ProtectionLevel.NONE },
+                        SegOption(s.protReed, protection == ProtectionLevel.MARKED) { protection = ProtectionLevel.MARKED },
+                        SegOption(s.protCage, protection == ProtectionLevel.CAGED) { protection = ProtectionLevel.CAGED },
                     ),
                 )
                 Text(
-                    "Reed = stakes + reed fence + tape + sign. Cage = metal cage (stronger, but scarce & heavy).",
+                    s.protectionHelp,
                     color = c.muted,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
                 )
                 // Sun exposure is optional (feeds the sex prediction; defaults to Partial) — tucked away.
                 Text(
-                    (if (showDetails) "▾ " else "▸ ") + "Optional: sun exposure",
+                    (if (showDetails) "▾ " else "▸ ") + s.optionalSun,
                     color = c.sea, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold,
                     modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { showDetails = !showDetails }.padding(vertical = 4.dp),
                 )
                 if (showDetails) {
                     Segmented(
                         listOf(
-                            SegOption("☀️ Sun", exposure == SunExposure.FULL_SUN) { exposure = SunExposure.FULL_SUN },
-                            SegOption("⛅ Partial", exposure == SunExposure.PARTIAL) { exposure = SunExposure.PARTIAL },
-                            SegOption("🌴 Shade", exposure == SunExposure.SHADE) { exposure = SunExposure.SHADE },
+                            SegOption(s.segSun, exposure == SunExposure.FULL_SUN) { exposure = SunExposure.FULL_SUN },
+                            SegOption(s.segPartial, exposure == SunExposure.PARTIAL) { exposure = SunExposure.PARTIAL },
+                            SegOption(s.segShade, exposure == SunExposure.SHADE) { exposure = SunExposure.SHADE },
                         ),
                     )
                 }
             }
 
             // ── Visibility ─────────────────────────────────────────────
-            SectionLabel("Visibility")
+            SectionLabel(s.visibility)
             Segmented(
                 listOf(
-                    SegOption("🌍 Public", visibility == Visibility.PUBLIC) { visibility = Visibility.PUBLIC },
-                    SegOption("🔒 Private", visibility == Visibility.PRIVATE) { visibility = Visibility.PRIVATE },
+                    SegOption(s.visPublic, visibility == Visibility.PUBLIC) { visibility = Visibility.PUBLIC },
+                    SegOption(s.visPrivate, visibility == Visibility.PRIVATE) { visibility = Visibility.PRIVATE },
                 ),
             )
 
             // ── Save ───────────────────────────────────────────────────
             Box(Modifier.size(4.dp))
-            PrimaryButton(if (isNest) "Save nest 🐢" else "Save false crawl 🌀") {
+            PrimaryButton(if (isNest) s.saveNest else s.saveFalseCrawl) {
                 repo.addNest(
                     point = shownPoint,
                     beachId = selectedBeach.id,
