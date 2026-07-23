@@ -26,6 +26,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
+            implementation("androidx.exifinterface:exifinterface:1.3.7")
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.ktor.client.okhttp)
             // Native MapLibre + OSM map (Android only; iOS uses native SwiftUI MapLibreView).

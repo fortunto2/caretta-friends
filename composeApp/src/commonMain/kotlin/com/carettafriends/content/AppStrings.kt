@@ -229,6 +229,7 @@ data class AppStrings(
     val timelapse: String,
     val shareImpact: String,
     val shareText: String, // "%d" = hatchlings
+    val addPhoto: String,
 )
 
 private val EN = AppStrings(
@@ -320,6 +321,7 @@ private val EN = AppStrings(
     filterViolations = "⛔ Violations", timelapse = "🎞️ Timelapse",
     shareImpact = "📣 Share my impact",
     shareText = "🐢 I'm a Caretta Friends volunteer — %d hatchlings have reached the sea! Join us: carettafriends.com",
+    addPhoto = "📷 Photo",
 )
 
 private val RU = AppStrings(
@@ -411,6 +413,7 @@ private val RU = AppStrings(
     filterViolations = "⛔ Нарушения", timelapse = "🎞️ Таймлапс",
     shareImpact = "📣 Поделиться вкладом",
     shareText = "🐢 Я волонтёр Caretta Friends — %d черепашат добрались до моря! Присоединяйся: carettafriends.com",
+    addPhoto = "📷 Фото",
 )
 
 private val TR = AppStrings(
@@ -502,6 +505,7 @@ private val TR = AppStrings(
     filterViolations = "⛔ İhlaller", timelapse = "🎞️ Zaman akışı",
     shareImpact = "📣 Katkımı paylaş",
     shareText = "🐢 Ben bir Caretta Friends gönüllüsüyüm — %d yavru denize ulaştı! Sen de katıl: carettafriends.com",
+    addPhoto = "📷 Fotoğraf",
 )
 
 /** The string bundle for [lang] ("ru" / "tr" / anything else → EN). */

@@ -60,12 +60,16 @@ import com.carettafriends.ui.components.SectionLabel
 import com.carettafriends.ui.components.SexRangeBar
 import com.carettafriends.ui.components.StatusPill
 import com.carettafriends.ui.components.TopBar
+import com.carettafriends.ui.rememberGalleryPicker
 import com.carettafriends.ui.theme.caretta
 import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
 
 @Composable
 fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, onExcavate: () -> Unit) {
@@ -77,6 +81,16 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
     val s = appStrings(state.profile.language)
     var watching by remember { mutableStateOf(false) }
     var sheet by remember { mutableStateOf(DetailSheet.NONE) }
+    // Gallery photo → a timeline update; an old photo's EXIF date back-dates it (capped a month).
+    val pickPhoto = rememberGalleryPicker { picked ->
+        if (picked != null) {
+            val obsDate = picked.exifEpochMillis?.let { millis ->
+                Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.currentSystemDefault()).date
+                    .coerceIn(today().minus(DatePeriod(days = MAX_BACKDATE_DAYS)), today())
+            }
+            repo.addUpdate(n.id, UpdateKind.OBSERVATION, "", obsDate = obsDate, photoPath = picked.path)
+        }
+    }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         TopBar(n.code, onBack = onBack)
@@ -193,11 +207,12 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                 n.updates.asReversed().forEach { u -> TimelineRow(u, s) }
             }
 
-            // Add update / Comment.
+            // Add update / Comment / Photo.
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                 GhostButton(s.addUpdate, modifier = Modifier.weight(1f)) { sheet = DetailSheet.UPDATE }
                 GhostButton(s.comment, modifier = Modifier.weight(1f)) { sheet = DetailSheet.COMMENT }
             }
+            GhostButton(s.addPhoto, modifier = Modifier.fillMaxWidth()) { pickPhoto() }
 
             when (sheet) {
                 DetailSheet.UPDATE -> AddUpdateDialog(comment = false, s = s, onDismiss = { sheet = DetailSheet.NONE }) { body, cond, date ->
