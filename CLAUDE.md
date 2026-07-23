@@ -27,7 +27,7 @@ composeApp/src/
   commonMain/kotlin/com/carettafriends/
     App.kt · CarettaApp.kt         — root, Navigator host, always-on BottomBar
     domain/Model.kt                — data classes + enums + AppState helpers (resolveMember, nestsBy, nestMapPhase…)
-    data/Repository.kt             — StateFlow repo, seed, TSD model, addNest/addUpdate, sync, nestDay/nestMapPhase
+    data/Repository.kt             — StateFlow repo, seed, TSD model, addNest/addUpdate, sync, nestDay/nestMapPhase, focusMap/takeMapFocus
     data/CloudBackend*.kt AuthBackend.kt LocalStore.kt WeatherClient.kt BeachDiscovery.kt
     content/AppStrings.kt          — ⚠️ Map-backed i18n catalog (255 getters, 3 mapOf bundles). See plan.md gotcha.
     content/GuideContent.kt        — L10n guide facts/articles

@@ -20,6 +20,11 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 - **Nest lifecycle map colours**: `Repository.nestMapPhase()` → incubating (coral) / soon (amber) / **emerging** (vivid green — HATCHING, act on it) / excavated (sea) / removed (grey, >2d post-excavation or lost). Android `CircleManager` + iOS per-phase pin image.
 - **Hatch lifecycle**: a "hatching/hatched" observation advances `Nest.status` (forward-only); "hatch window open 🐣" banner; excavation CTA gated to hatched/past-window nests.
 - **My location (iOS)**: blue dot + "locate" button (→ `.followWithHeading`). ⚠️ Needs refinement (see C).
+- **B1 — nest geo card → OUR map**: the "На карте" card now centres+zooms the in-app map on the nest
+  (transient `AppState.mapFocus` → `repo.focusMap()`/`takeMapFocus()`), instead of opening external
+  openstreetmap.org. Android reactive (Compose `OsmMap.animateCamera`); iOS via `AppRouter` env-object
+  → native `MapLibreView` focus. Focus is `@Transient` (one-shot, never persisted). Plan/spec:
+  `docs/plan/b1-map-focus_20260724/`.
 - **Photo durability (iOS)**: capture also saved to a **"Caretta Friends" Photos album** (`PhotoAlbumSaver`) so photos survive reinstall.
 - **Crash fixes**: iOS photo-share (dropped fragile CoreGraphics watermark); AppStrings 255-field VerifyError (Map-backed).
 - Empty states (encouraging CTA, not big "0"); excavation celebration (or supportive msg when 0); watch persists (`Profile.watchedNestIds`).
@@ -27,14 +32,6 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 ---
 
 ## 🔜 Backlog (prioritised — do in order, each its own commit + build + install both platforms)
-
-### B1 — Geo card → OUR map, centred on the nest (not external OSM)
-`NestDetailScreen.kt` geo card currently opens `openstreetmap.org` via `LocalUriHandler`. Change to
-open the in-app Map tab centred on the nest.
-- Add `AppState.mapFocus: GeoPoint?` + `Repository.focusMap(p)` / `takeMapFocus()`.
-- Geo card → `repo.focusMap(n.point)` + `onOpenMap()`.
-- Android `CarettaApp`: `onOpenMap` → `nav.selectTab(Screen.Map)`; `MapScreen` centres `OsmMap` on `mapFocus` (add `focus: GeoPoint?` param to `OsmMap` expect/actual) then clears it.
-- iOS: `onOpenMap` must switch the SwiftUI `TabView` to the Map tab (thread a callback to `ContentView.selectedTab`) + `MapLibreView` centres on `IosEntryKt.takeMapFocus()`.
 
 ### B3 — Contextual "+" (unify capture)
 The bottom "+" should be context-aware: on the map/home → new nest; on a nest detail → add update to THAT nest.
