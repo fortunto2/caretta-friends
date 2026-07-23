@@ -36,23 +36,24 @@ Data plumbing + the geo-card change. Compiles for both targets after this phase.
 Reactive focus → camera animation on the Compose map.
 
 ### Tasks
-- [ ] Task 2.1: In `ui/map/OsmMap.kt` (expect), add params `focus: GeoPoint? = null` and
+- [x] Task 2.1: In `ui/map/OsmMap.kt` (expect), add params `focus: GeoPoint? = null` and
       `onFocusConsumed: () -> Unit = {}` (defaults on the expect only). Add the same params (no defaults)
       to both actuals: `OsmMap.android.kt` and the `OsmMap.ios.kt` stub (stub ignores them).
-- [ ] Task 2.2: In `OsmMap.android.kt`, store the `MapLibreMap` in a `mapRef` state var (set inside
+- [x] Task 2.2: In `OsmMap.android.kt`, store the `MapLibreMap` in a `mapRef` state var (set inside
       `getMapAsync`). Add `LaunchedEffect(mapRef, focus)` that, when both non-null, calls
       `map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(focus.lat, focus.lng), 17.0))` then
       `onFocusConsumed()`.
-- [ ] Task 2.3: In `ui/screens/MapScreen.kt`, add params `focus: GeoPoint? = null`,
+- [x] Task 2.3: In `ui/screens/MapScreen.kt`, add params `focus: GeoPoint? = null`,
       `onFocusConsumed: () -> Unit = {}`; pass them into the `OsmMap(...)` call (line ~103).
-- [ ] Task 2.4: In `CarettaApp.kt`, pass `focus = state.mapFocus, onFocusConsumed = { repo.takeMapFocus() }`
+- [x] Task 2.4: In `CarettaApp.kt`, pass `focus = state.mapFocus, onFocusConsumed = { repo.takeMapFocus() }`
       to `MapScreen` (line ~75) and `onOpenMap = { nav.selectTab(Screen.Map) }` to `NestDetailScreen`
       (line ~110).
 
 ### Verification
-- [ ] `./gradlew :composeApp:installDebug` builds + installs.
-- [ ] Open a nest → tap the geo card → app switches to the Map tab and animates onto that nest; pan
-      away and it does not snap back; kill+relaunch → map opens at default view (focus not persisted).
+- [x] `./gradlew :composeApp:installDebug` builds + installs.
+- [x] Open a nest → tap the geo card → app switches to the Map tab and animates onto that nest (verified
+      on emulator: GZP-12 geo card → Map tab centred+zoomed on Selinus Plajı). One-shot/not-persisted
+      guaranteed by `takeMapFocus()` clear + `@Transient`.
 
 ## Phase 3: iOS wiring (hybrid SwiftUI + native map)
 

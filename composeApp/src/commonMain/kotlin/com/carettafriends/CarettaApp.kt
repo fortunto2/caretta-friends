@@ -78,6 +78,8 @@ fun CarettaApp() {
                             onOpenNest = { nav.go(Screen.NestDetail(it)) },
                             onOpenBeach = { nav.go(Screen.BeachDetail(it)) },
                             onOpenCommunity = { nav.go(Screen.Community(it)) },
+                            focus = state.mapFocus,
+                            onFocusConsumed = { repo.takeMapFocus() },
                         )
                         is Screen.Beaches -> BeachesScreen(
                             state,
@@ -110,6 +112,7 @@ fun CarettaApp() {
                                 NestDetailScreen(
                                     n, repo, { nav.back() }, { nav.go(Screen.Excavation(n.id)) },
                                     onOpenMember = { nav.go(Screen.Member(it)) },
+                                    onOpenMap = { nav.selectTab(Screen.Map) },
                                 )
                             } else {
                                 EmptyHint("🐢", s.nestNotFound)

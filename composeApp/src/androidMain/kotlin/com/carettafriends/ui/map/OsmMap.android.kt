@@ -72,6 +72,8 @@ actual fun OsmMap(
     onClick: (String) -> Unit,
     onBeachTap: (String) -> Unit,
     onCommunityTap: (String) -> Unit,
+    focus: com.carettafriends.domain.GeoPoint?,
+    onFocusConsumed: () -> Unit,
 ) {
     val ctx = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -83,6 +85,7 @@ actual fun OsmMap(
     var circleManager by remember { mutableStateOf<CircleManager?>(null) }
     var symbolManager by remember { mutableStateOf<SymbolManager?>(null) }
     var mapStyle by remember { mutableStateOf<Style?>(null) }
+    var mapRef by remember { mutableStateOf<MapLibreMap?>(null) }
 
     DisposableEffect(lifecycleOwner) {
         val obs = LifecycleEventObserver { _, e ->
@@ -153,6 +156,7 @@ actual fun OsmMap(
                     circleManager = cm
                     symbolManager = sm
                     mapStyle = style
+                    mapRef = map
                     centerCamera(map, points)
                 }
             }
@@ -168,6 +172,15 @@ actual fun OsmMap(
         cm?.let { renderCircles(it, points.filter { m -> (!m.isBeach || m.polygon.size < 3) && !m.isCommunity }) }
         style?.let { updateBeachPolygons(it, points.filter { m -> m.isBeach && m.polygon.size >= 3 }) }
         sm?.let { renderCommunitySymbols(it, points.filter { m -> m.isCommunity }) }
+    }
+
+    // One-shot: a nest's geo card requested this camera position → animate onto it, then clear.
+    val map = mapRef
+    LaunchedEffect(map, focus) {
+        if (map != null && focus != null) {
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(focus.lat, focus.lng), 17.0))
+            onFocusConsumed()
+        }
     }
 }
 

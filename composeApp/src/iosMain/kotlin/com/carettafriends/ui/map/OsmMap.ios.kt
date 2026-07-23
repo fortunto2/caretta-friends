@@ -16,6 +16,8 @@ actual fun OsmMap(
     onClick: (String) -> Unit,
     onBeachTap: (String) -> Unit,
     onCommunityTap: (String) -> Unit,
+    focus: com.carettafriends.domain.GeoPoint?,
+    onFocusConsumed: () -> Unit,
 ) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text("Map — ${points.size} markers")

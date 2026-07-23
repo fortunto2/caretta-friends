@@ -30,6 +30,9 @@ data class MapMarker(
  *
  * @param points  markers to draw. Camera centers on their average; if empty -> Gazipaşa (~36.27, 32.31).
  * @param onClick invoked with the tapped marker's [MapMarker.id] (beaches ignored by the caller).
+ * @param focus   one-shot request to animate the camera onto this point (e.g. a nest's geo card).
+ *                Null = no pending focus. After centring, the actual calls [onFocusConsumed].
+ * @param onFocusConsumed invoked once the camera has been moved to [focus] (clears the pending focus).
  *
  * Default values are declared ONLY here (expect); actuals must NOT repeat them.
  */
@@ -40,4 +43,6 @@ expect fun OsmMap(
     onClick: (markerId: String) -> Unit,
     onBeachTap: (beachId: String) -> Unit = {},
     onCommunityTap: (communityId: String) -> Unit = {},
+    focus: GeoPoint? = null,
+    onFocusConsumed: () -> Unit = {},
 )

@@ -54,6 +54,8 @@ fun MapScreen(
     onOpenNest: (String) -> Unit,
     onOpenBeach: (String) -> Unit = {},
     onOpenCommunity: (String) -> Unit = {},
+    focus: com.carettafriends.domain.GeoPoint? = null,
+    onFocusConsumed: () -> Unit = {},
 ) {
     val c = caretta
     val s = com.carettafriends.content.appStrings(state.profile.language)
@@ -106,6 +108,8 @@ fun MapScreen(
             onClick = { id -> if (state.nest(id) != null) onOpenNest(id) },
             onBeachTap = { id -> tappedBeach = id },
             onCommunityTap = { id -> onOpenCommunity(id.removePrefix("cm:")) },
+            focus = focus,
+            onFocusConsumed = onFocusConsumed,
         )
 
         // --- Top overlays: filter chips + coverage chip ---
