@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -81,6 +80,7 @@ fun NestDetailScreen(
     onBack: () -> Unit,
     onExcavate: () -> Unit,
     onOpenMember: (String) -> Unit = {},
+    onOpenMap: () -> Unit = {},
 ) {
     val c = caretta
     // React to repo updates (Add update / Comment) so the timeline stays live.
@@ -88,7 +88,6 @@ fun NestDetailScreen(
     val n = state.nest(nest.id) ?: nest
     val beach = state.beach(n.beachId)
     val s = appStrings(state.profile.language)
-    val uri = LocalUriHandler.current
     val watching = n.id in state.profile.watchedNestIds
     var sheet by remember { mutableStateOf(DetailSheet.NONE) }
 
@@ -207,16 +206,13 @@ fun NestDetailScreen(
                 modifier = Modifier.clickable { onOpenMember(n.foundBy) },
             )
 
-            // Where the nest is — tap to open the exact spot on the map (OSM).
+            // Where the nest is — tap to centre the in-app map on this exact spot.
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.surface)
                     .border(1.dp, c.line, RoundedCornerShape(14.dp))
                     .clickable {
-                        val lat = n.point.lat
-                        val lng = n.point.lng
-                        runCatching {
-                            uri.openUri("https://www.openstreetmap.org/?mlat=$lat&mlon=$lng#map=18/$lat/$lng")
-                        }
+                        repo.focusMap(n.point)
+                        onOpenMap()
                     }
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,

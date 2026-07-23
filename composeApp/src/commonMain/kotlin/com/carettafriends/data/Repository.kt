@@ -281,6 +281,14 @@ class CarettaRepository {
     var pendingPhoto: PendingPhoto? = null
     fun takePendingPhoto(): PendingPhoto? = pendingPhoto.also { pendingPhoto = null }
 
+    /** Request the map centre on [p] (e.g. from a nest's geo card). Reactive on Android (StateFlow),
+     *  read as a snapshot on iOS. Transient in [AppState] — never persisted. */
+    fun focusMap(p: GeoPoint) { _state.value = _state.value.copy(mapFocus = p) }
+
+    /** Read-and-clear the pending map focus (mirrors [takePendingPhoto]). Returns null if none pending. */
+    fun takeMapFocus(): GeoPoint? =
+        _state.value.mapFocus.also { if (it != null) _state.value = _state.value.copy(mapFocus = null) }
+
     /** Set the volunteer's display name (offline, no login needed — used as the nest/patrol author). */
     fun setDisplayName(name: String) {
         val clean = name.trim().take(40)

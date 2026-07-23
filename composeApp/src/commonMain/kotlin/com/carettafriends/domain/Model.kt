@@ -2,6 +2,7 @@ package com.carettafriends.domain
 
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 /** Enums mirror data-model.md (export-compatible with FWC / seaturtle.org). */
 enum class MarkerType { NEST, LANDMARK, TRASH, PREDATOR_SIGN, CRAWL, OBSTACLE, VIOLATION, OTHER }
@@ -292,6 +293,10 @@ data class AppState(
     val air: AirStatus? = null,
     /** Signed-in email, or null while still an anonymous volunteer (drives the profile sign-in CTA). */
     val accountEmail: String? = null,
+    /** One-shot "centre the map here" request (e.g. from a nest's geo card). Transient — never
+     *  serialized, so it can't survive a relaunch and re-focus the map. Set via [focusMap], consumed
+     *  via [takeMapFocus]. */
+    @Transient val mapFocus: GeoPoint? = null,
 ) {
     fun beach(id: String): Beach? = beaches.firstOrNull { it.id == id }
     fun nest(id: String): Nest? = nests.firstOrNull { it.id == id }
