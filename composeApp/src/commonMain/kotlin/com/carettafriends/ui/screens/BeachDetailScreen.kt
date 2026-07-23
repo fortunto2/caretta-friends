@@ -134,7 +134,7 @@ private fun FeedItem(nest: Nest, s: AppStrings, onOpenNest: (String) -> Unit) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 Text(nest.code, color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
-                StatusPill(nest.status)
+                StatusPill(nest.status, s)
             }
             Text(
                 last?.body?.ifBlank { "${s.dayWord} ${nestDay(nest)}" } ?: "${s.dayWord} ${nestDay(nest)}",

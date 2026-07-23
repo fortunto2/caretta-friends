@@ -58,18 +58,18 @@ fun Pill(text: String, fg: Color, bg: Color = fg.copy(alpha = 0.15f), modifier: 
 }
 
 @Composable
-fun StatusPill(status: NestStatus) {
+fun StatusPill(status: NestStatus, s: com.carettafriends.content.AppStrings) {
     val c = caretta
     val (label, color) = when (status) {
-        NestStatus.INCUBATING -> "Incubating" to c.sea
-        NestStatus.HATCHING -> "Hatching soon" to c.warn
-        NestStatus.HATCHED -> "Hatched" to c.good
-        NestStatus.EXCAVATED -> "Excavated" to c.good
-        NestStatus.PREDATED -> "Predated" to c.risk
-        NestStatus.WASHED_OVER -> "Washed over" to c.risk
-        NestStatus.POACHED -> "Poached" to c.risk
-        NestStatus.LOST -> "Lost" to c.muted
-        NestStatus.FALSE_CRAWL -> "False crawl" to c.muted
+        NestStatus.INCUBATING -> s.statusIncubating to c.sea
+        NestStatus.HATCHING -> s.statusHatchingSoon to c.warn
+        NestStatus.HATCHED -> s.statusHatched to c.good
+        NestStatus.EXCAVATED -> s.statusExcavated to c.good
+        NestStatus.PREDATED -> s.statusPredated to c.risk
+        NestStatus.WASHED_OVER -> s.statusWashedOver to c.risk
+        NestStatus.POACHED -> s.statusPoached to c.risk
+        NestStatus.LOST -> s.statusLost to c.muted
+        NestStatus.FALSE_CRAWL -> s.statusFalseCrawl to c.muted
     }
     Pill(label, color)
 }
@@ -123,7 +123,7 @@ fun GhostButton(text: String, modifier: Modifier = Modifier, onClick: () -> Unit
 
 /** Circular incubation progress ring: "Day X / ~total". */
 @Composable
-fun CountdownRing(day: Int, total: Int, modifier: Modifier = Modifier) {
+fun CountdownRing(day: Int, total: Int, dayLabel: String = "DAY", modifier: Modifier = Modifier) {
     val c = caretta
     val progress = (day.toFloat() / total.coerceAtLeast(1)).coerceIn(0f, 1f)
     Box(modifier = modifier.size(92.dp), contentAlignment = Alignment.Center) {
@@ -152,7 +152,7 @@ fun CountdownRing(day: Int, total: Int, modifier: Modifier = Modifier) {
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("$day", color = c.deep, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
-            Text("DAY / ~$total", color = c.muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            Text("$dayLabel / ~$total", color = c.muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

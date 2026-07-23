@@ -190,6 +190,18 @@ data class AppStrings(
     val airDustLabel: String,
     val patrolNotAdvised: String,
     val dustNotAdvised: String,
+    // nest status pills + countdown + months
+    val statusIncubating: String,
+    val statusHatchingSoon: String,
+    val statusHatched: String,
+    val statusExcavated: String,
+    val statusPredated: String,
+    val statusWashedOver: String,
+    val statusPoached: String,
+    val statusLost: String,
+    val statusFalseCrawl: String,
+    val dayLabel: String,
+    val months: List<String>,
 )
 
 private val EN = AppStrings(
@@ -262,6 +274,10 @@ private val EN = AppStrings(
     dayWord = "Day",
     airCleanLabel = "Air clean", airModerate = "Moderate air", airUnhealthy = "Unhealthy", airDustLabel = "Dust",
     patrolNotAdvised = "patrol not advised", dustNotAdvised = "⚠ Dust — patrol not advised",
+    statusIncubating = "Incubating", statusHatchingSoon = "Hatching soon", statusHatched = "Hatched",
+    statusExcavated = "Excavated", statusPredated = "Predated", statusWashedOver = "Washed over",
+    statusPoached = "Poached", statusLost = "Lost", statusFalseCrawl = "False crawl", dayLabel = "DAY",
+    months = listOf("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"),
 )
 
 private val RU = AppStrings(
@@ -334,6 +350,10 @@ private val RU = AppStrings(
     dayWord = "День",
     airCleanLabel = "Воздух чистый", airModerate = "Умеренный воздух", airUnhealthy = "Вредный", airDustLabel = "Пыль",
     patrolNotAdvised = "патруль не рекомендуется", dustNotAdvised = "⚠ Пыль — патруль не рекомендуется",
+    statusIncubating = "Инкубация", statusHatchingSoon = "Скоро вылупление", statusHatched = "Вылупилось",
+    statusExcavated = "Вскрыто", statusPredated = "Хищник", statusWashedOver = "Смыло",
+    statusPoached = "Разорено", statusLost = "Потеряно", statusFalseCrawl = "Ложный выход", dayLabel = "ДЕНЬ",
+    months = listOf("янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"),
 )
 
 private val TR = AppStrings(
@@ -406,6 +426,10 @@ private val TR = AppStrings(
     dayWord = "Gün",
     airCleanLabel = "Hava temiz", airModerate = "Orta hava", airUnhealthy = "Sağlıksız", airDustLabel = "Toz",
     patrolNotAdvised = "devriye önerilmez", dustNotAdvised = "⚠ Toz — devriye önerilmez",
+    statusIncubating = "İnkübasyon", statusHatchingSoon = "Yakında çıkış", statusHatched = "Çıktı",
+    statusExcavated = "Kazıldı", statusPredated = "Avlandı", statusWashedOver = "Su bastı",
+    statusPoached = "Yağmalandı", statusLost = "Kayıp", statusFalseCrawl = "Boş çıkış", dayLabel = "GÜN",
+    months = listOf("Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"),
 )
 
 /** The string bundle for [lang] ("ru" / "tr" / anything else → EN). */

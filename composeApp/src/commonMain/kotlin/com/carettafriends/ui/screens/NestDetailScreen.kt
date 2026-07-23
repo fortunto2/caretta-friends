@@ -121,7 +121,7 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                 Column(Modifier.weight(1f)) {
                     Text(n.code, color = c.deep, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
                     Text(
-                        "${beach?.name ?: s.beachWord} · ${s.foundWord} ${fmtDate(n.foundDate)}  ✎",
+                        "${beach?.name ?: s.beachWord} · ${s.foundWord} ${fmtDate(n.foundDate, s)}  ✎",
                         color = c.muted,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -131,7 +131,7 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
                             .padding(vertical = 2.dp),
                     )
                 }
-                StatusPill(n.status)
+                StatusPill(n.status, s)
             }
 
             // Unconfirmed banner.
@@ -158,11 +158,11 @@ fun NestDetailScreen(nest: Nest, repo: CarettaRepository, onBack: () -> Unit, on
             CarettaCard {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                        CountdownRing(day = nestDay(n), total = n.incubationDaysEst)
+                        CountdownRing(day = nestDay(n), total = n.incubationDaysEst, dayLabel = s.dayLabel)
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             SectionLabel(s.hatchWindow)
                             Text(
-                                hatchWindowLabel(n),
+                                hatchWindowLabel(n, s),
                                 color = c.deep,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.ExtraBold,
@@ -257,7 +257,7 @@ private fun TimelineRow(u: NestUpdate, s: AppStrings) {
     val c = caretta
     val dot = dotColor(u)
     val isComment = u.kind == UpdateKind.COMMENT
-    val dateStr = u.obsDate?.let { fmtDate(it) }
+    val dateStr = u.obsDate?.let { fmtDate(it, s) }
         ?: if (u.dateLabel.isBlank() || u.dateLabel == "Today") s.today else u.dateLabel
     val meta = "${u.author} · $dateStr${conditionSuffix(u, s)}"
     Row(
@@ -314,15 +314,13 @@ private fun conditionSuffix(u: NestUpdate, s: AppStrings): String = when (u.cond
 
 // --- helpers -------------------------------------------------------------
 
-private val MONTHS = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+private fun fmtDate(d: LocalDate, s: AppStrings): String = "${s.months[d.month.ordinal]} ${d.dayOfMonth}"
 
-private fun fmtDate(d: LocalDate): String = "${MONTHS[d.month.ordinal]} ${d.dayOfMonth}"
-
-private fun hatchWindowLabel(n: Nest): String {
-    if (n.incubationDaysEst <= 0) return "not incubating"
+private fun hatchWindowLabel(n: Nest, s: AppStrings): String {
+    if (n.incubationDaysEst <= 0) return "—"
     val start = n.foundDate.plus(DatePeriod(days = (n.incubationDaysEst - 3).coerceAtLeast(0)))
     val end = n.foundDate.plus(DatePeriod(days = n.incubationDaysEst + 4))
-    return "~${n.incubationDaysEst}d · ${fmtDate(start)}–${fmtDate(end)}"
+    return "~${n.incubationDaysEst}d · ${fmtDate(start, s)}–${fmtDate(end, s)}"
 }
 
 private fun exposureEmoji(e: SunExposure?): String = when (e) {
@@ -480,7 +478,7 @@ private fun DateStepper(date: LocalDate, s: AppStrings, onChange: (LocalDate) ->
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         StepButton("−", date > minDate) { onChange(date.minus(DatePeriod(days = 1))) }
         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(fmtDate(date), color = caretta.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
+            Text(fmtDate(date, s), color = caretta.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
             Text(dayAgoLabel(date, s), color = caretta.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
         StepButton("+", date < today()) { onChange(date.plus(DatePeriod(days = 1))) }
