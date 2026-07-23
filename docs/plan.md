@@ -55,7 +55,7 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 
 ### Other pending
 - **Photo cloud sync (offline-first, V2)**: nest *metadata* already syncs to Supabase; **photo files** do not — upload to Supabase Storage (→ Cloudflare R2 later, behind `CloudBackend`). Android durability: also save captures to a public MediaStore album (iOS done).
-- iOS camera permission-denied message still English (edge case).
+- ✅ iOS camera permission/starting messages — done: localized via `currentStrings().cameraDenied`/`cameraStarting` (EN/RU/TR).
 - ✅ **Save button visible without scroll** in AddNest — done: the Save button is now a pinned footer below the scrollable form.
 - ✅ Seed demo strings — moot: `seedState()` now seeds `nests = emptyList()`, so the English "Patrol — all OK"/"Looks good today" only linger in stale local state and are gone on a clean install.
 

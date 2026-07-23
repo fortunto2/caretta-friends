@@ -215,7 +215,7 @@ final class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureD
 
     @Published var isConfigured = false
     @Published var permissionDenied = false
-    @Published var statusMessage = "Starting camera…"
+    @Published var statusMessage = IosEntryKt.currentStrings().cameraStarting
     @Published var flashMode: AVCaptureDevice.FlashMode = .auto
 
     /// Delivered on the main thread.
@@ -228,10 +228,10 @@ final class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureD
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
                 if granted { self?.configure() }
-                else { self?.fail("Camera access denied.", denied: true) }
+                else { self?.fail(IosEntryKt.currentStrings().cameraDenied, denied: true) }
             }
         default:
-            fail("Camera access denied. Enable it in Settings.", denied: true)
+            fail(IosEntryKt.currentStrings().cameraDenied, denied: true)
         }
     }
 

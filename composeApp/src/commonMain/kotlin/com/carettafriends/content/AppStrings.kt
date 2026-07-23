@@ -250,6 +250,8 @@ class AppStrings(private val m: Map<String, String>, val months: List<String>) {
     val patrolPublish: String get() = m.getValue("patrolPublish")
     val patrolPublishBody: String get() = m.getValue("patrolPublishBody")
     val openSettings: String get() = m.getValue("openSettings")
+    val cameraStarting: String get() = m.getValue("cameraStarting")
+    val cameraDenied: String get() = m.getValue("cameraDenied")
     val memberNestsStat: String get() = m.getValue("memberNestsStat")
     val memberHatchStat: String get() = m.getValue("memberHatchStat")
     val memberNestsSection: String get() = m.getValue("memberNestsSection")
@@ -518,6 +520,8 @@ private fun enStrings() = AppStrings(
         "patrolPublish" to "Publish",
         "patrolPublishBody" to "Your walk is saved on your phone. Publish to share the route with your community — your live location is never shared.",
         "openSettings" to "Open Settings",
+        "cameraStarting" to "Starting camera…",
+        "cameraDenied" to "Camera access denied. Enable it in Settings.",
         "memberNestsStat" to "nests found",
         "memberHatchStat" to "hatchlings freed",
         "memberNestsSection" to "Nests",
@@ -788,6 +792,8 @@ private fun ruStrings() = AppStrings(
         "patrolPublish" to "Опубликовать",
         "patrolPublishBody" to "Прогулка сохранена на телефоне. Опубликуй, чтобы поделиться маршрутом с сообществом — твоя геопозиция в реальном времени никогда не передаётся.",
         "openSettings" to "Открыть настройки",
+        "cameraStarting" to "Запуск камеры…",
+        "cameraDenied" to "Доступ к камере запрещён. Включите его в Настройках.",
         "memberNestsStat" to "гнёзд найдено",
         "memberHatchStat" to "черепашат спасено",
         "memberNestsSection" to "Гнёзда",
@@ -1058,6 +1064,8 @@ private fun trStrings() = AppStrings(
         "patrolPublish" to "Yayınla",
         "patrolPublishBody" to "Yürüyüşün telefonunda kaydedildi. Rotayı toplulukla paylaşmak için yayınla — canlı konumun asla paylaşılmaz.",
         "openSettings" to "Ayarları aç",
+        "cameraStarting" to "Kamera başlatılıyor…",
+        "cameraDenied" to "Kamera erişimi reddedildi. Ayarlar'dan etkinleştirin.",
         "memberNestsStat" to "yuva bulundu",
         "memberHatchStat" to "yavru kurtarıldı",
         "memberNestsSection" to "Yuvalar",
