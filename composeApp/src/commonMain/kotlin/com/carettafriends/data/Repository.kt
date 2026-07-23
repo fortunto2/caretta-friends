@@ -58,6 +58,30 @@ fun predictTsd(exposure: SunExposure?): Triple<Int, Int, Int> = when (exposure) 
     null -> Triple(60, 85, 55)
 }
 
+/** How much warmer the nest sand runs than shaded air, by sun exposure (°C). */
+private fun sandOffsetC(exposure: SunExposure?): Double = when (exposure) {
+    SunExposure.FULL_SUN -> 3.5
+    SunExposure.PARTIAL -> 2.0
+    SunExposure.SHADE -> 0.5
+    null -> 2.0
+}
+
+/**
+ * Temperature-driven TSD (thermosensitive-period model). Loggerhead sex flips steeply around a pivot
+ * of ~29.2°C (transitional range ~28–30.5°C). We approximate mid-incubation sand temperature as the
+ * mean recorded air temp + a sun-exposure offset, then map it through a logistic curve to a female %.
+ * Returns a female-share range (± daily variation), or null if there's no temperature series yet.
+ * NOTE: uses the temps recorded so far (7-day window at creation) — a full per-day series over the
+ * incubation is the next step; this already beats the pure-exposure guess when local temps exist.
+ */
+fun predictFemaleRange(dailyAirC: List<Double>, exposure: SunExposure?): Pair<Int, Int>? {
+    if (dailyAirC.isEmpty()) return null
+    val sand = dailyAirC.average() + sandOffsetC(exposure)
+    val female = (100.0 / (1.0 + kotlin.math.exp(-1.4 * (sand - 29.2)))).toInt().coerceIn(0, 100)
+    val spread = 12
+    return (female - spread).coerceAtLeast(0) to (female + spread).coerceAtMost(100)
+}
+
 fun today(): LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
 
 /** How far back a nest/update date may be set (word-of-mouth back-dating; guards against bogus far-past dates). */
@@ -332,7 +356,15 @@ class CarettaRepository {
         if (isNest) {
             scope.launch {
                 weather.fetch(point.lat, point.lng)?.let { w ->
-                    update(id) { it.copy(airTempC = w.airTempC, rainMm7d = w.rainMm7d, temps = w.daily) }
+                    // Refine the sex prediction from the real local temperatures (thermosensitive model).
+                    val range = predictFemaleRange(w.daily.map { it.valueC }, exposure)
+                    update(id) {
+                        it.copy(
+                            airTempC = w.airTempC, rainMm7d = w.rainMm7d, temps = w.daily,
+                            predictedFemaleLow = range?.first ?: it.predictedFemaleLow,
+                            predictedFemaleHigh = range?.second ?: it.predictedFemaleHigh,
+                        )
+                    }
                 }
             }
         }
