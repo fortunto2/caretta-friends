@@ -61,7 +61,8 @@ private func destinationView(_ route: Route, path: Binding<NavigationPath>) -> s
             ComposeHost {
                 IosEntryKt.AddNestVC(
                     onDone: { path.wrappedValue.removeLast() },
-                    onCamera: { path.wrappedValue.append(Route.camera) }
+                    onCamera: { path.wrappedValue.append(Route.camera) },
+                    onNestSaved: { id in path.wrappedValue.removeLast(); path.wrappedValue.append(Route.nest(id)) }
                 )
             }
         }
@@ -285,7 +286,8 @@ struct MapTab: View {
                         ComposeHost {
                             IosEntryKt.AddNestVC(
                                 onDone: { if !path.isEmpty { path.removeLast() } },
-                                onCamera: { showCamera = true }
+                                onCamera: { showCamera = true },
+                                onNestSaved: { id in if !path.isEmpty { path.removeLast() }; path.append(Route.nest(id)) }
                             )
                         }
                     }
@@ -536,7 +538,8 @@ private struct AddFlow: View {
                             ComposeHost {
                                 IosEntryKt.AddNestVC(
                                     onDone: { onClose() },
-                                    onCamera: { showCamera = true }
+                                    onCamera: { showCamera = true },
+                                    onNestSaved: { id in path.append(Route.nest(id)) }
                                 )
                             }
                         }

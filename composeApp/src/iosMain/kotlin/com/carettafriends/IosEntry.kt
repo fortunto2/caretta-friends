@@ -177,9 +177,9 @@ fun OnboardingVC(onDone: () -> Unit): UIViewController = host {
     OnboardingScreen(state) { SharedRepo.repo.setOnboarded(); onDone() }
 }
 
-fun AddNestVC(onDone: () -> Unit, onCamera: () -> Unit): UIViewController = host {
+fun AddNestVC(onDone: () -> Unit, onCamera: () -> Unit, onNestSaved: (String) -> Unit): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
-    AddNestScreen(SharedRepo.repo, state, onDone, onCamera)
+    AddNestScreen(SharedRepo.repo, state, onDone, onCamera, onNestSaved)
 }
 
 fun NestDetailVC(nestId: String, onBack: () -> Unit, onExcavate: (String) -> Unit): UIViewController = host {
