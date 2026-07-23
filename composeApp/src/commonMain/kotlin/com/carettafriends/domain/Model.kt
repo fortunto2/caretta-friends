@@ -188,6 +188,8 @@ data class Nest(
     val predictedFemaleHigh: Int? = null,
     val airTempC: Double? = null,
     val rainMm7d: Double? = null,
+    /** Epoch-day of the last DAILY temperature appended to [temps] — drives the once-a-day TSP accrual. */
+    val lastTempDay: Int = 0,
     val photos: List<PhotoRef> = emptyList(),
     val updates: List<NestUpdate> = emptyList(),
     val excavation: Excavation? = null,

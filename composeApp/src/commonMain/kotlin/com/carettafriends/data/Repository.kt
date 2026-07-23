@@ -133,6 +133,29 @@ class CarettaRepository {
         scope.launch { syncOnStart() }
     }
 
+    /** Once-a-day per-incubating-nest temperature accrual → the thermosensitive-period TSD mean grows
+     *  over the whole incubation, not just the 7-day window at creation. One fetch per beach (nests on a
+     *  beach share the temperature); skips nests already updated today (lastTempDay). Best-effort/offline-safe. */
+    private suspend fun refreshNestTemps() {
+        val today = today().toEpochDays()
+        val due = _state.value.nests.filter { it.status == NestStatus.INCUBATING && it.lastTempDay < today }
+        due.groupBy { it.beachId }.forEach { (_, nests) ->
+            val n0 = nests.first()
+            val t = weather.fetch(n0.point.lat, n0.point.lng)?.airTempC ?: return@forEach
+            nests.forEach { nest ->
+                update(nest.id) {
+                    val temps = it.temps + com.carettafriends.domain.TemperatureReading("day $today", "air_daily", t)
+                    val range = predictFemaleRange(temps.map { r -> r.valueC }, it.exposure)
+                    it.copy(
+                        temps = temps, lastTempDay = today, airTempC = t,
+                        predictedFemaleLow = range?.first ?: it.predictedFemaleLow,
+                        predictedFemaleHigh = range?.second ?: it.predictedFemaleHigh,
+                    )
+                }
+            }
+        }
+    }
+
     private suspend fun syncOnStart() {
         // Anonymous sign-in on first run → stable owner_id + RLS-scoped, attributable writes.
         auth.ensureSession()
@@ -181,6 +204,8 @@ class CarettaRepository {
                 markers = mergeById(s.markers, remoteMarkers) { it.id },
             )
         }
+        // Once-a-day TSP temperature accrual for incubating nests (best-effort, after the merge).
+        runCatching { refreshNestTemps() }
     }
 
     /** Union by id; remote wins on conflict — safe for append-only entities (beaches, markers). */
