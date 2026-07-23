@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -86,6 +87,7 @@ fun NestDetailScreen(
     val n = state.nest(nest.id) ?: nest
     val beach = state.beach(n.beachId)
     val s = appStrings(state.profile.language)
+    val uri = LocalUriHandler.current
     var watching by remember { mutableStateOf(false) }
     var sheet by remember { mutableStateOf(DetailSheet.NONE) }
     // Gallery photo → a timeline update; an old photo's EXIF date back-dates it (capped a month).
@@ -197,6 +199,35 @@ fun NestDetailScreen(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.clickable { onOpenMember(n.foundBy) },
             )
+
+            // Where the nest is — tap to open the exact spot on the map (OSM).
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.surface)
+                    .border(1.dp, c.line, RoundedCornerShape(14.dp))
+                    .clickable {
+                        val lat = n.point.lat
+                        val lng = n.point.lng
+                        runCatching {
+                            uri.openUri("https://www.openstreetmap.org/?mlat=$lat&mlon=$lng#map=18/$lat/$lng")
+                        }
+                    }
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Box(
+                    Modifier.size(42.dp).clip(RoundedCornerShape(13.dp)).background(c.sea.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center,
+                ) { Text("📍", fontSize = 20.sp) }
+                Column(Modifier.weight(1f)) {
+                    Text(s.onMapWord, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(
+                        "${beach?.name?.plus(" · ") ?: ""}${fmtCoord(n.point.lat)}, ${fmtCoord(n.point.lng)}",
+                        color = c.muted, fontSize = 12.sp,
+                    )
+                }
+                Text("›", color = c.muted, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+            }
 
             // Countdown + hatch window + predicted sex range + conditions.
             CarettaCard {
@@ -311,6 +342,14 @@ private fun AuthorMeta(author: String, rest: String, onOpenMember: (String) -> U
         )
         Text(rest, color = c.muted, fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
     }
+}
+
+/** Format a lat/lng to ~5 decimals (~1 m) without String.format (unavailable in commonMain). */
+private fun fmtCoord(v: Double): String {
+    val scaled = (v * 100000).let { if (it < 0) (it - 0.5).toLong() else (it + 0.5).toLong() }
+    val whole = scaled / 100000
+    val frac = (if (scaled < 0) -scaled else scaled) % 100000
+    return "$whole." + frac.toString().padStart(5, '0')
 }
 
 /** Localized body for an auto-generated timeline entry — derived from the nest so it stays in the

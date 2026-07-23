@@ -278,6 +278,7 @@ data class AppStrings(
     val tlNestFound: String,
     val tlFalseCrawl: String,
     val tlHatchSuccess: String,
+    val onMapWord: String,
 )
 
 private val EN = AppStrings(
@@ -410,6 +411,7 @@ private val EN = AppStrings(
     tlNestFound = "Nest found",
     tlFalseCrawl = "False crawl logged",
     tlHatchSuccess = "hatch success",
+    onMapWord = "View on map",
 )
 
 private val RU = AppStrings(
@@ -542,6 +544,7 @@ private val RU = AppStrings(
     tlNestFound = "Гнездо найдено",
     tlFalseCrawl = "Отмечен ложный выход",
     tlHatchSuccess = "успех вылупления",
+    onMapWord = "На карте",
 )
 
 private val TR = AppStrings(
@@ -674,6 +677,7 @@ private val TR = AppStrings(
     tlNestFound = "Yuva bulundu",
     tlFalseCrawl = "Yanlış çıkış kaydedildi",
     tlHatchSuccess = "çıkış başarısı",
+    onMapWord = "Haritada",
 )
 
 /** The string bundle for [lang] ("ru" / "tr" / anything else → EN). */
