@@ -281,8 +281,10 @@ private fun updateBeachPolygons(style: Style, beaches: List<MapMarker>) {
     src.setGeoJson(FeatureCollection.fromFeatures(features))
 }
 
-/** Turn on the MapLibre LocationComponent as a heading arrow (COMPASS) without hijacking the camera.
- *  Caller must have checked ACCESS_FINE_LOCATION (guarded), hence @SuppressLint. */
+/** Turn on the MapLibre LocationComponent (a location puck) without hijacking the camera.
+ *  Caller must have checked ACCESS_FINE_LOCATION (guarded), hence @SuppressLint.
+ *  NB: RenderMode.NORMAL, not COMPASS — the compass renderer's async magnetometer handler calls
+ *  getSourceAs during style transitions and crashes ("newer style is loading"), a MapLibre race. */
 @SuppressLint("MissingPermission")
 private fun enableUserLocation(ctx: Context, map: MapLibreMap, style: Style) {
     val lc = map.locationComponent
@@ -290,7 +292,7 @@ private fun enableUserLocation(ctx: Context, map: MapLibreMap, style: Style) {
         LocationComponentActivationOptions.builder(ctx, style).useDefaultLocationEngine(true).build(),
     )
     lc.isLocationComponentEnabled = true
-    lc.renderMode = RenderMode.COMPASS   // a heading arrow, not a plain dot
+    lc.renderMode = RenderMode.NORMAL    // stable location puck (COMPASS crashes on the style race)
     lc.cameraMode = CameraMode.NONE      // show me, but don't seize the camera
 }
 
