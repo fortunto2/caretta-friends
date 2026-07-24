@@ -40,3 +40,6 @@ iosApp/build-dev/
 # iOS device build output (custom derivedDataPath)
 iosApp/build-device/
 iosApp/build/
+
+# iOS simulator build output (custom derivedDataPath)
+iosApp/build-sim/
