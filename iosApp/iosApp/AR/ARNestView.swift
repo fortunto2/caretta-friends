@@ -29,6 +29,7 @@ struct ARNest: Identifiable {
     let id: String
     let code: String
     let status: String
+    let date: String                // found date "d.MM"
     let coord: CLLocationCoordinate2D
     var world: SIMD3<Float> = .zero
     var screen: CGPoint = .zero
@@ -51,7 +52,7 @@ final class ARNestModel: NSObject, ObservableObject, ARSessionDelegate, CLLocati
         super.init()
         let pts = IosEntryKt.mapPoints()
         nests = pts.map {
-            ARNest(id: $0.id, code: $0.title, status: $0.status,
+            ARNest(id: $0.id, code: $0.title, status: $0.status, date: $0.dateShort,
                    coord: CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng))
         }
         loc.delegate = self
@@ -149,6 +150,31 @@ struct ARNestView: View {
             .min { $0.distance < $1.distance }
     }
 
+    /// Greedy de-overlap: nearest-first; a marker within `gap` px of an already-kept full badge
+    /// becomes a dot instead of a label, so distant clusters stay readable.
+    private func declutter(_ size: CGSize) -> (full: [ARNest], dots: [ARNest]) {
+        let vis = model.nests.filter { $0.visible }.sorted { $0.distance < $1.distance }
+        var full: [ARNest] = []
+        var dots: [ARNest] = []
+        let gap: CGFloat = 82
+        for n in vis {
+            if full.contains(where: { hypot($0.screen.x - n.screen.x, $0.screen.y - n.screen.y) < gap }) {
+                dots.append(n)
+            } else {
+                full.append(n)
+            }
+        }
+        return (full, dots)
+    }
+
+    // Collapsed far/overlapping marker: just a status dot (tap still opens the nest).
+    @ViewBuilder
+    private func dotMarker(_ n: ARNest) -> some View {
+        Circle().fill(statusColor(n.status)).frame(width: 13, height: 13)
+            .overlay(Circle().stroke(.white, lineWidth: 2))
+            .shadow(color: .black.opacity(0.35), radius: 2, y: 1)
+    }
+
     var body: some View {
         GeometryReader { geo in
             ZStack {
@@ -163,8 +189,14 @@ struct ARNestView: View {
                     }
                 }
 
-                // floating nest markers
-                ForEach(model.nests.filter { $0.visible }) { n in
+                // floating nest markers — nearest wins a full badge; overlapping/far ones collapse to
+                // small dots so a distant cluster doesn't pile labels on top of each other.
+                let shown = declutter(geo.size)
+                ForEach(shown.dots) { n in
+                    dotMarker(n).position(x: n.screen.x, y: n.screen.y)
+                        .onTapGesture { onOpenNest(n.id) }
+                }
+                ForEach(shown.full) { n in
                     marker(n, centred: centred(geo.size)?.id == n.id)
                         .position(x: n.screen.x, y: n.screen.y)
                         .onTapGesture { onOpenNest(n.id) }
@@ -205,13 +237,16 @@ struct ARNestView: View {
     @ViewBuilder
     private func marker(_ n: ARNest, centred: Bool) -> some View {
         let scale = CGFloat(max(0.7, min(1.25, 1.3 - n.distance / 120))) * (centred ? 1.12 : 1.0)
-        HStack(spacing: 6) {
+        HStack(spacing: 7) {
             Circle().fill(statusColor(n.status)).frame(width: 12, height: 12)
                 .overlay(Circle().stroke(.white, lineWidth: 2))
-            Text(n.code).font(.footnote.weight(.heavy)).foregroundColor(.white)
-            Text(distLabel(n.distance)).font(.caption2.weight(.semibold)).foregroundColor(.white.opacity(0.85))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(n.code).font(.footnote.weight(.heavy)).foregroundColor(.white)
+                Text("\(n.date) · \(distLabel(n.distance))")
+                    .font(.caption2.weight(.semibold)).foregroundColor(.white.opacity(0.85))
+            }
         }
-        .padding(.horizontal, 12).padding(.vertical, 8)
+        .padding(.horizontal, 11).padding(.vertical, 7)
         .background(Color.black.opacity(0.55), in: Capsule())
         .overlay(Capsule().stroke(statusColor(n.status), lineWidth: centred ? 2.5 : 1.5))
         .scaleEffect(scale)
@@ -224,7 +259,7 @@ struct ARNestView: View {
             Circle().fill(statusColor(n.status)).frame(width: 16, height: 16)
             VStack(alignment: .leading, spacing: 2) {
                 Text(n.code).font(.headline.weight(.heavy)).foregroundColor(.white)
-                Text(distLabel(n.distance)).font(.caption).foregroundColor(.white.opacity(0.8))
+                Text("\(n.date) · \(distLabel(n.distance))").font(.caption).foregroundColor(.white.opacity(0.8))
             }
             Spacer()
             Button { onOpenNest(n.id) } label: {

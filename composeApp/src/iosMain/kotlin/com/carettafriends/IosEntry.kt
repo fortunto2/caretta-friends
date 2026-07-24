@@ -35,13 +35,21 @@ object SharedRepo {
     val repo = CarettaRepository()
 }
 
-/** A nest point for the native iOS MapLibre map. */
-data class IosMapPoint(val id: String, val lat: Double, val lng: Double, val title: String, val status: String)
+/** A nest point for the native iOS MapLibre map. [dateShort] = found date "d.MM" (for the AR badge). */
+data class IosMapPoint(
+    val id: String, val lat: Double, val lng: Double, val title: String, val status: String,
+    val dateShort: String = "",
+)
+
+private fun shortDate(d: kotlinx.datetime.LocalDate): String =
+    "${d.dayOfMonth}.${d.monthNumber.toString().padStart(2, '0')}"
 
 /** Nest points for the native SwiftUI MapLibre map (read from the shared repo). */
 fun mapPoints(): List<IosMapPoint> {
     val s = SharedRepo.repo.state.value
-    return s.nests.map { IosMapPoint(it.id, it.point.lat, it.point.lng, it.code, com.carettafriends.data.nestMapPhase(it)) }
+    return s.nests.map {
+        IosMapPoint(it.id, it.point.lat, it.point.lng, it.code, com.carettafriends.data.nestMapPhase(it), shortDate(it.foundDate))
+    }
 }
 
 /** Timelapse bounds: the earliest nest found-day and today (epoch days). */
