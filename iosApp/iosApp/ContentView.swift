@@ -245,6 +245,7 @@ struct MapTab: View {
             MapPoint(id: p.id, coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng), title: p.title, phase: p.status)
         }
         air = IosEntryKt.airStatus()
+        AirWidgetBridge.publish()   // keep the home-screen air widget fresh
     }
 
     /// Localized native-chrome strings (map chips, tooltip, patrol dialog), cached so a body re-render

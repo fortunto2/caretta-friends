@@ -67,6 +67,17 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
   community members. Submission stays: export → coordinator → DKMP (server aggregation = later, no direct
   DKMP API). Also add DKMP coordination note to the `beach-rules` guide + a `docs/regulations.md` record.
 
+### iOS surfaces (widgets / Live Activity) — in progress + ideas
+- 🔧 **Air widget** (home screen) — code done (`iosApp/CarettaAirWidget/AirWidget.swift` + app-side
+  `Widget/AirWidgetBridge.swift` publishing `AirStatus` to App Group `group.com.carettafriends.app`,
+  called from `MapTab.reload`). Needs a **Widget Extension target + App Group capability** created in
+  Xcode (2-min wizard) — hand-pbxproj can't safely add a whole target / entitlement.
+- **⏳ Live Activity / Dynamic Island** ("шторка"): active patrol (distance/time) or "you're at nest GZP-14".
+  Reuses the same extension target + App Group. ActivityKit.
+- **⏳ Lock-screen widgets** (accessory families) — air / next hatch window.
+- **⏳ Nearest nest ≤10 m** — CoreLocation region monitoring / continuous distance → local notification or a
+  Live Activity ("ты у гнезда"). Great field UX.
+
 ### Other pending
 - **Photo cloud sync (offline-first, V2)**: nest *metadata* already syncs to Supabase; **photo files** do not — upload to Supabase Storage (→ Cloudflare R2 later, behind `CloudBackend`). Android durability: also save captures to a public MediaStore album (iOS done).
 - ✅ iOS camera permission/starting messages — done: localized via `currentStrings().cameraDenied`/`cameraStarting` (EN/RU/TR).

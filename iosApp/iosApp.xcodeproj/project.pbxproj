@@ -16,6 +16,7 @@
 		D07829F76F3EFDBE6943D14E /* PatrolRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC2A3FBD42664D4128F25711 /* PatrolRecorder.swift */; };
 		E12D4299D7B3BC17388081C5 /* MapLibreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF09B2833F8EDC0BDE560124 /* MapLibreView.swift */; };
 		A1B2C3D4E5F6000000000A01 /* ARNestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000A02 /* ARNestView.swift */; };
+		A1B2C3D4E5F6000000000B01 /* AirWidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000B02 /* AirWidgetBridge.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +28,7 @@
 		CE8509E5A49E4A5CAAEB3ADB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		DF09B2833F8EDC0BDE560124 /* MapLibreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapLibreView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6000000000A02 /* ARNestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ARNestView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6000000000B02 /* AirWidgetBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirWidgetBridge.swift; sourceTree = "<group>"; };
 		EC2A3FBD42664D4128F25711 /* PatrolRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatrolRecorder.swift; sourceTree = "<group>"; };
 		F543015C899423D4B01CEB2E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -51,6 +53,7 @@
 				C117AD187833E2513BD2F553 /* Info.plist */,
 				668CECA83ACC03A83C85A623 /* iOSApp.swift */,
 				A1B2C3D4E5F6000000000A03 /* AR */,
+				A1B2C3D4E5F6000000000B03 /* Widget */,
 				2E408D1280BAF4EF7959383D /* Camera */,
 				26D8D46639863EE2A7EE2201 /* Location */,
 				A85BD802409218374DC8EF1F /* Map */,
@@ -81,6 +84,14 @@
 				A1B2C3D4E5F6000000000A02 /* ARNestView.swift */,
 			);
 			path = AR;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F6000000000B03 /* Widget */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6000000000B02 /* AirWidgetBridge.swift */,
+			);
+			path = Widget;
 			sourceTree = "<group>";
 		};
 		38B69C3F79CD97858CF7B609 = {
@@ -217,6 +228,7 @@
 				381D2317C200B0874951C91A /* DeviceLocation.swift in Sources */,
 				E12D4299D7B3BC17388081C5 /* MapLibreView.swift in Sources */,
 				A1B2C3D4E5F6000000000A01 /* ARNestView.swift in Sources */,
+				A1B2C3D4E5F6000000000B01 /* AirWidgetBridge.swift in Sources */,
 				D07829F76F3EFDBE6943D14E /* PatrolRecorder.swift in Sources */,
 				307C2654CD5972A25FB7FD87 /* iOSApp.swift in Sources */,
 			);
