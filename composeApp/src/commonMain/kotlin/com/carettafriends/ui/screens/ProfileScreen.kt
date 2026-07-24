@@ -18,6 +18,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -68,6 +70,7 @@ fun ProfileScreen(
     var pickingLang by remember { mutableStateOf(false) }
     var showAuth by remember { mutableStateOf(false) }
     var feedRange by remember { mutableStateOf(FeedRange.ALL) }
+    var showMenu by remember { mutableStateOf(false) }
 
     // "Beaches you've been to" — where this volunteer has patrolled or logged a nest.
     val visitedIds = (state.patrols.map { it.beachId } + state.nests.filter { it.foundBy == p.displayName }.map { it.beachId }).toSet()
@@ -76,7 +79,22 @@ fun ProfileScreen(
     val earnedBadges = state.badges.filter { it.earned }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        TopBar(s.profile)
+        // "⋮" overflow tucks away the non-essential actions (share today's report) so the header stays clean.
+        TopBar(s.profile, trailing = {
+            Box {
+                Box(
+                    Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(c.surface)
+                        .border(1.dp, c.line, RoundedCornerShape(11.dp)).clickable { showMenu = true },
+                    contentAlignment = Alignment.Center,
+                ) { Text("⋮", color = c.deep, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold) }
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text("📤 ${s.shareDay}") },
+                        onClick = { showMenu = false; platformShare(todayReportText(state, s)) },
+                    )
+                }
+            }
+        })
         Column(Modifier.padding(horizontal = 15.dp).padding(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             // header — tap to set your name (works offline, before any login)
             Row(
@@ -248,13 +266,6 @@ fun ProfileScreen(
                 RangeChip(s.rangeWeek, feedRange == FeedRange.WEEK) { feedRange = FeedRange.WEEK }
                 RangeChip(s.rangeMonth, feedRange == FeedRange.MONTH) { feedRange = FeedRange.MONTH }
                 RangeChip(s.filterAll, feedRange == FeedRange.ALL) { feedRange = FeedRange.ALL }
-                Box(
-                    Modifier.clip(RoundedCornerShape(50)).background(c.sea)
-                        .clickable { platformShare(todayReportText(state, s)) }
-                        .padding(horizontal = 13.dp, vertical = 8.dp),
-                ) {
-                    Text("📤 ${s.shareDay}", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
-                }
             }
             if (feed.isNotEmpty()) {
                 ActivityFeed(feed, onOpenNest)

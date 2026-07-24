@@ -31,10 +31,10 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
   opens its dialog via `LaunchedEffect`. iOS tracks the top nest in `AppRouter.currentNestId`
   (set/clear on `.nest` appear/disappear); the coral "+" routes through `handlePlus()`.
 - **D — feed range filter + today report**: the profile activity feed has time chips (Today / Week /
-  Month / All → `activityFeed(range = FeedRange…)`, cutoff by `createdEpochMillis`) + an empty state,
-  and a "📤 Share today" button that shares a compact emoji report (`todayReportText()` →
-  `platformShare`). Shared Compose `ProfileScreen`, so both platforms get it. i18n: `rangeWeek`,
-  `rangeMonth`, `shareDay`, `activityEmpty` (EN/RU/TR).
+  Month / All → `activityFeed(range = FeedRange…)`, cutoff by `createdEpochMillis`) + an empty state.
+  The "share today report" (`todayReportText()` → `platformShare`) lives in a **"⋮" overflow menu** in
+  the Profile `TopBar` (moved out of the filter row per feedback — non-essential actions tuck away there).
+  Shared Compose `ProfileScreen`, both platforms. i18n: `rangeWeek`, `rangeMonth`, `shareDay`, `activityEmpty`.
 - **Photo durability (iOS)**: capture also saved to a **"Caretta Friends" Photos album** (`PhotoAlbumSaver`) so photos survive reinstall.
 - **Crash fixes**: iOS photo-share (dropped fragile CoreGraphics watermark); AppStrings 255-field VerifyError (Map-backed).
 - Empty states (encouraging CTA, not big "0"); excavation celebration (or supportive msg when 0); watch persists (`Profile.watchedNestIds`).
@@ -45,8 +45,9 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 
 ### C — Native navigation feel
 - ✅ **Android map my-location** — done: MapLibre `LocationComponent` in `OsmMap.android` (default engine,
-  runtime `ACCESS_FINE_LOCATION` request, `RenderMode.COMPASS` heading arrow, `CameraMode.NONE`). Compiles +
-  runs clean; the arrow needs a real GPS fix to render (emulator mock-GPS→FusedLocation is unreliable) — confirm on device.
+  runtime `ACCESS_FINE_LOCATION` request, **`RenderMode.NORMAL`** stable puck, `CameraMode.NONE`). Needs a real
+  GPS fix to render (emulator mock-GPS→FusedLocation unreliable). ⚠️ `RenderMode.COMPASS` was reverted — its
+  magnetometer handler (`updateCompassHeading`→`getSourceAs`) crashes on the MapLibre style race; heading-arrow deferred.
 - ✅ **iOS heading indicator** — done: `mapView.showsUserHeadingIndicator = true` (heading cone on the user
   dot). Confirm the "navigator" feel on device (needs a real compass).
 - **iOS native nav bar** (⏳ needs device): use `NavigationStack`'s bar (title + native back + swipe-back) instead of the Compose `TopBar`. Add `expect fun useNativeHeader(): Boolean` (Android=false, iOS=true); Compose `TopBar` renders nothing on iOS; thread per-route titles to `.navigationTitle` in `ContentView.destinationView`. Larger refactor + swipe-back needs on-device verification.
