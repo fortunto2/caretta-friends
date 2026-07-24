@@ -629,6 +629,10 @@ internal fun seedCommunity(): Community = Community(
     phone = "+90 501 379 4326",
     email = "info@carettafriends.com",
     kind = CommunityKind.COMMUNITY,
+    // Türkiye's permitting authority for nesting-beach work (excavation, organized events): the
+    // Ministry's DKMP regional directorate for Antalya. Other countries/communities set their own.
+    authorityName = "DKMP 6. Bölge Müdürlüğü (Antalya)",
+    authorityUrl = "https://bolge6.tarimorman.gov.tr",
 )
 
 private fun seedState(): AppState {

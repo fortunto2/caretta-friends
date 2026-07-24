@@ -225,6 +225,10 @@ class AppStrings(private val m: Map<String, String>, val months: List<String>) {
     val excavationTitle: String get() = m.getValue("excavationTitle")
     val excFinalCount: String get() = m.getValue("excFinalCount")
     val excCountWhatYouFind: String get() = m.getValue("excCountWhatYouFind")
+    /** Excavation coordination note; contains a "%s" placeholder for the community's authority name. */
+    val excAuthNote: String get() = m.getValue("excAuthNote")
+    /** Generic fallback for the regulator name when a community hasn't set its own authority. */
+    val authorityGeneric: String get() = m.getValue("authorityGeneric")
     val excShells: String get() = m.getValue("excShells")
     val excUnhatched: String get() = m.getValue("excUnhatched")
     val excPipped: String get() = m.getValue("excPipped")
@@ -495,6 +499,8 @@ private fun enStrings() = AppStrings(
         "excavationTitle" to "Nest excavation",
         "excFinalCount" to "final count",
         "excCountWhatYouFind" to "Count what you find",
+        "excAuthNote" to "Excavation is coordinated with %s and done with the authorized team — the count goes into the official protocol, not a public event.",
+        "authorityGeneric" to "the local conservation authority",
         "excShells" to "Hatched / empty shells",
         "excUnhatched" to "Unhatched / whole eggs",
         "excPipped" to "Pipped / in egg",
@@ -767,6 +773,8 @@ private fun ruStrings() = AppStrings(
         "excavationTitle" to "Вскрытие гнезда",
         "excFinalCount" to "финальный подсчёт",
         "excCountWhatYouFind" to "Считай, что нашёл",
+        "excAuthNote" to "Вскрытие — по согласованию с %s и с уполномоченной командой; подсчёт идёт в официальный протокол, а не публичное мероприятие.",
+        "authorityGeneric" to "местным природоохранным органом",
         "excShells" to "Вылупились / пустые скорлупки",
         "excUnhatched" to "Не вылупились / целые яйца",
         "excPipped" to "Проклюнулись / в яйце",
@@ -1039,6 +1047,8 @@ private fun trStrings() = AppStrings(
         "excavationTitle" to "Yuva kazısı",
         "excFinalCount" to "son sayım",
         "excCountWhatYouFind" to "Bulduklarını say",
+        "excAuthNote" to "Yuva boşaltımı %s ile koordineli ve yetkili ekiple yapılır; sayım resmî tutanağa geçer, halka açık bir etkinlik değildir.",
+        "authorityGeneric" to "yerel koruma yetkilisi",
         "excShells" to "Çıkmış / boş kabuk",
         "excUnhatched" to "Çıkmamış / bütün yumurta",
         "excPipped" to "Gagalamış / yumurtada",

@@ -1,6 +1,7 @@
 package com.carettafriends.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -69,6 +71,24 @@ fun ExcavationScreen(nest: Nest, repo: CarettaRepository, lang: String, onBack: 
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("${nest.code} · ${s.excFinalCount}", color = c.muted, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+
+            // Regulatory reminder — excavation is coordinated with the community's authority (country-
+            // specific: Türkiye = DKMP), done with the authorized team, recorded for the official protocol.
+            val community = repo.state.value.community
+            val authority = community.authorityName.ifBlank { s.authorityGeneric }
+            val uriHandler = LocalUriHandler.current
+            CarettaCard {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("⚖️ ${s.excAuthNote.replace("%s", authority)}", color = c.deep, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    if (community.authorityUrl.isNotBlank()) {
+                        Text(
+                            "${community.authorityName} ›",
+                            color = c.sea, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.clickable { runCatching { uriHandler.openUri(community.authorityUrl) } },
+                        )
+                    }
+                }
+            }
 
             // glove-friendly stepper rows
             SectionLabel(s.excCountWhatYouFind)

@@ -60,6 +60,11 @@ data class Community(
     val kind: CommunityKind = CommunityKind.COMMUNITY,
     /** Who they're affiliated with (parent university, ministry, network) — "" if independent. */
     val affiliation: String = "",
+    /** The official conservation/permitting authority this community coordinates with for regulated
+     *  activity (nest excavation, organized beach events). Country-specific — Türkiye = DKMP, others set
+     *  their own. Empty = fall back to a generic "local conservation authority" phrase. */
+    val authorityName: String = "",
+    val authorityUrl: String = "",
     /** Localized tagline / description (RU + TR). Empty → falls back to the English [tagline]/[description]. */
     val taglineRu: String = "",
     val taglineTr: String = "",
