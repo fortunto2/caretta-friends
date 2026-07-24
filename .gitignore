@@ -16,7 +16,8 @@ local.properties
 
 # Xcode / iOS
 iosApp/build/
-iosApp/iosApp.xcodeproj/
+# NB: iosApp.xcodeproj is HAND-MAINTAINED (no xcodegen/tuist) → track project.pbxproj so the app
+# name, signing, target settings and the source-file list are versioned. Only user data is ignored.
 **/xcuserdata/
 **/*.xcworkspace/xcuserdata/
 

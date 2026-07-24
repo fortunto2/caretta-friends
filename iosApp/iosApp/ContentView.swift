@@ -159,6 +159,7 @@ struct MapTab: View {
     @EnvironmentObject private var router: AppRouter
     @State private var path = NavigationPath()
     @State private var showCamera = false
+    @State private var showAR = false
     @State private var focusCoord: CLLocationCoordinate2D? = nil
     @State private var focusApplyTick = 0
     @State private var points: [MapPoint] = []
@@ -279,16 +280,27 @@ struct MapTab: View {
                 }
                 // "Locate me" — recenters on the volunteer's position with a heading (compass) cone.
                 .overlay(alignment: .bottomTrailing) {
-                    Button {
-                        recenter += 1
-                    } label: {
-                        Image(systemName: "location.fill")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.cfSea)
-                            .frame(width: 46, height: 46)
-                            .background(.regularMaterial, in: Circle())
-                            .overlay(Circle().stroke(Color.black.opacity(0.06)))
-                            .shadow(color: .black.opacity(0.15), radius: 6, y: 2)
+                    VStack(spacing: 12) {
+                        // AR nest finder — point the phone around to see nests where they physically are.
+                        Button { showAR = true } label: {
+                            Image(systemName: "arkit")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 46, height: 46)
+                                .background(Color.cfCoral, in: Circle())
+                                .shadow(color: Color.cfCoral.opacity(0.4), radius: 6, y: 2)
+                        }
+                        Button {
+                            recenter += 1
+                        } label: {
+                            Image(systemName: "location.fill")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.cfSea)
+                                .frame(width: 46, height: 46)
+                                .background(.regularMaterial, in: Circle())
+                                .overlay(Circle().stroke(Color.black.opacity(0.06)))
+                                .shadow(color: .black.opacity(0.15), radius: 6, y: 2)
+                        }
                     }
                     .padding(.trailing, 14)
                     .padding(.bottom, 100)
@@ -400,6 +412,12 @@ struct MapTab: View {
                 focusCoord = CLLocationCoordinate2D(latitude: g.lat, longitude: g.lng)
                 focusApplyTick += 1
             }
+        }
+        .fullScreenCover(isPresented: $showAR) {
+            ARNestView(
+                onClose: { showAR = false },
+                onOpenNest: { id in showAR = false; path.append(Route.nest(id)) }
+            )
         }
         .fullScreenCover(isPresented: $showCamera) {
             CameraCaptureView(
