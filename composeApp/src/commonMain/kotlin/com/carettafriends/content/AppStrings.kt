@@ -229,6 +229,11 @@ class AppStrings(private val m: Map<String, String>, val months: List<String>) {
     val excAuthNote: String get() = m.getValue("excAuthNote")
     /** Generic fallback for the regulator name when a community hasn't set its own authority. */
     val authorityGeneric: String get() = m.getValue("authorityGeneric")
+    val excReportBtn: String get() = m.getValue("excReportBtn")
+    val excReportTitle: String get() = m.getValue("excReportTitle")
+    val excTeamLabel: String get() = m.getValue("excTeamLabel")
+    val excDateLabel: String get() = m.getValue("excDateLabel")
+    val excReportCoord: String get() = m.getValue("excReportCoord")
     val excShells: String get() = m.getValue("excShells")
     val excUnhatched: String get() = m.getValue("excUnhatched")
     val excPipped: String get() = m.getValue("excPipped")
@@ -501,6 +506,11 @@ private fun enStrings() = AppStrings(
         "excCountWhatYouFind" to "Count what you find",
         "excAuthNote" to "Excavation is coordinated with %s and done with the authorized team — the count goes into the official protocol, not a public event.",
         "authorityGeneric" to "the local conservation authority",
+        "excReportBtn" to "Excavation report (PDF)",
+        "excReportTitle" to "Nest Excavation Record",
+        "excTeamLabel" to "Team / observers",
+        "excDateLabel" to "Excavation date",
+        "excReportCoord" to "Coordinated with",
         "excShells" to "Hatched / empty shells",
         "excUnhatched" to "Unhatched / whole eggs",
         "excPipped" to "Pipped / in egg",
@@ -775,6 +785,11 @@ private fun ruStrings() = AppStrings(
         "excCountWhatYouFind" to "Считай, что нашёл",
         "excAuthNote" to "Вскрытие — по согласованию с %s и с уполномоченной командой; подсчёт идёт в официальный протокол, а не публичное мероприятие.",
         "authorityGeneric" to "местным природоохранным органом",
+        "excReportBtn" to "Отчёт вскрытия (PDF)",
+        "excReportTitle" to "Акт вскрытия гнезда",
+        "excTeamLabel" to "Команда / наблюдатели",
+        "excDateLabel" to "Дата вскрытия",
+        "excReportCoord" to "Согласовано с",
         "excShells" to "Вылупились / пустые скорлупки",
         "excUnhatched" to "Не вылупились / целые яйца",
         "excPipped" to "Проклюнулись / в яйце",
@@ -1049,6 +1064,11 @@ private fun trStrings() = AppStrings(
         "excCountWhatYouFind" to "Bulduklarını say",
         "excAuthNote" to "Yuva boşaltımı %s ile koordineli ve yetkili ekiple yapılır; sayım resmî tutanağa geçer, halka açık bir etkinlik değildir.",
         "authorityGeneric" to "yerel koruma yetkilisi",
+        "excReportBtn" to "Yuva boşaltım raporu (PDF)",
+        "excReportTitle" to "Yuva Boşaltım Tutanağı",
+        "excTeamLabel" to "Ekip / gözlemciler",
+        "excDateLabel" to "Boşaltım tarihi",
+        "excReportCoord" to "Koordinasyon",
         "excShells" to "Çıkmış / boş kabuk",
         "excUnhatched" to "Çıkmamış / bütün yumurta",
         "excPipped" to "Gagalamış / yumurtada",

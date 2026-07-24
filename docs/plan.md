@@ -54,6 +54,19 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 - **Swipe between tabs** (⏳): HorizontalPager (Android) / paged content (iOS) under the persistent bottom bar. Gesture-conflict risk with the map pan — verify carefully.
 - **Locate button / full compass-triangle** (⏳ needs device): optionally drop the iOS bottom-right locate button and/or use a custom `MLNUserLocationAnnotationView` triangle once the heading feel is confirmed on device.
 
+### Excavation record (tutanak) — done + next
+- ✅ **On-site record + PDF export** — done: the excavation screen is the tutanak. Data-driven authority
+  note (`Community.authorityName/Url`, Türkiye = DKMP 6. Bölge, per-country). Official fields: team
+  (defaults to the filler) + excavation date (‹/› stepper, back-datable). Counts support **direct entry**
+  (tap the number → type; shared `Stepper` gained `onSet`). Export a one-page **PDF** (`platformSharePdf`
+  expect/actual — Android `PdfDocument`, iOS `UIGraphicsPDFRenderer`) via the OS share sheet. Verified on
+  Android (`caretta_GZP-12.pdf`); iOS compiles. i18n: `excReportBtn/Title`, `excTeamLabel`, `excDateLabel`,
+  `excReportCoord`, `excAuthNote`, `authorityGeneric`.
+- **⏳ At-home aggregate reports (V2)**: not just one nest — select nests over a date range / a whole
+  beach into one PDF; filter by dates; mark a record "submitted" (in the DB). Optional: pick team from
+  community members. Submission stays: export → coordinator → DKMP (server aggregation = later, no direct
+  DKMP API). Also add DKMP coordination note to the `beach-rules` guide + a `docs/regulations.md` record.
+
 ### Other pending
 - **Photo cloud sync (offline-first, V2)**: nest *metadata* already syncs to Supabase; **photo files** do not — upload to Supabase Storage (→ Cloudflare R2 later, behind `CloudBackend`). Android durability: also save captures to a public MediaStore album (iOS done).
 - ✅ iOS camera permission/starting messages — done: localized via `currentStrings().cameraDenied`/`cameraStarting` (EN/RU/TR).

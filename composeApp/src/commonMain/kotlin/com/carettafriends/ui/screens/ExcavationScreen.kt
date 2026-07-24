@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,10 +33,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.carettafriends.content.AppStrings
 import com.carettafriends.content.appStrings
 import com.carettafriends.data.CarettaRepository
+import com.carettafriends.data.platformSharePdf
+import com.carettafriends.data.today
+import com.carettafriends.domain.Community
 import com.carettafriends.domain.Excavation
 import com.carettafriends.domain.Nest
+import com.carettafriends.ui.components.GhostButton
+import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import com.carettafriends.ui.components.CarettaCard
 import com.carettafriends.ui.components.PrimaryButton
 import com.carettafriends.ui.components.SectionLabel
@@ -55,6 +65,9 @@ fun ExcavationScreen(nest: Nest, repo: CarettaRepository, lang: String, onBack: 
     var inNest by remember { mutableStateOf(seed?.inNest ?: 0) }
     var helpedOut by remember { mutableStateOf(seed?.helpedOut ?: 0) }
     var celebrating by remember { mutableStateOf(false) }
+    // Official record fields (tutanak): who did it (defaults to the person filling this in) + the date.
+    var team by remember { mutableStateOf(seed?.team?.ifBlank { null } ?: repo.state.value.profile.displayName) }
+    var excDate by remember { mutableStateOf(seed?.excavatedOn ?: today()) }
 
     val exc = Excavation(
         shells = shells,
@@ -62,6 +75,8 @@ fun ExcavationScreen(nest: Nest, repo: CarettaRepository, lang: String, onBack: 
         pipped = pipped,
         inNest = inNest,
         helpedOut = helpedOut,
+        excavatedOn = excDate,
+        team = team,
     )
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -92,11 +107,11 @@ fun ExcavationScreen(nest: Nest, repo: CarettaRepository, lang: String, onBack: 
 
             // glove-friendly stepper rows
             SectionLabel(s.excCountWhatYouFind)
-            CountRow("🥚", s.excShells, shells, onDec = { if (shells > 0) shells-- }, onInc = { shells++ })
-            CountRow("🟤", s.excUnhatched, unhatched, onDec = { if (unhatched > 0) unhatched-- }, onInc = { unhatched++ })
-            CountRow("🐣", s.excPipped, pipped, onDec = { if (pipped > 0) pipped-- }, onInc = { pipped++ })
-            CountRow("🕳️", s.excInNest, inNest, onDec = { if (inNest > 0) inNest-- }, onInc = { inNest++ })
-            CountRow("🐢", s.excHelpedOut, helpedOut, onDec = { if (helpedOut > 0) helpedOut-- }, onInc = { helpedOut++ })
+            CountRow("🥚", s.excShells, shells, onDec = { if (shells > 0) shells-- }, onInc = { shells++ }, onSet = { shells = it })
+            CountRow("🟤", s.excUnhatched, unhatched, onDec = { if (unhatched > 0) unhatched-- }, onInc = { unhatched++ }, onSet = { unhatched = it })
+            CountRow("🐣", s.excPipped, pipped, onDec = { if (pipped > 0) pipped-- }, onInc = { pipped++ }, onSet = { pipped = it })
+            CountRow("🕳️", s.excInNest, inNest, onDec = { if (inNest > 0) inNest-- }, onInc = { inNest++ }, onSet = { inNest = it })
+            CountRow("🐢", s.excHelpedOut, helpedOut, onDec = { if (helpedOut > 0) helpedOut-- }, onInc = { helpedOut++ }, onSet = { helpedOut = it })
 
             // auto-computed success tiles
             SectionLabel(s.excSuccessLabel)
@@ -118,6 +133,30 @@ fun ExcavationScreen(nest: Nest, repo: CarettaRepository, lang: String, onBack: 
                         Text(s.excZeroHint, color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
+            }
+
+            // Official record (tutanak): who + when, then export a PDF to hand to the coordinator.
+            SectionLabel(s.excReportTitle)
+            OutlinedTextField(
+                value = team,
+                onValueChange = { team = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(s.excTeamLabel) },
+                singleLine = true,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(s.excDateLabel, color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                DateStepBtn("‹") { excDate = excDate.minus(DatePeriod(days = 1)) }
+                Text(
+                    "${excDate.dayOfMonth} ${s.months[excDate.month.ordinal]}",
+                    color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold,
+                )
+                DateStepBtn("›") { if (excDate < today()) excDate = excDate.plus(DatePeriod(days = 1)) }
+            }
+            GhostButton("📄 ${s.excReportBtn}", modifier = Modifier.fillMaxWidth()) {
+                val beachName = repo.state.value.beach(nest.beachId)?.name ?: ""
+                val (title, lines) = excavationReport(nest, exc, repo.state.value.community, s, beachName)
+                platformSharePdf("caretta_${nest.code}", title, lines)
             }
 
             PrimaryButton(s.excFinish) {
@@ -154,8 +193,53 @@ fun ExcavationScreen(nest: Nest, repo: CarettaRepository, lang: String, onBack: 
     }
 }
 
+/** ~5-decimal (~1 m) coordinate for the report. */
+private fun trim5(v: Double): String = ((v * 100000).toLong() / 100000.0).toString()
+
+/** Build the excavation record (tutanak): a title + "Label: value" lines for the PDF export. */
+private fun excavationReport(
+    nest: Nest,
+    exc: Excavation,
+    community: Community,
+    s: AppStrings,
+    beachName: String,
+): Pair<String, List<String>> {
+    val d = exc.excavatedOn
+    val dateStr = d?.let { "${it.dayOfMonth} ${s.months[it.month.ordinal]} ${it.year}" } ?: ""
+    val authority = community.authorityName.ifBlank { s.authorityGeneric }
+    val lines = listOf(
+        nest.code + if (beachName.isNotBlank()) " · $beachName" else "",
+        "${trim5(nest.point.lat)}, ${trim5(nest.point.lng)}",
+        "${s.excDateLabel}: $dateStr",
+        "${s.excTeamLabel}: ${exc.team}",
+        "",
+        "${s.excShells}: ${exc.shells}",
+        "${s.excUnhatched}: ${exc.unhatched}",
+        "${s.excPipped}: ${exc.pipped}",
+        "${s.excInNest}: ${exc.inNest}",
+        "${s.excHelpedOut}: ${exc.helpedOut}",
+        "",
+        "${s.excHatchingSuccess}: ${exc.hatchSuccessPct ?: 0}%",
+        "${s.excEmergenceSuccess}: ${exc.emergenceSuccessPct ?: 0}%",
+        "${s.hatchlingsReached}: ${exc.hatchlingsToSea}",
+        "",
+        "${s.excReportCoord}: $authority",
+        "Caretta Friends",
+    )
+    return s.excReportTitle to lines
+}
+
 @Composable
-private fun CountRow(emoji: String, label: String, value: Int, onDec: () -> Unit, onInc: () -> Unit) {
+private fun DateStepBtn(label: String, onClick: () -> Unit) {
+    val c = caretta
+    Box(
+        Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(c.sand).clickable { onClick() },
+        contentAlignment = Alignment.Center,
+    ) { Text(label, color = c.sea, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold) }
+}
+
+@Composable
+private fun CountRow(emoji: String, label: String, value: Int, onDec: () -> Unit, onInc: () -> Unit, onSet: (Int) -> Unit) {
     val c = caretta
     CarettaCard {
         Row(
@@ -171,7 +255,7 @@ private fun CountRow(emoji: String, label: String, value: Int, onDec: () -> Unit
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f),
             )
-            Stepper(value = value, onDec = onDec, onInc = onInc)
+            Stepper(value = value, onDec = onDec, onInc = onInc, onSet = onSet)
         }
     }
 }

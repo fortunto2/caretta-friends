@@ -156,6 +156,9 @@ data class Excavation(
     val pipped: Int = 0,          // pipped live + dead in egg
     val inNest: Int = 0,          // hatched but stuck in chamber
     val helpedOut: Int = 0,       // rescued alive
+    /** Official record fields for the excavation report (tutanak): date and who did it. */
+    val excavatedOn: LocalDate? = null,
+    val team: String = "",
 ) {
     val eggsTotal: Int get() = shells + unhatched + pipped
     val hatchSuccessPct: Int?

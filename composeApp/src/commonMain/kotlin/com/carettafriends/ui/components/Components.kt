@@ -16,9 +16,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -188,12 +197,42 @@ fun SexRangeBar(femaleLow: Int, femaleHigh: Int, modifier: Modifier = Modifier) 
 
 /** Big +/- stepper for excavation counts (glove-friendly). */
 @Composable
-fun Stepper(value: Int, onDec: () -> Unit, onInc: () -> Unit) {
+fun Stepper(value: Int, onDec: () -> Unit, onInc: () -> Unit, onSet: ((Int) -> Unit)? = null) {
     val c = caretta
+    var editing by remember { mutableStateOf(false) }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         StepBtn("−", onDec)
-        Text("$value", color = c.deep, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.widthIn())
+        // Tap the number to type a value directly (no tapping "+" 100 times).
+        Text(
+            "$value", color = c.deep, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold,
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .then(if (onSet != null) Modifier.clickable { editing = true } else Modifier)
+                .padding(horizontal = 8.dp, vertical = 2.dp),
+        )
         StepBtn("+", onInc)
+    }
+    if (editing && onSet != null) {
+        var txt by remember { mutableStateOf(value.toString()) }
+        AlertDialog(
+            onDismissRequest = { editing = false },
+            confirmButton = {
+                TextButton(onClick = { onSet(txt.toIntOrNull()?.coerceAtLeast(0) ?: value); editing = false }) {
+                    Text("✓", color = c.sea, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { editing = false }) { Text("✕", color = c.muted, fontSize = 18.sp) }
+            },
+            text = {
+                OutlinedTextField(
+                    value = txt,
+                    onValueChange = { new -> txt = new.filter { it.isDigit() }.take(4) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                )
+            },
+        )
     }
 }
 

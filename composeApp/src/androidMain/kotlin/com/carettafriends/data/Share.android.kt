@@ -50,3 +50,36 @@ actual fun platformShare(text: String) {
     val chooser = Intent.createChooser(send, null).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
     runCatching { AndroidApp.context.startActivity(chooser) }
 }
+
+actual fun platformSharePdf(fileName: String, title: String, lines: List<String>) {
+    runCatching {
+        val ctx = AndroidApp.context
+        val pageW = 595; val pageH = 842   // A4 @ 72dpi
+        val margin = 48f
+        val doc = android.graphics.pdf.PdfDocument()
+        val page = doc.startPage(android.graphics.pdf.PdfDocument.PageInfo.Builder(pageW, pageH, 1).create())
+        val canvas = page.canvas
+        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.BLACK; textSize = 18f; isFakeBoldText = true }
+        val bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.DKGRAY; textSize = 12f }
+        var y = margin + 8f
+        canvas.drawText(title, margin, y, titlePaint); y += 28f
+        for (line in lines) {
+            val paint = if (line.isEmpty()) bodyPaint else bodyPaint
+            canvas.drawText(line, margin, y, paint)
+            y += 20f
+        }
+        doc.finishPage(page)
+        val dir = File(ctx.cacheDir, "shared").apply { mkdirs() }
+        val out = File(dir, "$fileName.pdf")
+        FileOutputStream(out).use { doc.writeTo(it) }
+        doc.close()
+        val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.fileprovider", out)
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_SUBJECT, title)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        ctx.startActivity(Intent.createChooser(send, null).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
+    }
+}
