@@ -17,6 +17,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,6 +44,7 @@ import com.carettafriends.content.AppStrings
 import com.carettafriends.content.appStrings
 import com.carettafriends.data.CarettaRepository
 import com.carettafriends.data.platformShareImage
+import com.carettafriends.data.platformSharePdf
 import com.carettafriends.data.MAX_BACKDATE_DAYS
 import com.carettafriends.data.nestDay
 import com.carettafriends.data.today
@@ -91,6 +94,12 @@ fun NestDetailScreen(
     val s = appStrings(state.profile.language)
     val watching = n.id in state.profile.watchedNestIds
     var sheet by remember { mutableStateOf(DetailSheet.NONE) }
+    var showMenu by remember { mutableStateOf(false) }
+    // Excavation is offered once the nest has hatched (or its window passed) — a lifecycle gate, not
+    // just an admin one. Hoisted so both the "⋮" menu and the bottom CTA share it.
+    val readyToExcavate = n.status == NestStatus.HATCHED ||
+        n.status == NestStatus.EXCAVATED ||
+        nestDay(n) > n.incubationDaysEst
 
     // Context-aware bottom "+" (B3): when the shell requests an add-update for THIS nest, open the dialog.
     LaunchedEffect(state.addUpdateFor) {
@@ -101,7 +110,43 @@ fun NestDetailScreen(
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        TopBar(n.code, onBack = onBack)
+        val canExcavateNow = state.profile.canExcavate && readyToExcavate
+        val hasExcavation = n.excavation != null
+        TopBar(
+            n.code,
+            onBack = onBack,
+            trailing = if (canExcavateNow || hasExcavation) {
+                {
+                    Box {
+                        Box(
+                            Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(c.surface)
+                                .border(1.dp, c.line, RoundedCornerShape(11.dp)).clickable { showMenu = true },
+                            contentAlignment = Alignment.Center,
+                        ) { Text("⋮", color = c.deep, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold) }
+                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            if (canExcavateNow) {
+                                DropdownMenuItem(
+                                    text = { Text(s.excavation) },
+                                    onClick = { showMenu = false; onExcavate() },
+                                )
+                            }
+                            if (hasExcavation) {
+                                DropdownMenuItem(
+                                    text = { Text("📄 ${s.excReportBtn}") },
+                                    onClick = {
+                                        showMenu = false
+                                        val (title, lines) = excavationReport(n, n.excavation!!, state.community, s, beach?.name ?: "")
+                                        platformSharePdf("caretta_${n.code}", title, lines)
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                null
+            },
+        )
 
         // Hero header — sea→deep gradient with a big egg + Watch toggle.
         Box(
@@ -297,9 +342,7 @@ fun NestDetailScreen(
 
             // Excavation payoff — ONLY once the nest has hatched (or its window has passed). Never a
             // dig CTA on a live incubating nest. Then it's gated to experienced volunteers / leaders.
-            val readyToExcavate = n.status == NestStatus.HATCHED ||
-                n.status == NestStatus.EXCAVATED ||
-                nestDay(n) > n.incubationDaysEst
+            // (readyToExcavate is hoisted above so the "⋮" menu shares it.)
             if (readyToExcavate) {
                 if (state.profile.canExcavate) {
                     PrimaryButton(s.excavation, onClick = onExcavate)
@@ -534,7 +577,13 @@ private fun AddUpdateDialog(
                 ConditionPicker(condition, s) { condition = it }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(s.cancel, color = c.muted) }
-                    PrimaryButton(s.save, modifier = Modifier.weight(1f), enabled = body.isNotBlank() || photo != null) {
+                    // A status change alone (e.g. "hatched") is enough to save — no note/photo required,
+                    // so witnessing a hatch is one tap: pick the condition → Save.
+                    PrimaryButton(
+                        s.save,
+                        modifier = Modifier.weight(1f),
+                        enabled = body.isNotBlank() || photo != null || condition != ObsCondition.OK,
+                    ) {
                         onSave(body.trim(), condition, photo?.path, obsDate)
                     }
                 }

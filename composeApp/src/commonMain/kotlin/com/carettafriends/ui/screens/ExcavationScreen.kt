@@ -196,8 +196,9 @@ fun ExcavationScreen(nest: Nest, repo: CarettaRepository, lang: String, onBack: 
 /** ~5-decimal (~1 m) coordinate for the report. */
 private fun trim5(v: Double): String = ((v * 100000).toLong() / 100000.0).toString()
 
-/** Build the excavation record (tutanak): a title + "Label: value" lines for the PDF export. */
-private fun excavationReport(
+/** Build the excavation record (tutanak): a title + "Label: value" lines for the PDF export.
+ *  internal so the nest-detail "⋮" menu can generate the same report without opening this screen. */
+internal fun excavationReport(
     nest: Nest,
     exc: Excavation,
     community: Community,
