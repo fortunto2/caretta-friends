@@ -1,5 +1,7 @@
 # 🐢 Caretta Friends
 
+**🌐 [carettafriends.com](https://carettafriends.com)** · iOS + Android · Kotlin Multiplatform
+
 A cute, field-friendly app for volunteers protecting **loggerhead sea-turtle (Caretta caretta)
 nests** — from the crawl at dawn to the night the hatchlings reach the sea.
 
@@ -8,31 +10,45 @@ to work for any nesting-beach volunteer community.
 
 ## What it does
 
-- **Shared map** of nests, landmarks and trash — mark a nest in ≤20 s (camera/gallery + EXIF geotag).
-- **Guided nest vs false-crawl** logging (the #1 field error), confirmed/unconfirmed states.
+- **Shared map** of nests, beaches and trash — mark a nest in ≤20 s (camera/gallery + EXIF geotag),
+  plus an **AR nest finder**: point the phone and see nests pinned where they physically are.
 - **Nest lifecycle**: countdown to hatch, timeline of updates & comments, then the **excavation**
-  count (FWC categories → Hatching % + Emergence Success %).
+  record (FWC categories → Hatching % + Emergence Success %), exportable as a **PDF** for the
+  authority — coordinated with the community's regulator (e.g. DKMP in Türkiye).
 - **Temperature & sex prediction** (TSD) shown honestly as a **range** — no hardware needed in V1
   (exposure tag + weather API), calibrated to regional data (Anamur 28.9 °C).
 - **Patrols & coverage** so volunteers don't re-walk a covered stretch.
 - **Community**: WhatsApp + site + Instagram, beach leaders. **Learn**: facts + guide.
 - **Gamification**: personal impact ("N hatchlings reached the sea"), streak, badges.
 
-Offline-first. Works without an account (viewing + adding). Multilingual (RU/TR/EN planned).
+Offline-first. Works without an account (viewing + adding). Multilingual — **Russian, Turkish, English**.
 
 ## Tech
 
-Kotlin Multiplatform + Compose Multiplatform · MapLibre + OpenStreetMap · offline-first
-(Supabase + PostGIS in V2). See [`CLAUDE.md`](CLAUDE.md) and [`docs/`](docs/) for the research,
-design spec, and data model.
+Kotlin Multiplatform + Compose Multiplatform (shared UI/logic) · **iOS = native SwiftUI shell +
+ARKit + MapLibre** hosting shared Compose screens · MapLibre + OpenStreetMap · offline-first, syncs to
+**Supabase** (Postgres + PostGIS). See [`CLAUDE.md`](CLAUDE.md) and [`docs/`](docs/) for the research,
+design spec, data model, and backlog.
 
 ## Run
 
+**Android:**
 ```bash
 export ANDROID_HOME=$HOME/Library/Android/sdk
-./gradlew :composeApp:assembleDebug
-adb install -r composeApp/build/outputs/apk/debug/composeApp-debug.apk
+./gradlew :composeApp:installDebug     # build + install on a running emulator/device
 ```
+
+**iOS** (open `iosApp/iosApp.xcodeproj` in Xcode and run, or CLI):
+```bash
+xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug \
+  -destination generic/platform=iOS -allowProvisioningUpdates build
+```
+
+App Store screenshots live in [`docs/store/`](docs/store/).
+
+## License
+
+TBD — to be chosen before the repository is made public.
 
 ---
 *Made with care for the turtles of Gazipaşa. 🐢🌊*
