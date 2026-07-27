@@ -78,6 +78,24 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 - **⏳ Nearest nest ≤10 m** — CoreLocation region monitoring / continuous distance → local notification or a
   Live Activity ("ты у гнезда"). Great field UX.
 
+### Store & release readiness — done (2026-07-27)
+- ✅ **Google Play build**: signed release **AAB** at `docs/store/android/caretta-friends-1.0.0.aab`
+  (gitignored). Signing reads `keystore.properties` → `keystore/caretta-upload.jks` (both gitignored —
+  **BACK THESE UP**; losing the keystore = can't update the Play listing). Config in
+  `composeApp/build.gradle.kts` (`signingConfigs`). Tested on emulator: launches, map + location OK.
+- ✅ **16 KB page alignment** (Play requirement for targetSdk 35+): MapLibre **11.5.2 → 11.13.5** +
+  forced `androidx.graphics:graphics-path:1.0.1` → both native `.so` ship 16 KB-aligned LOAD segments.
+- ✅ **Store screenshots (EN)**: Play `docs/store/play/` (1080×2160, `compose_play.py`); App Store
+  `docs/store/ios/` (1320×2868 6.9", `compose_ios.py`, native iOS captures). Raw tabs in `*/raw`,`ios-raw`.
+- ✅ **iOS screenshot tooling**: `AppRouter` reads `CF_TAB` env (SIMCTL_CHILD_CF_TAB=beaches|learn|profile)
+  to preselect a tab headlessly; onboarding skipped by setting `profile.onboarded=true` in the sim's
+  `caretta_state_v2.json`; demo data comes from **Supabase cloud sync on start** (17 nests), not the seed.
+  System Events `click at` is TCC-blocked on the sim (only `key code` works) — hence the env approach.
+- ✅ **Missing `iosApp` Xcode scheme** added (shared). Only `CarettaAirWidget` was shared, which disabled
+  scheme autogen → `-scheme iosApp` builds/device installs were failing.
+- **⏳ Submit**: create the App Store + Play listings, upload the AAB / iOS build, fill descriptions +
+  App Privacy, privacy URL `https://app.carettafriends.com/privacy`. (BETA_CONTRACT_MISSING = Apple-side.)
+
 ### Other pending
 - **Photo cloud sync (offline-first, V2)**: nest *metadata* already syncs to Supabase; **photo files** do not — upload to Supabase Storage (→ Cloudflare R2 later, behind `CloudBackend`). Android durability: also save captures to a public MediaStore album (iOS done).
 - ✅ iOS camera permission/starting messages — done: localized via `currentStrings().cameraDenied`/`cameraStarting` (EN/RU/TR).
@@ -93,7 +111,8 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 - **Native Swift strings** (map chips, tooltip, patrol dialog, camera) are separate from AppStrings — bridged via `IosEntryKt.currentStrings(): AppStrings`.
 - **Kotlin 2.3 ABI trap**: don't add libs whose iosArm64 klib is built with Kotlin 2.3 (we're on 2.2.20) — fails `compileKotlinIosArm64` only (Android tolerates it). No `supabase-kt`/markdown-renderer≥0.39 in commonMain.
 - **iPhone install**: raise the tunnel via `xcrun devicectl device info details --device FC73117A-…` first; retry install on "Connection interrupted".
-- **Android emulator** drive: `adb shell input tap X Y` (screenshot 900px → ×1.2 → 1080). iOS simulator has no CLI tap.
+- **Android emulator** drive: `adb shell input tap X Y` (screenshot 900px → ×1.2 → 1080). iOS simulator has no CLI tap (System Events `click at` is TCC-blocked; only `key code` works — e.g. Return to dismiss the location alert).
+- **MapLibre LocationComponent crash** (`IllegalStateException: getSourceAs when a newer style is loading`): a real GPS fix drives the stale-state timer → `refreshSource` during a style race. Fixed in `OsmMap.android.kt` via `LocationComponentOptions.enableStaleState(false)`. (Same race the reverted `RenderMode.COMPASS` hit.) MapLibre pinned to **11.13.x** (11.x = OpenGL-ES; 12/13 = Vulkan → emulator MESA crash).
 
 ## Build / install
 
