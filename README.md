@@ -48,7 +48,8 @@ App Store screenshots live in [`docs/store/`](docs/store/).
 
 ## License
 
-TBD — to be chosen before the repository is made public.
+**MIT** — see [`LICENSE`](LICENSE). Open source: fork it, adapt it, and run your own sea-turtle
+(or any wildlife) nesting-beach app for your community. Contributions welcome.
 
 ---
 *Made with care for the turtles of Gazipaşa. 🐢🌊*

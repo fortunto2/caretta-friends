@@ -1,7 +1,7 @@
 # Caretta Friends — Backlog / Roadmap
 
 Working branch: **`feat/v1-mvp`** (pushed to origin). Installs on Android emulator + Rust's iPhone
-(`00008120-0011754C2208201E`, coredevice `FC73117A-EDA2-5F2C-825C-6E80050F1255`).
+(`<your-iPhone-UDID>`, coredevice `<your-coredevice-UUID>`).
 
 Guiding principle (from the client): **radical simplicity**. Volunteers are ordinary people who
 "snap a photo & forget". The core loop must be effortless: photograph → smart auto-fill → save.
@@ -105,6 +105,6 @@ adb shell monkey -p com.carettafriends -c android.intent.category.LAUNCHER 1
 # iOS (device)
 xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug \
   -destination generic/platform=iOS -derivedDataPath iosApp/build-device -allowProvisioningUpdates build
-xcrun devicectl device install app --device FC73117A-EDA2-5F2C-825C-6E80050F1255 \
+xcrun devicectl device install app --device <your-coredevice-UUID> \
   iosApp/build-device/Build/Products/Debug-iphoneos/iosApp.app
 ```

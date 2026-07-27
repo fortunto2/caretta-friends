@@ -11,9 +11,6 @@
 		22EA1CB33A17DCC6FC82406D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F543015C899423D4B01CEB2E /* Assets.xcassets */; };
 		307C2654CD5972A25FB7FD87 /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668CECA83ACC03A83C85A623 /* iOSApp.swift */; };
 		381D2317C200B0874951C91A /* DeviceLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91163EE20AE50F585A1BBC5 /* DeviceLocation.swift */; };
-		4A5D01A03013C17C00EA765E /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4A5D019F3013C17C00EA765E /* WidgetKit.framework */; };
-		4A5D01A23013C17C00EA765E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4A5D01A13013C17C00EA765E /* SwiftUI.framework */; };
-		4A5D01A63013C17C00EA765E /* CarettaAirWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4A5D019D3013C17C00EA765E /* CarettaAirWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		56B0305B5D3847FC6B326502 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8509E5A49E4A5CAAEB3ADB /* ContentView.swift */; };
 		63823544ABE6FAD47D146481 /* CameraCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70DE774F694C8F685CF22FD /* CameraCaptureView.swift */; };
 		A1B2C3D4E5F6000000000A01 /* ARNestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000A02 /* ARNestView.swift */; };
@@ -22,16 +19,6 @@
 		E12D4299D7B3BC17388081C5 /* MapLibreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF09B2833F8EDC0BDE560124 /* MapLibreView.swift */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-		4A5D01A43013C17C00EA765E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 242FB5348943441C388468CE /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 4A5D019C3013C17C00EA765E;
-			remoteInfo = CarettaAirWidget;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXCopyFilesBuildPhase section */
 		4A5D01A73013C17C00EA765E /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -39,7 +26,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				4A5D01A63013C17C00EA765E /* CarettaAirWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -47,7 +33,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		4A5D019D3013C17C00EA765E /* CarettaAirWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "CarettaAirWidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4A5D019F3013C17C00EA765E /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		4A5D01A13013C17C00EA765E /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		668CECA83ACC03A83C85A623 /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
@@ -64,15 +49,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		4A5D019A3013C17C00EA765E /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				4A5D01A23013C17C00EA765E /* SwiftUI.framework in Frameworks */,
-				4A5D01A03013C17C00EA765E /* WidgetKit.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		EF8A6E9BFD470986D9D5C9B5 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -139,7 +115,6 @@
 			isa = PBXGroup;
 			children = (
 				86038AE1032E284E79B32AD6 /* CarettaFriends.app */,
-				4A5D019D3013C17C00EA765E /* CarettaAirWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -179,25 +154,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		4A5D019C3013C17C00EA765E /* CarettaAirWidgetExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 4A5D01AA3013C17C00EA765E /* Build configuration list for PBXNativeTarget "CarettaAirWidgetExtension" */;
-			buildPhases = (
-				4A5D01993013C17C00EA765E /* Sources */,
-				4A5D019A3013C17C00EA765E /* Frameworks */,
-				4A5D019B3013C17C00EA765E /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = CarettaAirWidget;
-			packageProductDependencies = (
-			);
-			productName = CarettaAirWidget;
-			productReference = 4A5D019D3013C17C00EA765E /* CarettaAirWidgetExtension.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 		78B53CC79860CBFC2F5543C6 /* iosApp */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 29DCA9F0B3A40325067EB163 /* Build configuration list for PBXNativeTarget "iosApp" */;
@@ -211,7 +167,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				4A5D01A53013C17C00EA765E /* PBXTargetDependency */,
 			);
 			name = iosApp;
 			packageProductDependencies = (
@@ -230,9 +185,6 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
-					4A5D019C3013C17C00EA765E = {
-						CreatedOnToolsVersion = 26.5;
-					};
 					78B53CC79860CBFC2F5543C6 = {
 						ProvisioningStyle = Automatic;
 					};
@@ -255,7 +207,6 @@
 			projectRoot = "";
 			targets = (
 				78B53CC79860CBFC2F5543C6 /* iosApp */,
-				4A5D019C3013C17C00EA765E /* CarettaAirWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -266,13 +217,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				22EA1CB33A17DCC6FC82406D /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		4A5D019B3013C17C00EA765E /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -316,22 +260,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		4A5D01993013C17C00EA765E /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		4A5D01A53013C17C00EA765E /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 4A5D019C3013C17C00EA765E /* CarettaAirWidgetExtension */;
-			targetProxy = 4A5D01A43013C17C00EA765E /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		11814011E7D6EC822BFBC66D /* Release */ = {
@@ -391,86 +320,6 @@
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
-		4A5D01A83013C17C00EA765E /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
-				DEVELOPMENT_TEAM = 8N495BBBLM;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "";
-				INFOPLIST_KEY_CFBundleDisplayName = CarettaAirWidget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.carettafriends.app.CarettaAirWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		4A5D01A93013C17C00EA765E /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
-				DEVELOPMENT_TEAM = 8N495BBBLM;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "";
-				INFOPLIST_KEY_CFBundleDisplayName = CarettaAirWidget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.carettafriends.app.CarettaAirWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -605,15 +454,6 @@
 			buildConfigurations = (
 				9221A1FDC06803E8A2FC6E61 /* Debug */,
 				AF835BFF1220CA5AB5B867E4 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
-		};
-		4A5D01AA3013C17C00EA765E /* Build configuration list for PBXNativeTarget "CarettaAirWidgetExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				4A5D01A83013C17C00EA765E /* Debug */,
-				4A5D01A93013C17C00EA765E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

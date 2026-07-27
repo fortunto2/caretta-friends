@@ -50,11 +50,11 @@ docs/plan.md                       — backlog, gotchas, build commands (READ TH
 adb shell monkey -p com.carettafriends -c android.intent.category.LAUNCHER 1
 adb exec-out screencap -p > /tmp/shot.png        # verify (drive: adb shell input tap X Y; shot is 900px, ×1.2→1080)
 
-# iOS (device — Rust's iPhone, UDID 00008120-0011754C2208201E, coredevice FC73117A-EDA2-5F2C-825C-6E80050F1255)
+# iOS (device — Rust's iPhone, UDID <your-iPhone-UDID>, coredevice <your-coredevice-UUID>)
 xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug \
   -destination generic/platform=iOS -derivedDataPath iosApp/build-device -allowProvisioningUpdates build
-xcrun devicectl device info details --device FC73117A-EDA2-5F2C-825C-6E80050F1255   # raise the tunnel first
-xcrun devicectl device install app --device FC73117A-EDA2-5F2C-825C-6E80050F1255 \
+xcrun devicectl device info details --device <your-coredevice-UUID>   # raise the tunnel first
+xcrun devicectl device install app --device <your-coredevice-UUID> \
   iosApp/build-device/Build/Products/Debug-iphoneos/iosApp.app
 # validate Kotlin fast: ./gradlew :composeApp:compileDebugKotlinAndroid  (Android) / :compileKotlinIosSimulatorArm64 (iOS)
 ```
