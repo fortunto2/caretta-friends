@@ -1,4 +1,12 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
+
+// Release signing — read from keystore.properties (gitignored). Absent on machines
+// that only build debug (e.g. CI/emulator); release signing is skipped there.
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) keystorePropsFile.inputStream().use { load(it) }
+}
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -33,6 +41,9 @@ kotlin {
             implementation(libs.maplibre.android)
             implementation(libs.maplibre.annotation)
             implementation(libs.androidx.lifecycle.runtime.compose)
+            // Force the 16 KB-page-aligned build (Compose pulls an older one transitively). Play
+            // requires 16 KB support for targetSdk 35+ — this .so was flagged as unaligned.
+            implementation("androidx.graphics:graphics-path:1.0.1")
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -74,9 +85,21 @@ android {
         }
     }
 
+    signingConfigs {
+        if (keystoreProps.isNotEmpty()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 

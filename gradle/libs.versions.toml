@@ -10,7 +10,8 @@ serialization = "1.7.3"
 sqldelight = "2.0.2"
 # 11.x is OpenGL-ES by default (works on swiftshader emulators + all devices). 12/13 default to
 # Vulkan, which crashes on the emulator's MESA (Failed to open rendernode).
-maplibre = "11.5.2"
+# 11.13.5 = latest 11.x → ships 16 KB-page-aligned native libs (Play requirement for targetSdk 35+).
+maplibre = "11.13.5"
 maplibreAnnotation = "3.0.2"
 lifecycleRuntimeCompose = "2.8.7"
 playServicesLocation = "21.3.0"

@@ -25,6 +25,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import org.maplibre.android.location.LocationComponentActivationOptions
+import org.maplibre.android.location.LocationComponentOptions
 import org.maplibre.android.location.modes.CameraMode
 import org.maplibre.android.location.modes.RenderMode
 import com.google.gson.JsonPrimitive
@@ -284,12 +285,21 @@ private fun updateBeachPolygons(style: Style, beaches: List<MapMarker>) {
 /** Turn on the MapLibre LocationComponent (a location puck) without hijacking the camera.
  *  Caller must have checked ACCESS_FINE_LOCATION (guarded), hence @SuppressLint.
  *  NB: RenderMode.NORMAL, not COMPASS — the compass renderer's async magnetometer handler calls
- *  getSourceAs during style transitions and crashes ("newer style is loading"), a MapLibre race. */
+ *  getSourceAs during style transitions and crashes ("newer style is loading"), a MapLibre race.
+ *  Same race also fires via the stale-state timer: a real GPS fix → updateLocation →
+ *  StaleStateManager → refreshSource → getSourceAs while the style is (re)loading → crash. We
+ *  don't grey out a "stale" puck anyway, so disable stale state entirely to kill that path. */
 @SuppressLint("MissingPermission")
 private fun enableUserLocation(ctx: Context, map: MapLibreMap, style: Style) {
     val lc = map.locationComponent
+    val options = LocationComponentOptions.builder(ctx)
+        .enableStaleState(false)
+        .build()
     lc.activateLocationComponent(
-        LocationComponentActivationOptions.builder(ctx, style).useDefaultLocationEngine(true).build(),
+        LocationComponentActivationOptions.builder(ctx, style)
+            .locationComponentOptions(options)
+            .useDefaultLocationEngine(true)
+            .build(),
     )
     lc.isLocationComponentEnabled = true
     lc.renderMode = RenderMode.NORMAL    // stable location puck (COMPASS crashes on the style race)

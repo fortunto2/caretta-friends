@@ -34,6 +34,12 @@ iosApp/spm/
 .env
 supabase/.temp/
 
+# Android release signing — NEVER commit these (back them up securely elsewhere)
+keystore.properties
+keystore/
+*.jks
+*.keystore
+
 # iOS device-build derivedData
 iosApp/build-dev/
 
@@ -43,3 +49,11 @@ iosApp/build/
 
 # iOS simulator build output (custom derivedDataPath)
 iosApp/build-sim/
+
+# Build artifacts (upload to Play Console, don't commit)
+*.aab
+docs/store/android/
+
+# Playwright/adb scratch screenshots
+.playwright-mcp/
+partners.png
