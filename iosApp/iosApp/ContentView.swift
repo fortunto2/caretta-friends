@@ -620,6 +620,17 @@ final class AppRouter: ObservableObject {
 
     /// Switch to the Map tab and request it to consume the pending map focus.
     func focusMap() { selection = .map; focusTick += 1 }
+
+    init() {
+        // Screenshot helper only: `SIMCTL_CHILD_CF_TAB=beaches|learn|profile` preselects a tab so
+        // App Store shots can be captured without UI taps. No-op in normal launches (env unset).
+        switch ProcessInfo.processInfo.environment["CF_TAB"] {
+        case "beaches": selection = .beaches
+        case "learn": selection = .learn
+        case "profile": selection = .profile
+        default: break
+        }
+    }
 }
 
 struct ContentView: View {
