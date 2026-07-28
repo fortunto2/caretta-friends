@@ -414,6 +414,12 @@ struct MapTab: View {
                 focusApplyTick += 1
             }
         }
+        .onChange(of: router.startAddTick) { _ in
+            // Global "+" (from any tab) → run the add-nest flow on THIS tab's stack: camera → form →
+            // saved nest, all with the bottom tab bar visible. Reset to the map root for a clean start.
+            if !path.isEmpty { path = NavigationPath() }
+            showCamera = true
+        }
         .fullScreenCover(isPresented: $showAR) {
             ARNestView(
                 onClose: { showAR = false },
@@ -617,9 +623,14 @@ final class AppRouter: ObservableObject {
     @Published var focusTick: Int = 0
     /// The nest id currently shown as the top pushed screen, or nil. Drives the context-aware "+" (B3).
     @Published var currentNestId: String? = nil
+    /// Bumped by the global "+" to start the add-nest flow on the Map tab's OWN NavigationStack, so the
+    /// bottom tab bar stays visible the whole time (a full-screen cover would hide it — user request).
+    @Published var startAddTick: Int = 0
 
     /// Switch to the Map tab and request it to consume the pending map focus.
     func focusMap() { selection = .map; focusTick += 1 }
+    /// Switch to the Map tab and start the add-a-nest flow there (camera → form → saved nest).
+    func startAddNest() { selection = .map; startAddTick += 1 }
 
     init() {
         // Screenshot helper only: `SIMCTL_CHILD_CF_TAB=beaches|learn|profile` preselects a tab so
@@ -636,7 +647,6 @@ final class AppRouter: ObservableObject {
 struct ContentView: View {
     @StateObject private var router = AppRouter()
     @State private var prior: AppTab = .map
-    @State private var showAdd = false
     @State private var showOnboarding = false
 
     /// Context-aware "+" (B3): on a nest detail → add an update to THAT nest; elsewhere → new-nest flow.
@@ -644,7 +654,7 @@ struct ContentView: View {
         if let nid = router.currentNestId {
             IosEntryKt.requestAddUpdate(nestId: nid)
         } else {
-            showAdd = true
+            router.startAddNest()   // push the add flow on the Map tab → tab bar stays visible
         }
     }
 
@@ -710,15 +720,11 @@ struct ContentView: View {
         .environmentObject(router)
         .onChange(of: router.selection) { newValue in
             if newValue == .add {
-                showAdd = true
                 router.selection = prior   // bounce back so the empty tab never shows
+                router.startAddNest()      // …then start the add flow on the Map tab (keeps the tab bar)
             } else {
                 prior = newValue
             }
-        }
-        .fullScreenCover(isPresented: $showAdd) {
-            AddFlow(onClose: { showAdd = false })
-                .environmentObject(router)   // covers don't always inherit the shell's environment
         }
         .onAppear { showOnboarding = !IosEntryKt.isOnboarded() }
         .fullScreenCover(isPresented: $showOnboarding) {
@@ -728,54 +734,5 @@ struct ContentView: View {
     }
 }
 
-/// The global add-a-nest flow launched from the centre "+" tab: native camera → Compose AddNest
-/// form. Mirrors the map FAB flow but works from any tab (Android has the same centre "+").
-private struct AddFlow: View {
-    @EnvironmentObject private var router: AppRouter
-    let onClose: () -> Void
-    @State private var path = NavigationPath()
-    @State private var showCamera = false
-    @State private var started = false
-
-    var body: some View {
-        NavigationStack(path: $path) {
-            Color(.systemBackground).ignoresSafeArea()
-                .navigationDestination(for: Route.self) { route in
-                    if case .addNest = route {
-                        DetailScreen(fullBleed: false) {
-                            ComposeHost {
-                                IosEntryKt.AddNestVC(
-                                    onDone: { onClose() },
-                                    onCamera: { showCamera = true },
-                                    onNestSaved: { id in path.append(Route.nest(id)) }
-                                )
-                            }
-                        }
-                    } else {
-                        destinationView(route, path: $path, router: router)
-                    }
-                }
-                .fullScreenCover(isPresented: $showCamera) {
-                    CameraCaptureView(
-                        author: "You",
-                        onDone: { imagePath, lat, lng in
-                            showCamera = false
-                            IosEntryKt.setPendingPhoto(
-                                path: imagePath,
-                                lat: lat ?? 0,
-                                lng: lng ?? 0,
-                                hasLocation: lat != nil && lng != nil
-                            )
-                            if path.isEmpty { path.append(Route.addNest) }
-                        },
-                        onCancel: {
-                            showCamera = false
-                            if path.isEmpty { onClose() }   // cancelled before the form → close the flow
-                        }
-                    )
-                }
-        }
-        // Open the camera once, after the cover is on screen (avoids nested-present warnings).
-        .onAppear { if !started { started = true; showCamera = true } }
-    }
-}
+// (The global "+" add-a-nest flow now runs inside the Map tab's own NavigationStack — see
+// MapTab's `router.startAddTick` handler — so the bottom tab bar stays visible throughout.)
