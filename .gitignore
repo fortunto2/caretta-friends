@@ -57,3 +57,5 @@ docs/store/android/
 # Playwright/adb scratch screenshots
 .playwright-mcp/
 partners.png
+
+*.apk
