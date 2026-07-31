@@ -364,7 +364,7 @@ struct MapTab: View {
                             }
                         } label: {
                             let dust = (air?.patrolAdvisable == false) && !patrol.isRecording
-                            Text(patrol.isRecording ? "■ Stop patrol" : (dust ? "⚠ Dust — not advised" : "● Start patrol"))
+                            Text(patrol.isRecording ? strings.stopPatrol : (dust ? strings.dustNotAdvised : strings.startPatrol))
                                 .font(.subheadline.weight(.bold)).foregroundColor(.white)
                                 .padding(.horizontal, 14).padding(.vertical, 10)
                                 .background((patrol.isRecording || dust) ? Color.cfCoral : Color.cfGood).clipShape(Capsule())
@@ -460,12 +460,13 @@ struct MapTab: View {
     }
 
     private func airText(_ a: IosAir) -> String {
+        let s = IosEntryKt.currentStrings()
         let base: String
         switch a.level {
-        case "DUST": base = "Dust · PM10 \(a.pm10) — patrol not advised"
-        case "UNHEALTHY": base = "Unhealthy · PM2.5 \(a.pm25)"
-        case "MODERATE": base = "Moderate air · PM2.5 \(a.pm25)"
-        default: base = "Air clean · PM2.5 \(a.pm25)"
+        case "DUST": base = "\(s.airDustLabel) · PM10 \(a.pm10) — \(s.patrolNotAdvised)"
+        case "UNHEALTHY": base = "\(s.airUnhealthy) · PM2.5 \(a.pm25)"
+        case "MODERATE": base = "\(s.airModerate) · PM2.5 \(a.pm25)"
+        default: base = "\(s.airCleanLabel) · PM2.5 \(a.pm25)"
         }
         return a.comfort >= 0 ? "\(base) · ☺ \(a.comfort)" : base
     }
@@ -618,7 +619,18 @@ enum AppTab: Hashable { case map, beaches, add, learn, profile }
 /// focus (e.g. a nest's geo card → open the map centred on that nest). Injected as an
 /// `@EnvironmentObject` so any pushed Compose screen's closures can reach it.
 final class AppRouter: ObservableObject {
-    @Published var selection: AppTab = .map
+    /// Store screenshots are captured per language, and the simulator cannot be tapped from the
+    /// command line — so `-startTab beaches|learn|profile` opens straight onto a tab. Debug-only
+    /// convenience; without the argument the app always starts on the map.
+    @Published var selection: AppTab = {
+        guard let raw = UserDefaults.standard.string(forKey: "startTab") else { return .map }
+        switch raw {
+        case "beaches": return .beaches
+        case "learn": return .learn
+        case "profile": return .profile
+        default: return .map
+        }
+    }()
     /// Bumped to ask the Map tab to read `IosEntryKt.takeMapFocus()` and centre on it.
     @Published var focusTick: Int = 0
     /// The nest id currently shown as the top pushed screen, or nil. Drives the context-aware "+" (B3).

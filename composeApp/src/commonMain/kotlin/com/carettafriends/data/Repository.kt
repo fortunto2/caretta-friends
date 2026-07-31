@@ -688,6 +688,9 @@ private fun seedState(): AppState {
         ),
         profile = Profile(
             displayName = "Volunteer", avatar = "🐢", role = "Guardian",
+            // Open in the phone's language — most volunteers here are Turkish-speaking and should
+            // not have to hunt for the language picker. Their own pick is persisted and wins after.
+            language = systemLanguage(),
             memberRole = MemberRole.BEACH_LEADER, // current user is the organiser → can excavate
         ),
         members = listOf(
