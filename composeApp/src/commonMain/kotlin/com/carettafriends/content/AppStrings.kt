@@ -59,6 +59,11 @@ class AppStrings(private val m: Map<String, String>, val months: List<String>) {
     val haveAccount: String get() = m.getValue("haveAccount")
     val newHere: String get() = m.getValue("newHere")
     val saveAccountBody: String get() = m.getValue("saveAccountBody")
+    val deleteAccount: String get() = m.getValue("deleteAccount")
+    val deleteAccountTitle: String get() = m.getValue("deleteAccountTitle")
+    val deleteAccountBody: String get() = m.getValue("deleteAccountBody")
+    val deleteAccountCta: String get() = m.getValue("deleteAccountCta")
+    val deleteAccountDone: String get() = m.getValue("deleteAccountDone")
     val welcomeBack: String get() = m.getValue("welcomeBack")
     val nestsWord: String get() = m.getValue("nestsWord")
     val activeWord: String get() = m.getValue("activeWord")
@@ -338,6 +343,11 @@ private fun enStrings() = AppStrings(
         "haveAccount" to "Already have an account? Sign in",
         "newHere" to "New here? Create an account",
         "saveAccountBody" to "Add an email + password so your work syncs and isn't lost if you change phone.",
+        "deleteAccount" to "Delete account",
+        "deleteAccountTitle" to "Delete your account?",
+        "deleteAccountBody" to "Your account and profile are removed for good. The nests, patrols and markers you recorded stay on the shared map — they are the community's conservation record — but they will no longer be linked to you. This can't be undone.",
+        "deleteAccountCta" to "Delete for good",
+        "deleteAccountDone" to "Your account has been deleted.",
         "welcomeBack" to "Welcome back — sign in to load your nests & impact.",
         "nestsWord" to "nests",
         "activeWord" to "active",
@@ -617,6 +627,11 @@ private fun ruStrings() = AppStrings(
         "haveAccount" to "Уже есть аккаунт? Войти",
         "newHere" to "Впервые? Создать аккаунт",
         "saveAccountBody" to "Добавь почту и пароль — данные синхронизируются и не потеряются при смене телефона.",
+        "deleteAccount" to "Удалить аккаунт",
+        "deleteAccountTitle" to "Удалить аккаунт?",
+        "deleteAccountBody" to "Аккаунт и профиль удалятся навсегда. Гнёзда, патрули и метки, которые ты записал, останутся на общей карте — это данные наблюдений сообщества, — но больше не будут связаны с тобой. Отменить нельзя.",
+        "deleteAccountCta" to "Удалить навсегда",
+        "deleteAccountDone" to "Аккаунт удалён.",
         "welcomeBack" to "С возвращением — войди, чтобы загрузить свои гнёзда и вклад.",
         "nestsWord" to "гнёзд",
         "activeWord" to "активн.",
@@ -896,6 +911,11 @@ private fun trStrings() = AppStrings(
         "haveAccount" to "Hesabın var mı? Giriş yap",
         "newHere" to "Yeni misin? Hesap oluştur",
         "saveAccountBody" to "E-posta + şifre ekle — verilerin senkronize olur, telefon değişince kaybolmaz.",
+        "deleteAccount" to "Hesabı sil",
+        "deleteAccountTitle" to "Hesabın silinsin mi?",
+        "deleteAccountBody" to "Hesabın ve profilin kalıcı olarak silinir. Kaydettiğin yuvalar, devriyeler ve işaretler ortak haritada kalır — bunlar topluluğun koruma kaydıdır — ama artık seninle ilişkilendirilmez. Bu işlem geri alınamaz.",
+        "deleteAccountCta" to "Kalıcı olarak sil",
+        "deleteAccountDone" to "Hesabın silindi.",
         "welcomeBack" to "Tekrar hoş geldin — yuvalarını ve katkını yüklemek için giriş yap.",
         "nestsWord" to "yuva",
         "activeWord" to "aktif",

@@ -69,6 +69,10 @@ fun ProfileScreen(
     var pickingBeach by remember { mutableStateOf(false) }
     var pickingLang by remember { mutableStateOf(false) }
     var showAuth by remember { mutableStateOf(false) }
+    var confirmingDelete by remember { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf(false) }
+    var deleteError by remember { mutableStateOf<String?>(null) }
+    var deletedNotice by remember { mutableStateOf(false) }
     var feedRange by remember { mutableStateOf(FeedRange.ALL) }
     var showMenu by remember { mutableStateOf(false) }
 
@@ -293,6 +297,53 @@ fun ProfileScreen(
                     confirmButton = { TextButton(onClick = { pickingLang = false }) { Text(s.close) } },
                 )
             }
+
+            // Account deletion — App Store guideline 5.1.1(v): any app that lets you create an
+            // account must let you delete it from inside the app. Field records survive; see
+            // CarettaRepository.deleteAccount.
+            DangerNavRow(s.deleteAccount) { confirmingDelete = true }
+            if (confirmingDelete) {
+                AlertDialog(
+                    onDismissRequest = { if (!deleting) confirmingDelete = false },
+                    title = { Text(s.deleteAccountTitle) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(s.deleteAccountBody, color = c.muted, fontSize = 13.sp)
+                            deleteError?.let {
+                                Text(it, color = c.risk, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(
+                            enabled = !deleting,
+                            onClick = {
+                                deleting = true
+                                deleteError = null
+                                repo.deleteAccount { err ->
+                                    deleting = false
+                                    if (err == null) {
+                                        confirmingDelete = false
+                                        deletedNotice = true
+                                    } else {
+                                        deleteError = err
+                                    }
+                                }
+                            },
+                        ) { Text(if (deleting) "…" else s.deleteAccountCta, color = c.risk) }
+                    },
+                    dismissButton = {
+                        TextButton(enabled = !deleting, onClick = { confirmingDelete = false }) { Text(s.cancel) }
+                    },
+                )
+            }
+            if (deletedNotice) {
+                AlertDialog(
+                    onDismissRequest = { deletedNotice = false },
+                    title = { Text(s.deleteAccountDone) },
+                    confirmButton = { TextButton(onClick = { deletedNotice = false }) { Text(s.close) } },
+                )
+            }
         }
     }
 }
@@ -363,6 +414,21 @@ private fun ProfileNavRow(label: String, onClick: () -> Unit) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(label, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
+            Text("›", color = c.muted, fontSize = 18.sp)
+        }
+    }
+}
+
+/** Same row as [ProfileNavRow] but reads as destructive — used for account deletion. */
+@Composable
+private fun DangerNavRow(label: String, onClick: () -> Unit) {
+    val c = caretta
+    Box(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(c.surface)
+            .border(1.dp, c.line, RoundedCornerShape(13.dp)).clickable { onClick() }.padding(14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(label, color = c.risk, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
             Text("›", color = c.muted, fontSize = 18.sp)
         }
     }

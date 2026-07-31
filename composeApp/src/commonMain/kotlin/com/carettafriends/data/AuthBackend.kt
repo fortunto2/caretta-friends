@@ -47,6 +47,19 @@ interface AuthBackend {
 
     /** Sign in an existing email account (returning volunteer on a new phone) — switches to their uid. */
     suspend fun signInEmail(email: String, password: String): AuthOutcome
+
+    /**
+     * Permanently delete the signed-in account — required by App Store guideline 5.1.1(v) for any
+     * app that lets people create one.
+     *
+     * Field records (nests, markers, patrols) are NOT destroyed: the `delete_account()` SQL function
+     * detaches them (owner_id → null) so the shared map keeps the observation while the person
+     * behind it is erased. See supabase/migrations/0006_account_deletion.sql.
+     */
+    suspend fun deleteAccount(): AuthOutcome
+
+    /** Drop the local session without touching the server (used after the account is gone). */
+    fun clearSession()
 }
 
 /** Result of an auth action for the UI (ok, or a human-readable error). */
@@ -156,6 +169,26 @@ class SupabaseAuth : AuthBackend {
             ?: return AuthOutcome(false, "Invalid email or password")
         saveSession(sess)
         return AuthOutcome(true)
+    }
+
+    override suspend fun deleteAccount(): AuthOutcome {
+        val s = ensureSession() ?: return AuthOutcome(false, "You're offline — try again when connected")
+        val resp = http.post("${SupabaseConfig.URL.trimEnd('/')}/rest/v1/rpc/delete_account") {
+            header("apikey", SupabaseConfig.ANON_KEY)
+            header("Authorization", "Bearer ${s.accessToken}")
+            contentType(ContentType.Application.Json)
+            setBody(buildJsonObject { })
+        }
+        if (!resp.status.isSuccess()) {
+            return AuthOutcome(false, parseError(resp.bodyAsText(), "Couldn't delete your account"))
+        }
+        clearSession()
+        return AuthOutcome(true)
+    }
+
+    override fun clearSession() {
+        session = null
+        runCatching { LocalStore.delete(AUTH_FILE) }
     }
 
     override suspend fun ensureSession(): AuthSession? {

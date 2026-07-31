@@ -33,6 +33,16 @@ object LocalStore {
         }
     }
 
+    /** Remove a stored file. Used by account deletion, which must leave nothing behind on device. */
+    fun delete(name: String) {
+        try {
+            val p = appDirPath().toPath() / name
+            if (fs.exists(p)) fs.delete(p)
+        } catch (e: Throwable) {
+            // best-effort; ignore delete failures
+        }
+    }
+
     /** Read raw bytes at an ABSOLUTE path (e.g. a camera photo file). Null if missing/unreadable. */
     fun readBytesAbs(absPath: String): ByteArray? = try {
         val p = absPath.toPath()

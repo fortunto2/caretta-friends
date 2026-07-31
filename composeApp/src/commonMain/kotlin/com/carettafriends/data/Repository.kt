@@ -341,6 +341,30 @@ class CarettaRepository {
         }
     }
 
+    /**
+     * Permanently delete the volunteer's account, on the server and on this device.
+     *
+     * Required by App Store guideline 5.1.1(v) for any app offering account creation. The nests,
+     * markers and patrols they recorded are kept on the shared map but detached from them — they
+     * are the community's conservation record, and the project rule is that field observations are
+     * never destroyed (see supabase/migrations/0006_account_deletion.sql).
+     *
+     * Afterwards the app is back to a first-install state; the next sync signs in a brand-new
+     * anonymous user.
+     */
+    fun deleteAccount(onResult: (String?) -> Unit) {
+        scope.launch {
+            val r = auth.deleteAccount()
+            if (!r.ok) {
+                onResult(r.error ?: "Couldn't delete your account")
+                return@launch
+            }
+            LocalStore.delete(STATE_FILE)
+            _state.value = seedState().copy(community = seedCommunity())
+            onResult(null)
+        }
+    }
+
     /** Set (or clear with null) the volunteer's optional home beach. */
     fun setHomeBeach(beachId: String?) {
         _state.value = _state.value.copy(profile = _state.value.profile.copy(homeBeachId = beachId))
