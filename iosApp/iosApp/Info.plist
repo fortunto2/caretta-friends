@@ -8,6 +8,15 @@
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
 	<string>Caretta Friends</string>
+	<!-- Declares the languages the interface ships in (the catalogue lives in Kotlin, not in
+	     .lproj folders). Without this iOS shows no "Preferred Language" entry under
+	     Settings › Caretta Friends, which is where people look for it. -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>ru</string>
+		<string>tr</string>
+	</array>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

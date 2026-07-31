@@ -251,6 +251,9 @@ data class Profile(
     val avatar: String = "🐢",
     val role: String = "Volunteer",
     val language: String = "en",
+    /** True once the volunteer picks a language themselves. Until then the app follows the phone's
+     *  language on every launch, so changing it in iOS Settings (or Android system settings) works. */
+    val languageExplicit: Boolean = false,
     val hatchlingsReached: Int = 0,
     val streakDays: Int = 0,
     val kmWalked: Double = 0.0,

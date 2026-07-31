@@ -127,7 +127,12 @@ private fun loadOrSeed(json: Json): AppState {
     val loaded = LocalStore.readText(STATE_FILE)?.let { runCatching { json.decodeFromString<AppState>(it) }.getOrNull() }
     // Community is static reference data → always refresh from seed so field additions (description,
     // email, phone, kind…) reach existing installs without wiping the user's local nests/patrols.
-    return (loaded ?: seedState()).copy(community = seedCommunity())
+    val state = (loaded ?: seedState()).copy(community = seedCommunity())
+
+    // Follow the phone's language until the volunteer picks one themselves, so switching the
+    // language in iOS Settings → Caretta Friends actually changes the app on the next launch.
+    if (state.profile.languageExplicit) return state
+    return state.copy(profile = state.profile.copy(language = systemLanguage()))
 }
 
 private fun persist(json: Json, s: AppState) {
@@ -303,7 +308,10 @@ class CarettaRepository {
     }
 
     fun setLanguage(lang: String) {
-        _state.value = _state.value.copy(profile = _state.value.profile.copy(language = lang))
+        // An explicit pick sticks — from here on the phone's language is ignored.
+        _state.value = _state.value.copy(
+            profile = _state.value.profile.copy(language = lang, languageExplicit = true)
+        )
     }
 
     /** Toggle watching a nest (persists → survives restarts). Returns the new watching state. */
