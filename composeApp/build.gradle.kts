@@ -74,9 +74,11 @@ android {
     defaultConfig {
         applicationId = "com.carettafriends"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        // Android 16. Play blocks updates from 2026-08-31 for anything below it. Edge-to-edge is
+        // already enforced app-wide via enableEdgeToEdge() in MainActivity.
+        targetSdk = 36
+        versionCode = 2
+        versionName = "1.0.1"
     }
 
     packaging {

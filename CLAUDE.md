@@ -10,7 +10,9 @@ photo & forget"; the capture flow must be effortless, everything else smart-defa
 ## Stack (validated, cached versions — do not bump casually)
 
 - **Kotlin Multiplatform + Compose Multiplatform** (shared UI/logic). Kotlin **2.2.20**, Compose MP **1.9.0**,
-  AGP **8.7.3**, Gradle **8.11.1**. `compileSdk=36`, `minSdk=26`. Package `com.carettafriends`.
+  AGP **8.7.3**, Gradle **8.11.1**. `compileSdk=36`, `targetSdk=36`, `minSdk=26`. Package `com.carettafriends`.
+  ⚠️ Play kills uploads targeting >~1 year behind the latest Android: API 36 is required from
+  **31 Aug 2026** — keep `targetSdk` on the newest API, don't let it lag (`/solo:android-release`).
 - **iOS = HYBRID**: native SwiftUI shell (`iosApp/iosApp/ContentView.swift`, TabView + per-tab NavigationStack)
   hosting shared Compose screens via `IosEntry.kt` VC factories. iOS map + camera are **native Swift**.
 - Map: **MapLibre + OpenStreetMap** (no key). Android = Compose `OsmMap` (expect/actual, MapView in AndroidView);
