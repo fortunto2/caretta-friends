@@ -1,0 +1,7 @@
+{
+  "description": "Caretta Friends is a field app for volunteers who protect loggerhead sea-turtle (Caretta caretta) nests — from the crawl found at dawn to the night the hatchlings reach the sea. Built for Caretta Gazipaşa on Türkiye's protected nesting beaches, and made to work for any sea-turtle volunteer community.\n\nWHAT IT DOES\n\n• Shared map of every nest, beach and trash spot — mark a nest in seconds with an auto-geotagged photo\n• AR nest finder — point your phone and see nests pinned where they physically are\n• Nest lifecycle — countdown to hatch, a timeline of updates, and an honest temperature-based sex-prediction range\n• Excavation record — hatching and emergence success, exported as a PDF for the local authority\n• Field guides and facts — what to do when you find a nest, no lights at night, beach rules\n• Patrols and coverage — so volunteers don't re-walk a stretch someone already covered\n• Your impact — how many hatchlings you helped reach the sea, a streak, badges\n\nOffline-first: capture works with no signal and syncs when you are back online. Works without an account.\n\nInterface in English, Türkçe and Русский.\n\nOpen source (MIT): github.com/fortunto2/caretta-friends\nWebsite: carettafriends.com",
+  "keywords": "loggerhead,turtle,sea,nest,hatchling,conservation,volunteer,wildlife,beach,nature,patrol,marine,AR",
+  "marketingUrl": "https://app.carettafriends.com",
+  "supportUrl": "https://carettafriends.com",
+  "whatsNew": "New app icon — a hatchling breaking out of its shell."
+}

@@ -1,0 +1,7 @@
+{
+  "description": "Caretta Friends, deniz kaplumbağası (Caretta caretta) yuvalarını koruyan gönüllüler için bir saha uygulamasıdır — şafakta bulunan izden, yavruların denize ulaştığı geceye kadar. Türkiye'nin koruma altındaki yuvalama plajlarında Caretta Gazipaşa için yapıldı; her gönüllü topluluğu için çalışır.\n\nNELER YAPAR\n\n• Bütün yuvaların, plajların ve çöp noktalarının ortak haritası — yuvayı saniyeler içinde işaretle, fotoğraf konumuyla birlikte kaydedilir\n• AR yuva bulucu — telefonu doğrult, yuvaları gerçekte oldukları yerde gör\n• Yuvanın seyri — çıkışa geri sayım, güncelleme akışı ve sıcaklığa dayalı dürüst cinsiyet tahmini aralığı\n• Boşaltım kaydı — çıkış ve yüzeye ulaşma başarısı, yetkililer için PDF olarak dışa aktarılır\n• Saha rehberi ve bilgiler — yuva bulunca ne yapmalı, gece neden ışık yakılmaz, plaj kuralları\n• Devriyeler ve kapsama — başkasının yürüdüğü kıyıyı tekrar yürümemek için\n• Katkın — denize ulaşmasına yardım ettiğin yavru sayısı, seri ve rozetler\n\nÖnce çevrimdışı: kayıt sinyal olmadan da çalışır, bağlantı gelince senkronize olur. Hesap gerekmez.\n\nArayüz Türkçe, İngilizce ve Rusça.\n\nAçık kaynak (MIT): github.com/fortunto2/caretta-friends\nWeb sitesi: carettafriends.com",
+  "keywords": "loggerhead,kaplumbağa,deniz,yuva,gönüllü,koruma,sahil,doğa,yavru,devriye,turtle,nest,sea",
+  "marketingUrl": "https://app.carettafriends.com",
+  "supportUrl": "https://carettafriends.com",
+  "whatsNew": "Yeni uygulama simgesi — kabuğundan çıkan bir yavru kaplumbağa."
+}
