@@ -79,6 +79,12 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
   Live Activity ("ты у гнезда"). Great field UX.
 
 ### Store & release readiness — done (2026-07-27)
+- ✅ **iOS 1.0 approved** (2026-08-01) — live at `https://apps.apple.com/app/id6794324877`; the landing
+  page's App Store button points there. Play still has **no production listing** (Internal testing only),
+  so the landing keeps the Google Play button as "soon".
+- ✅ **targetSdk 36 / v1.0.1 (2)** published to Play **Internal testing** (2026-08-01) — Play mails
+  "app must target Android 16" and blocks updates below API 36 from **31 Aug 2026**. `compileSdk` was
+  already 36, so only `targetSdk` moved; edge-to-edge was already on. Keep targetSdk on the newest API.
 - ✅ **Google Play build**: signed release **AAB** at `docs/store/android/caretta-friends-1.0.0.aab`
   (gitignored). Signing reads `keystore.properties` → `keystore/caretta-upload.jks` (both gitignored —
   **BACK THESE UP**; losing the keystore = can't update the Play listing). Config in
