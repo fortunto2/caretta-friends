@@ -31,8 +31,9 @@ interface PatrolRecorder {
  * Remember the platform patrol recorder, or null where patrols are recorded outside Compose.
  *
  * iOS returns null — its SwiftUI shell owns the map and records with `PatrolRecorder.swift`.
- * Android returns a real recorder; before this the "start patrol" pill on Android was decoration
- * that recorded nothing.
+ * Android returns a real recorder backed by a foreground service; before this the "start patrol"
+ * pill on Android was decoration that recorded nothing. [lang] localizes the service's notification,
+ * which is what keeps the GPS alive while the phone is in a pocket.
  */
 @Composable
-expect fun rememberPatrolRecorder(): PatrolRecorder?
+expect fun rememberPatrolRecorder(lang: String): PatrolRecorder?

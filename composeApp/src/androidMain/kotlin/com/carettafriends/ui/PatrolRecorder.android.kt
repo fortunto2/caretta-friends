@@ -2,105 +2,73 @@ package com.carettafriends.ui
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
+import android.os.Build
 import android.os.SystemClock
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import com.carettafriends.PatrolService
 import com.carettafriends.domain.GeoPoint
 import com.carettafriends.domain.distanceMeters
 
-/** One recorder for the process. A patrol in progress must survive leaving the map — opening the
- *  nest you just found used to destroy the whole walk, unsaved, with no message. Holds the
- *  application context, so it outlives an Activity without leaking one. */
-private var sharedRecorder: AndroidPatrolRecorder? = null
-
-@Composable
-actual fun rememberPatrolRecorder(): PatrolRecorder? {
-    val context = LocalContext.current.applicationContext
-    val recorder = remember { sharedRecorder ?: AndroidPatrolRecorder(context).also { sharedRecorder = it } }
-    // Asking at the moment the volunteer taps "start patrol" is the only place the permission makes
-    // sense — the answer comes back here and starts the walk without a second tap.
-    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) recorder.beginUpdates()
-    }
-    recorder.requestPermission = { ask.launch(Manifest.permission.ACCESS_FINE_LOCATION) }
-    // Leaving the map stops the GPS — unless a walk is actually being recorded, which is the whole
-    // point of it running.
-    DisposableEffect(recorder) { onDispose { if (!recorder.isRecording) recorder.dispose() } }
-    return recorder
-}
-
 /**
- * GPS track recorder over [LocationManager] (no Play Services dependency — the app must work on
- * phones without them, and MapLibre already runs on the plain platform provider).
+ * The walk in progress, as Compose state.
+ *
+ * It lives here rather than inside the recorder because the thing doing the recording is a
+ * [PatrolService] — a walk outlives the screen that started it, and has to outlive the screen lock:
+ * a patrol is an hour on a dark beach with the phone in a pocket.
  */
-private class AndroidPatrolRecorder(private val context: Context) : PatrolRecorder, LocationListener {
+internal object PatrolTrack : PatrolRecorder {
 
     override var isRecording by mutableStateOf(false)
         private set
-    override val meters: Int get() = walked.toInt()
-
-    /** Accumulated as a Double: truncating each 3-4 m leg to an Int lost ~10% of a long walk. */
-    private var walked by mutableStateOf(0.0)
     override var seconds by mutableStateOf(0)
         private set
     override var track by mutableStateOf<List<GeoPoint>>(emptyList())
         private set
 
-    /** Set by the composable — asks for location permission and starts once it's granted. */
-    var requestPermission: () -> Unit = {}
+    /** Metres as a Double: truncating each 3–4 m leg lost ~10% of a long walk. */
+    private var walked by mutableStateOf(0.0)
+    override val meters: Int get() = walked.toInt()
 
-    private val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
     private var startedAtMs = 0L
 
-    override fun start() {
-        if (isRecording) return
-        if (hasPermission()) beginUpdates() else requestPermission()
+    /** Wired by the composable, which is the only place with a Context and a permission launcher. */
+    internal var launcher: (() -> Unit)? = null
+    internal var stopper: (() -> Unit)? = null
+
+    override fun start() { launcher?.invoke() }
+
+    override fun stop(): List<GeoPoint> {
+        val finished = track
+        stopper?.invoke()
+        return finished
     }
 
-    fun beginUpdates() {
-        if (isRecording || !hasPermission()) return
+    internal fun begin() {
         track = emptyList()
         walked = 0.0
         seconds = 0
         startedAtMs = SystemClock.elapsedRealtime()
         isRecording = true
-        val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
-            .filter { runCatching { lm.isProviderEnabled(it) }.getOrDefault(false) }
-        runCatching {
-            providers.forEach { p -> lm.requestLocationUpdates(p, 2_000L, 0f, this) }
-        }.onFailure { isRecording = false }
     }
 
-    override fun stop(): List<GeoPoint> {
-        if (!isRecording) return emptyList()
-        runCatching { lm.removeUpdates(this) }
-        isRecording = false
-        return track
-    }
+    internal fun finish() { isRecording = false }
 
-    fun dispose() {
-        runCatching { lm.removeUpdates(this) }
-        isRecording = false
-    }
-
-    override fun onLocationChanged(location: Location) {
+    internal fun onFix(lat: Double, lng: Double, accuracy: Float, hasAccuracy: Boolean) {
         if (!isRecording) return
         // Drop the jitter a phone emits while standing still: a bad fix, or a "step" too small to
         // be a step, would inflate the walked distance by hundreds of metres over an hour.
-        if (location.hasAccuracy() && location.accuracy > 30f) return
-        val point = GeoPoint(location.latitude, location.longitude)
+        if (hasAccuracy && accuracy > 30f) return
+        val point = GeoPoint(lat, lng)
         val last = track.lastOrNull()
         val step = last?.let { distanceMeters(it, point) } ?: 0.0
         if (last != null && step < 3.0) return
@@ -108,15 +76,50 @@ private class AndroidPatrolRecorder(private val context: Context) : PatrolRecord
         walked += step
         seconds = ((SystemClock.elapsedRealtime() - startedAtMs) / 1000).toInt()
     }
+}
 
-    @Deprecated("Required by LocationListener on API < 30; never called on newer Android.")
-    override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) = Unit
+@Composable
+actual fun rememberPatrolRecorder(lang: String): PatrolRecorder? {
+    val context = LocalContext.current.applicationContext
+    // Asking at the moment the volunteer taps "start patrol" is the only place the permissions make
+    // sense — the answer comes back here and starts the walk without a second tap. Notifications are
+    // asked for alongside location on purpose: the ongoing notice is how the volunteer can see that
+    // we're holding their GPS open, and without it Android just hides that fact.
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
+        if (granted[Manifest.permission.ACCESS_FINE_LOCATION] == true) context.startPatrol(lang)
+    }
+    remember(lang) {
+        PatrolTrack.launcher = {
+            if (context.hasLocationPermission()) {
+                context.startPatrol(lang)
+            } else {
+                ask.launch(
+                    buildList {
+                        add(Manifest.permission.ACCESS_FINE_LOCATION)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            add(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }.toTypedArray(),
+                )
+            }
+        }
+        PatrolTrack.stopper = {
+            context.startService(
+                Intent(context, PatrolService::class.java).setAction(PatrolService.ACTION_STOP),
+            )
+        }
+        PatrolTrack
+    }
+    // Nothing is disposed here on purpose: the service owns the GPS, and a walk must survive
+    // leaving the map — opening the nest you just found used to destroy the whole recording.
+    return PatrolTrack
+}
 
-    override fun onProviderEnabled(provider: String) = Unit
+private fun Context.hasLocationPermission(): Boolean =
+    ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+        PackageManager.PERMISSION_GRANTED
 
-    override fun onProviderDisabled(provider: String) = Unit
-
-    private fun hasPermission(): Boolean =
-        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED
+private fun Context.startPatrol(lang: String) {
+    val intent = Intent(this, PatrolService::class.java).putExtra(PatrolService.EXTRA_LANG, lang)
+    ContextCompat.startForegroundService(this, intent)
 }

@@ -70,7 +70,7 @@ fun MapScreen(
     var tappedBeach by remember { mutableStateOf<String?>(null) }
     var airExpanded by remember { mutableStateOf(false) }
     // Patrol recording (Android); null on iOS, which records in its native map shell.
-    val patrol = rememberPatrolRecorder()
+    val patrol = rememberPatrolRecorder(state.profile.language)
     var savedPatrolId by remember { mutableStateOf<String?>(null) }
     // Bumped by the "locate me" button; the map actual animates onto the user's own position.
     var recenterTick by remember { mutableStateOf(0) }

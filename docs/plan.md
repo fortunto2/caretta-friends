@@ -47,8 +47,12 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 - **Guardian names** (`content/GuardianNames.kt`): a fresh install is "Dawn Guardian" / "Лунный
   Страж" / "Kumul Bekçisi" instead of the literal "Volunteer" every install shared. Existing
   installs still on the placeholder are renamed on load. The profile still nudges for a real name.
-- **Android parity (base)**: real patrol recording (`ui/PatrolRecorder.kt` — the pill was decoration
-  that recorded nothing), captures saved to a "Caretta Friends" gallery album so they survive a
+- **Android parity (base)**: real patrol recording — a `PatrolService` foreground service
+  (`type=location`, ongoing notification showing the distance) owns the GPS, so a walk survives the
+  screen lock and leaving the map; `PatrolTrack` holds it as Compose state. The pill used to be
+  decoration that recorded nothing, then a recorder tied to the map screen's composition that any
+  navigation destroyed. Background location is deliberately NOT requested: the service is only ever
+  started while the app is on screen, captures saved to a "Caretta Friends" gallery album so they survive a
   reinstall (iOS already did), and a "locate me" button (`OsmMap(recenterTick)`).
 - **Patrol is a coordinator's tool now** — the big "Start patrol" pill confused visitors, so it's a
   small icon on the right edge, shown only to a signed-in member with a role; the "no patrol yet
@@ -189,11 +193,6 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
   anonymous sign-up is open, so the door is exactly as wide as it already is for `nests` rows
   (`0003_rls_auth.sql`, `select using (true)`). Same fix as the coordinate exposure below: a
   verified-volunteer role, granted by a community admin, gating both.
-- **Android patrol recording stops when the screen locks** — the recorder is a plain
-  `LocationManager` client in the app process, and Android suspends location for a backgrounded app
-  without a foreground service. It survives navigation now (shared instance), but a pocketed phone
-  still loses the walk. Proper fix: a `ForegroundService` with `type=location` + the matching
-  manifest permission, driven from the repository rather than a screen.
 - **iOS: opening the camera from inside the add-nest form discards the typed note / date / beach.**
   `router.startAddNest()` resets the tab's navigation stack. Cancel now returns to a fresh form
   instead of a bare map, but the entered values are gone. Proper fix: present the camera over the
