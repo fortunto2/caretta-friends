@@ -208,6 +208,14 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 
 ## 🔴 Known, NOT fixed (decide before a public release)
 
+- ✅ **Photos no longer carry a location** (2026-08-07): `stripImageMetadata` removes EXIF/XMP/IPTC
+  from every upload (`uploadPendingPhotos`), and the iOS camera's burned-in overlay lost its GPS
+  line — it prints author + time only. The coordinate lives on the nest record, covered by the same
+  access rules as the rest of the nest; a photo that leaves the phone is pixels. The phone's OWN
+  file keeps its EXIF (that copy is the volunteer's). Verified: GZP-30 uploaded with 0 EXIF tags
+  while its record carries the point. This is what the Play **Data safety** form should say: photos
+  are collected and transferred, location is collected as app data — not embedded in the images.
+
 - **Nest photos are readable by anyone who can mint an anonymous token** — i.e. anyone who extracts
   the app's publishable key from the APK/IPA. The photo Worker enforces "signed-in volunteer", and
   anonymous sign-up is open, so the door is exactly as wide as it already is for `nests` rows

@@ -4,7 +4,7 @@
 //
 //  Presented from the native SwiftUI shell when the user taps "+".
 //  Flow: live preview / recent-photos strip / full gallery -> capture or pick
-//        -> burn overlay (GPS + date + author) + write EXIF/GPS metadata
+//        -> burn overlay (author + date) + write EXIF/GPS metadata into the LOCAL file
 //        -> onDone(imagePath, lat, lng).
 //
 //  Frameworks: SwiftUI, AVFoundation, Photos, PhotosUI, CoreLocation,
@@ -28,7 +28,8 @@ import ComposeApp
 
 /// Full-screen native camera. Hand the result back via `onDone(imagePath, lat, lng, sourceId)`.
 /// `imagePath` is an absolute file path (JPEG in the app's Documents dir) with the
-/// overlay burned in AND GPS/timestamp written into EXIF. `lat`/`lng` are nil when
+/// overlay burned in AND GPS/timestamp written into EXIF — that EXIF stays on this phone, since
+/// uploads are stripped of metadata (`stripImageMetadata`). `lat`/`lng` are nil when
 /// no location was available.
 ///
 /// `sourceId` is the Photos asset the image came from, or nil for a live capture. The app uses it
@@ -458,16 +459,17 @@ struct RecentThumbnail: View {
 // MARK: - Overlay text formatting
 
 enum OverlayFormatter {
+    /// Author and time only — deliberately NOT the coordinate.
+    ///
+    /// The nest's position lives on its record, where the app's access rules cover it. Burned into
+    /// the pixels it would survive every crop, forward and export: a photo of a protected nesting
+    /// beach that carries its own map. The excavation report prints the coordinate from the record
+    /// (`excReportCoord`), so the evidence value is kept where it belongs.
     static func lines(author: String, date: Date, location: CLLocation?) -> [String] {
-        var out: [String] = []
-        out.append("Caretta Friends • \(author)")
-        out.append(dateFormatter.string(from: date))
-        if let c = location?.coordinate {
-            out.append(String(format: "GPS %.6f, %.6f", c.latitude, c.longitude))
-        } else {
-            out.append("GPS unavailable")
-        }
-        return out
+        [
+            "Caretta Friends • \(author)",
+            dateFormatter.string(from: date),
+        ]
     }
 
     private static let dateFormatter: DateFormatter = {

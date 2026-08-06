@@ -349,8 +349,11 @@ class CarettaRepository {
                 if (photo.remotePath != null) continue
                 val local = photo.localUri?.takeIf { LocalStore.existsAbs(it) } ?: continue
                 val bytes = LocalStore.readBytesAbs(local) ?: continue
-                val stored = runCatching { photos.upload("$owner/${nest.id}/${photo.id}.jpg", bytes) }.getOrNull()
-                    ?: continue
+                // The coordinate belongs on the nest record, not inside the file: a photo that
+                // leaves the phone should not carry its own map to a protected nesting beach.
+                val shareable = stripImageMetadata(bytes)
+                val stored = runCatching { photos.upload("$owner/${nest.id}/${photo.id}.jpg", shareable) }
+                    .getOrNull() ?: continue
                 update(nest.id) { n ->
                     n.copy(
                         photos = n.photos.map { if (it.id == photo.id) it.copy(remotePath = stored) else it },
