@@ -247,6 +247,9 @@ class CarettaRepository {
         scope.launch { refreshAir() }
         // Best-effort cloud sync (no-op when offline).
         scope.launch { syncOnStart() }
+        // Two counts, and no more: how many people opened the app, and how many nests got
+        // recorded. Anonymous and install-scoped — see Analytics.
+        Analytics.track("app_launched")
     }
 
     /** Once-a-day per-incubating-nest temperature accrual → the thermosensitive-period TSD mean grows
@@ -671,6 +674,13 @@ class CarettaRepository {
         )
         _state.value = s.copy(nests = s.nests + nest)
         syncNest(nest)
+        Analytics.track(
+            "nest_recorded",
+            props = mapOf(
+                "has_photo" to hasPhoto.toString(),
+                "located" to (locationSource != LocationSource.NONE).toString(),
+            ),
+        )
         if (hasPhoto) scope.launch { runCatching { uploadPendingPhotos() } }
         // Best-effort: pull REAL weather (Open-Meteo, free) for this point and cache it on the nest.
         // Offline-safe — the nest already exists; this just enriches it when online.

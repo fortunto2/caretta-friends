@@ -185,6 +185,22 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 - **⏳ Submit**: create the App Store + Play listings, upload the AAB / iOS build, fill descriptions +
   App Privacy, privacy URL `https://app.carettafriends.com/privacy`. (BETA_CONTRACT_MISSING = Apple-side.)
 
+### Analytics — wired (2026-08-07)
+
+- `data/Analytics.kt` posts to **superduper-analytics** (`POST /e`, source `carettafriends` — the
+  same id as the landing page and the iOS app, so a visit and a launch compare without a join).
+  Two events only: `app_launched` and `nest_recorded` (`has_photo`, `located`). Batched, flushed
+  after 2 s — waiting for a full batch lost `app_launched` every time, since it is the only event
+  of a launch and the buffer dies with the process.
+- The id is an **install-scoped UUID** (`caretta_anon.txt`), not the account and not a device id.
+  That is what keeps the App Store label at *Data Not Linked to You*; if events ever carry the auth
+  uid it must become *Linked* and the point is lost. Registry: `carettafriends` now has an
+  `android` app row too (superduper-analytics `d5717ac`, not pushed).
+- ⚠️ **Declarations must follow before the next store release**: App Store privacy gains
+  `PRODUCT_INTERACTION · ANALYTICS · DATA_NOT_LINKED_TO_YOU`; Play Data safety gains app activity.
+  The repo's own ТЗ (`docs/tz-funnel-and-mobile.md`) spells this out — Apple removes apps for a
+  label that disagrees with behaviour.
+
 ### Other pending
 
 - **Onboarding asks for your beach** — a 4th page lists the nearest beaches (with their community)

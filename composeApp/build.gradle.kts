@@ -71,6 +71,10 @@ android {
     namespace = "com.carettafriends"
     compileSdk = 36
 
+    // The analytics client stamps every event with the app version, so a regression can be
+    // pinned to a release — BuildConfig is how Android exposes it.
+    buildFeatures { buildConfig = true }
+
     defaultConfig {
         applicationId = "com.carettafriends"
         minSdk = 26
