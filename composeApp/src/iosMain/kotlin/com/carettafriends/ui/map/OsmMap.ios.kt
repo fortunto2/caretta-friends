@@ -18,6 +18,7 @@ actual fun OsmMap(
     onCommunityTap: (String) -> Unit,
     focus: com.carettafriends.domain.GeoPoint?,
     onFocusConsumed: () -> Unit,
+    recenterTick: Int,
 ) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text("Map — ${points.size} markers")

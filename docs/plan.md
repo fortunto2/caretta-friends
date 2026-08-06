@@ -11,6 +11,54 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 
 ## ✅ Done (shipped this cycle)
 
+- **Field-test fixes (2026-08-06, from Alina's session — GZP-21…24 in prod)**. Four separate bugs
+  made "I logged a nest and it's not in my profile" true:
+  - **Timeline entries had `createdEpochMillis = 0`** (`FOUND`, `STATUS_CHANGE`, `EXCAVATED`). The
+    activity feed sorts and time-filters on it, so a nest you just logged sank to the bottom and
+    disappeared entirely under Today/Week/Month. Now stamped; legacy zeros are backfilled on load
+    from the entry's date (`repairTimestamps`).
+  - **Identity was the display name.** Every install starts as "Volunteer" / author "you", so
+    `nestsBy` handed each volunteer everyone else's nests ("мусор от других") and lost their own the
+    moment they set a real name. Attribution now runs on the auth uid: `Nest.foundByUserId` +
+    `Profile.userId/knownUserIds` (a SET — anonymous → linked email → sign-in all stay "me"), and
+    `pullNests` lifts the server's `owner_id` onto old rows so history is attributed too. Names are
+    a fallback only, and never a placeholder one (`isPlaceholderName`).
+  - **`code = "GZP-${nests.size + 1}"`** counted the whole local list, other volunteers' synced nests
+    included → prod has GZP-3 and GZP-16 twice. Now `nextNestCode()` = highest in use + 1.
+  - **The same photo made a new nest every time.** `findDuplicate()` catches it two ways —
+    `PhotoRef.hash` (md5 of the gallery file / the iOS Photos asset id; the file itself is useless,
+    iOS re-encodes each import) and a ≤25 m proximity check — and the save dialog offers "add photo
+    to GZP-xx" (folds into the existing nest as an observation) before "it's a different nest".
+- **Capture actually works on Android** — the "camera" was a mock viewfinder whose shutter produced
+  no photo (and iOS's in-form camera button opened that same mock). Android now launches the system
+  camera (`rememberCameraCapture`, TakePicture + FileProvider) and stamps the device's last known fix
+  into the JPEG's EXIF; iOS's in-form button hands over to its real native camera (`router.startAddNest()`).
+  The mock `CameraScreen` and its route are gone.
+- **Gallery photos keep their location** (`PickedPhoto.lat/lng`) and back-date the nest from EXIF —
+  on iOS. Android's photo picker redacts GPS unconditionally (see Gotchas), so the form now says so
+  instead of silently pinning the nest to the beach centre.
+- **Platform-native dialogs** (`ui/PlatformDialog.kt`): `PlatformChoiceDialog` / `PlatformTextPrompt`
+  are a real `UIAlertController` on iOS and a Material dialog on Android. Material dialogs inside the
+  Compose screens were the main reason the iPhone build read as "an Android app": wrong radius,
+  wrong button row, wrong dismiss gesture, wrong keyboard. Migrated: photo source, duplicate nest,
+  beach pick, home beach, language, your name, patrol publish. Still Compose (complex content):
+  email sign-in, add-update sheet, excavation.
+- **Guardian names** (`content/GuardianNames.kt`): a fresh install is "Dawn Guardian" / "Лунный
+  Страж" / "Kumul Bekçisi" instead of the literal "Volunteer" every install shared. Existing
+  installs still on the placeholder are renamed on load. The profile still nudges for a real name.
+- **Android parity (base)**: real patrol recording (`ui/PatrolRecorder.kt` — the pill was decoration
+  that recorded nothing), captures saved to a "Caretta Friends" gallery album so they survive a
+  reinstall (iOS already did), and a "locate me" button (`OsmMap(recenterTick)`).
+- **Patrol is a coordinator's tool now** — the big "Start patrol" pill confused visitors, so it's a
+  small icon on the right edge, shown only to a signed-in member with a role; the "no patrol yet
+  today" pill hides for everyone else.
+- **Beaches**: your home beach is pinned to the top of the list and marked; a beach's nest feed is
+  ordered by what needs attention today (hatching → soon → incubating → finished) and its stat tiles
+  hide zeros. AddNest shows ONE auto-picked beach with "change" instead of the full inline list.
+- **Profile simplified**: "My nests" list (the thing volunteers open the screen for), zero-value stat
+  tiles hidden, badges derived from real activity, share actions moved into the "⋮" menu, settings
+  grouped at the bottom, and a nudge to set a real name while it's still the default.
+
 - **Nav**: bottom tab bar always visible (Android + iOS `.toolbar(.visible,.tabBar)`); leave any screen via tabs.
 - **Full-interface i18n** EN/RU/TR — one `AppStrings` catalog (⚠️ **Map-backed** now, see Gotchas).
 - **People-graph**: `MemberProfileScreen` reachable from community / leaderboard / beach-leader / nest "found by" / timeline author (`AppState.resolveMember`).
@@ -123,6 +171,18 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 ## ⚠️ Gotchas (read before editing)
 
 - **AppStrings is Map-backed** (`class AppStrings(m: Map<String,String>, months: List<String>)` + 255 computed getters). A plain data class with ~255 constructor args tripped the ART verifier → **VerifyError on launch** (compiles fine, crashes on class-load). Add a field = getter + one `"key" to "value"` in all 3 `mapOf` bundles (EN/RU/TR). `months` is the one non-String field (explicit param).
+- **Never identify a volunteer by name.** `Profile.displayName` starts as "Volunteer" on every
+  install and `NestUpdate.author` defaults to "you" — matching on those gave everyone everyone
+  else's records. Ownership = `foundByUserId` ∈ `AppState.myUserIds` (`AppState.isMine`).
+- **Every timeline entry needs `createdEpochMillis`.** The activity feed both sorts and filters on
+  it; a zero silently hides the entry from every time range. There is no "unset" that behaves.
+- **Android's photo picker always strips GPS** — `MediaStore.setRequireOriginal` can't reach its
+  `content://media/picker/…` URIs, and ACCESS_MEDIA_LOCATION doesn't change that (verified on API
+  36). A gallery import on Android has no coordinates, by platform design; capture is the only path
+  to a real fix there. iOS PHPicker keeps the EXIF, so the same code does work on iOS.
+- **Launching IMAGE_CAPTURE needs a granted CAMERA permission** whenever the app *declares* it —
+  otherwise Android refuses with "Permission Denial: … with revoked permission", and the camera
+  simply never opens. Ask at the tap, then launch.
 - **iOS present/share/PHPicker**: use `topmostViewController()` (`ui/IosPresent.kt`) — `keyWindow` is nil on iOS 15+. `UIWindow.isKeyWindow` is a **method** in K/N.
 - **Native Swift strings** (map chips, tooltip, patrol dialog, camera) are separate from AppStrings — bridged via `IosEntryKt.currentStrings(): AppStrings`.
 - **Kotlin 2.3 ABI trap**: don't add libs whose iosArm64 klib is built with Kotlin 2.3 (we're on 2.2.20) — fails `compileKotlinIosArm64` only (Android tolerates it). No `supabase-kt`/markdown-renderer≥0.39 in commonMain.

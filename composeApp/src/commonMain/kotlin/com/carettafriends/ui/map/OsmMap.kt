@@ -33,6 +33,7 @@ data class MapMarker(
  * @param focus   one-shot request to animate the camera onto this point (e.g. a nest's geo card).
  *                Null = no pending focus. After centring, the actual calls [onFocusConsumed].
  * @param onFocusConsumed invoked once the camera has been moved to [focus] (clears the pending focus).
+ * @param recenterTick bump this to centre the camera on the volunteer's own position ("locate me").
  *
  * Default values are declared ONLY here (expect); actuals must NOT repeat them.
  */
@@ -45,4 +46,5 @@ expect fun OsmMap(
     onCommunityTap: (communityId: String) -> Unit = {},
     focus: GeoPoint? = null,
     onFocusConsumed: () -> Unit = {},
+    recenterTick: Int = 0,
 )

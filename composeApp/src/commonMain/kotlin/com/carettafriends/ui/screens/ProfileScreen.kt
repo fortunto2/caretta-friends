@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -45,6 +46,10 @@ import com.carettafriends.data.platformShare
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Badge
 import com.carettafriends.domain.MemberRole
+import com.carettafriends.ui.DialogAction
+import com.carettafriends.ui.DialogStyle
+import com.carettafriends.ui.PlatformChoiceDialog
+import com.carettafriends.ui.PlatformTextPrompt
 import com.carettafriends.ui.components.CarettaCard
 import com.carettafriends.ui.components.LocalPhoto
 import com.carettafriends.ui.components.Pill
@@ -76,14 +81,18 @@ fun ProfileScreen(
     var feedRange by remember { mutableStateOf(FeedRange.ALL) }
     var showMenu by remember { mutableStateOf(false) }
 
+    // Everything this volunteer has recorded, resolved by owner id (see AppState.nestsBy).
+    val myNests = state.nestsBy(state.meAsMember).sortedByDescending { it.foundDate }
     // "Beaches you've been to" — where this volunteer has patrolled or logged a nest.
-    val visitedIds = (state.patrols.map { it.beachId } + state.nests.filter { it.foundBy == p.displayName }.map { it.beachId }).toSet()
+    val visitedIds = (state.patrols.map { it.beachId } + myNests.map { it.beachId }).toSet()
     val visited = state.beaches.filter { it.id in visitedIds }
     val home = p.homeBeachId?.let { state.beach(it) }
-    val earnedBadges = state.badges.filter { it.earned }
+    // Derived from real activity — the seeded badge list is all-unearned, so filtering IT always
+    // produced an empty section with a "no badges yet" line under it.
+    val earnedBadges = state.earnedBadgesFor(state.meAsMember)
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        // "⋮" overflow tucks away the non-essential actions (share today's report) so the header stays clean.
+        // "⋮" overflow tucks away the sharing actions so the screen itself stays about the volunteer.
         TopBar(s.profile, trailing = {
             Box {
                 Box(
@@ -96,6 +105,13 @@ fun ProfileScreen(
                         text = { Text("📤 ${s.shareDay}") },
                         onClick = { showMenu = false; platformShare(todayReportText(state, s)) },
                     )
+                    DropdownMenuItem(
+                        text = { Text("🐢 ${s.shareImpact}") },
+                        onClick = {
+                            showMenu = false
+                            platformShare(s.shareText.replace("%d", p.hatchlingsReached.toString()))
+                        },
+                    )
                 }
             }
         })
@@ -106,16 +122,17 @@ fun ProfileScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                // Quiet single-tone avatar. A gradient here competed with the cards below it —
+                // on a screen that is mostly a list, the header should recede, not shout.
                 Box(
-                    Modifier.size(62.dp).clip(RoundedCornerShape(20.dp))
-                        .background(Brush.linearGradient(listOf(c.sunlit, c.coral))),
+                    Modifier.size(54.dp).clip(RoundedCornerShape(18.dp)).background(c.sea.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     // A photo (once added) replaces the emoji; tap the name row to edit for now.
                     if (p.photoPath != null) {
-                        LocalPhoto(p.photoPath, Modifier.fillMaxSize().clip(RoundedCornerShape(20.dp)))
+                        LocalPhoto(p.photoPath, Modifier.fillMaxSize().clip(RoundedCornerShape(18.dp)))
                     } else {
-                        Text(p.avatar, fontSize = 32.sp)
+                        Text(p.avatar, fontSize = 28.sp)
                     }
                 }
                 Column {
@@ -123,136 +140,87 @@ fun ProfileScreen(
                         Text(p.displayName, color = c.deep, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                         Text("✎", color = c.muted, fontSize = 15.sp)
                     }
-                    val roleText = when (p.memberRole) {
-                        MemberRole.ADMIN -> s.roleAdmin
-                        MemberRole.BEACH_LEADER -> s.roleLeader
-                        MemberRole.VOLUNTEER -> s.roleVolunteer
+                    // Until they type a name they're the same "Volunteer" as everyone else — which is
+                    // what put other people's finds under their name on the community leaderboard.
+                    // Said in the accent colour, not an alarm colour: it's a suggestion, not a fault.
+                    if (!p.nameSet) {
+                        Text(s.nameNudge, color = c.sea, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                    } else {
+                        val roleText = when (p.memberRole) {
+                            MemberRole.ADMIN -> s.roleAdmin
+                            MemberRole.BEACH_LEADER -> s.roleLeader
+                            MemberRole.VOLUNTEER -> s.roleVolunteer
+                        }
+                        Text(roleText, color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
-                    Text(roleText, color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
             if (editingName) {
-                var draft by remember { mutableStateOf(p.displayName) }
-                AlertDialog(
-                    onDismissRequest = { editingName = false },
-                    title = { Text(s.yourName) },
-                    text = {
-                        OutlinedTextField(
-                            value = draft,
-                            onValueChange = { draft = it.take(40) },
-                            singleLine = true,
-                            label = { Text(s.displayName) },
-                        )
-                    },
-                    confirmButton = {
-                        TextButton(onClick = { repo.setDisplayName(draft); editingName = false }) { Text(s.save) }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { editingName = false }) { Text(s.cancel) }
-                    },
-                )
+                PlatformTextPrompt(
+                    title = s.yourName,
+                    initial = p.displayName,
+                    placeholder = s.displayName,
+                    confirmLabel = s.save,
+                    cancelLabel = s.cancel,
+                ) { entered ->
+                    editingName = false
+                    entered?.let { repo.setDisplayName(it) }
+                }
             }
 
-            // account — anonymous volunteers get a nudge to save their work under an email.
-            if (state.accountEmail == null) {
-                AccountCta(s.saveAccount, s.saveAccountSub) { showAuth = true }
-            } else {
-                SignedInRow(s.signedIn, state.accountEmail!!)
-            }
             if (showAuth) {
                 EmailAuthDialog(repo, appStrings(p.language), onDismiss = { showAuth = false })
             }
 
-            // impact tile — when it's still 0, the whole tile is a tappable "log your first nest" CTA.
-            Box(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
-                    .background(Brush.linearGradient(listOf(c.sea, c.deep)))
-                    .then(if (p.hatchlingsReached == 0) Modifier.clickable { onAddNest() } else Modifier)
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    if (p.hatchlingsReached > 0) {
-                        Text("${p.hatchlingsReached}", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.ExtraBold)
-                        Text(s.hatchlingsReached, color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
-                    } else {
-                        Text("🐣", fontSize = 30.sp)
-                        Text(s.impactZeroCta, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                    }
+            // ── My nests — the first thing a volunteer opens this screen to check ──────────
+            // (It used to be missing entirely: the only trace of your work was an activity feed
+            // that showed other people's entries and buried your own.)
+            SectionLabel("${s.myNests}${if (myNests.isNotEmpty()) " · ${myNests.size}" else ""}")
+            if (myNests.isEmpty()) {
+                // The empty state IS the call to action, so a brand-new profile doesn't need a
+                // separate full-width banner shouting the same thing above it.
+                EmptyNestsCta(s.myNestsEmpty, s.impactZeroCta, onAddNest)
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    myNests.take(6).forEach { n -> NestListItem(n, s, onOpenNest) }
                 }
             }
-            // share my impact — motivational "I'm a volunteer" card via the OS share sheet.
-            Box(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-                    .background(c.coral.copy(alpha = 0.14f)).border(1.dp, c.coral.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-                    .clickable { platformShare(s.shareText.replace("%d", p.hatchlingsReached.toString())) }
-                    .padding(13.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(s.shareImpact, color = c.coral, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+
+            // Numbers, only once there are any: hatchlings first (the one that means something),
+            // then the walking counters. A row of zeros is noise, and the old full-bleed gradient
+            // tile made "0" the loudest thing on the screen.
+            val stats = buildList {
+                if (p.hatchlingsReached > 0) add("🐣 ${p.hatchlingsReached}" to s.hatchlingsReached)
+                if (p.streakDays > 0) add("🔥 ${p.streakDays}" to s.dayStreak)
+                if (p.kmWalked >= 1) add("${p.kmWalked.toInt()} km" to s.walked)
+                if (p.patrols > 0) add("${p.patrols}" to s.patrols)
             }
-
-            // stats
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatTile("🔥 ${p.streakDays}", s.dayStreak, Modifier.weight(1f))
-                StatTile("${p.kmWalked.toInt()} km", s.walked, Modifier.weight(1f))
-                StatTile("${p.patrols}", s.patrols, Modifier.weight(1f))
-            }
-
-            // community — shown directly (a volunteer usually belongs to 1–3), tap to open.
-            SectionLabel(s.community)
-            CommunityCard(
-                s = s,
-                name = state.community.name,
-                tagline = state.community.taglineFor(p.language),
-                members = state.members.size,
-                onOpen = onOpenCommunity,
-            )
-
-            // my beach — one pinned home beach + everywhere you've patrolled.
-            SectionLabel(s.myBeach)
-            HomeBeachCard(
-                title = home?.let { "${it.leaderAvatar} ${it.name}" } ?: s.freeVolunteer,
-                sub = if (home != null) s.yourHomeBeach else s.patrolClosest,
-                change = s.change,
-                onChange = { pickingBeach = true },
-            )
-            if (visited.isNotEmpty()) {
-                Text(s.patrolled, color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    visited.forEach { b -> Box(Modifier.clickable { onOpenBeach(b.id) }) { Pill("🏖️ ${b.name}", c.sea) } }
+            if (stats.isNotEmpty()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    stats.take(3).forEach { (value, label) -> StatTile(value, label, Modifier.weight(1f)) }
                 }
             }
             if (pickingBeach) {
-                AlertDialog(
-                    onDismissRequest = { pickingBeach = false },
-                    title = { Text(s.homeBeach) },
-                    text = {
-                        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            BeachPickRow(s.freeVolunteer, p.homeBeachId == null) {
-                                repo.setHomeBeach(null); pickingBeach = false
-                            }
-                            state.beaches.forEach { b ->
-                                BeachPickRow("${b.leaderAvatar} ${b.name}", p.homeBeachId == b.id) {
-                                    repo.setHomeBeach(b.id); pickingBeach = false
-                                }
-                            }
-                        }
-                    },
-                    confirmButton = { TextButton(onClick = { pickingBeach = false }) { Text(s.done) } },
+                PlatformChoiceDialog(
+                    title = s.homeBeach,
+                    actions = listOf(
+                        DialogAction(
+                            (if (p.homeBeachId == null) "✓ " else "") + s.freeVolunteer,
+                            if (p.homeBeachId == null) DialogStyle.PRIMARY else DialogStyle.DEFAULT,
+                        ) { repo.setHomeBeach(null) },
+                    ) + state.beaches.map { b ->
+                        DialogAction(
+                            (if (p.homeBeachId == b.id) "✓ " else "") + b.name,
+                            if (p.homeBeachId == b.id) DialogStyle.PRIMARY else DialogStyle.DEFAULT,
+                        ) { repo.setHomeBeach(b.id) }
+                    } + DialogAction(s.cancel, DialogStyle.CANCEL),
+                    onDismiss = { pickingBeach = false },
                 )
             }
 
-            // badges — only the ones actually earned (no confusing greyed-out locks).
-            SectionLabel(s.badges)
-            if (earnedBadges.isEmpty()) {
-                Text(
-                    s.noBadges,
-                    color = c.muted,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                )
-            } else {
+            // badges — only once something has actually been earned (no empty shelf, no grey locks).
+            if (earnedBadges.isNotEmpty()) {
+                SectionLabel(s.badges)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                     earnedBadges.forEach { b -> BadgeCell(s, b) }
                 }
@@ -266,7 +234,11 @@ fun ProfileScreen(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                RangeChip(s.today, feedRange == FeedRange.TODAY) { feedRange = FeedRange.TODAY }
+                // "today" reads as a word inside sentences elsewhere; as a chip it sits next to
+                // Week/Month/All and has to match them.
+                RangeChip(s.today.replaceFirstChar { it.uppercase() }, feedRange == FeedRange.TODAY) {
+                    feedRange = FeedRange.TODAY
+                }
                 RangeChip(s.rangeWeek, feedRange == FeedRange.WEEK) { feedRange = FeedRange.WEEK }
                 RangeChip(s.rangeMonth, feedRange == FeedRange.MONTH) { feedRange = FeedRange.MONTH }
                 RangeChip(s.filterAll, feedRange == FeedRange.ALL) { feedRange = FeedRange.ALL }
@@ -277,24 +249,43 @@ fun ProfileScreen(
                 Text(s.activityEmpty, color = c.muted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             }
 
+            // ── Community — who you're doing this with ────────────────────────────────────
+            SectionLabel(s.community)
+            ProfileNavRow("🐢 ${state.community.name}", onClick = onOpenCommunity)
+            if (visited.isNotEmpty()) {
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    visited.forEach { b -> Box(Modifier.clickable { onOpenBeach(b.id) }) { Pill("🏖️ ${b.name}", c.sea) } }
+                }
+            }
+
+            // ── Settings — everything you touch once, gathered at the bottom ───────────────
+            // The account row lives here too, marked with a small amber dot while the work is only
+            // on this phone. It used to be a full yellow banner near the top, which read as an
+            // error and pushed the volunteer's own nests below the fold.
+            SectionLabel(s.settingsTitle)
+            if (state.accountEmail == null) {
+                ProfileNavRow("🔒 ${s.saveAccount}", accent = c.warn) { showAuth = true }
+            } else {
+                // Signed in: state, not an action — so no chevron inviting a tap that does nothing.
+                ProfileNavRow(state.accountEmail!!, accent = c.good, showArrow = false) { }
+            }
+            // my beach — one pinned home beach (patrol wherever's closest by default).
+            ProfileNavRow(home?.let { "🏖️ ${it.name}" } ?: "🏖️ ${s.myBeach}") { pickingBeach = true }
             // trends / charts
-            ProfileNavRow(s.trends, onOpenStats)
+            ProfileNavRow(s.trends, onClick = onOpenStats)
             // language — switch the whole interface (RU / TR / EN).
             ProfileNavRow(s.language) { pickingLang = true }
             if (pickingLang) {
-                AlertDialog(
-                    onDismissRequest = { pickingLang = false },
-                    title = { Text(s.language.trim()) },
-                    text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            LANGUAGES.forEach { (code, label) ->
-                                BeachPickRow(label, p.language.equals(code, ignoreCase = true)) {
-                                    repo.setLanguage(code); pickingLang = false
-                                }
-                            }
-                        }
-                    },
-                    confirmButton = { TextButton(onClick = { pickingLang = false }) { Text(s.close) } },
+                PlatformChoiceDialog(
+                    title = s.language.trim(),
+                    actions = LANGUAGES.map { (code, label) ->
+                        val current = p.language.equals(code, ignoreCase = true)
+                        DialogAction(
+                            (if (current) "✓ " else "") + label,
+                            if (current) DialogStyle.PRIMARY else DialogStyle.DEFAULT,
+                        ) { repo.setLanguage(code) }
+                    } + DialogAction(s.cancel, DialogStyle.CANCEL),
+                    onDismiss = { pickingLang = false },
                 )
             }
 
@@ -375,23 +366,6 @@ private fun CommunityCard(s: com.carettafriends.content.AppStrings, name: String
 }
 
 @Composable
-private fun HomeBeachCard(title: String, sub: String, change: String, onChange: () -> Unit) {
-    val c = caretta
-    Box(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(c.surface)
-            .border(1.dp, c.line, RoundedCornerShape(13.dp)).clickable { onChange() }.padding(14.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(title, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
-                Text(sub, color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-            }
-            Text(change, color = c.sea, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
-        }
-    }
-}
-
-@Composable
 private fun BeachPickRow(label: String, selected: Boolean, onClick: () -> Unit) {
     val c = caretta
     Row(
@@ -405,17 +379,48 @@ private fun BeachPickRow(label: String, selected: Boolean, onClick: () -> Unit) 
     }
 }
 
+/** One settings/navigation row. [accent] adds a small status dot — enough to flag "your work isn't
+ *  saved to an account yet" without turning the row into a coloured banner. */
 @Composable
-private fun ProfileNavRow(label: String, onClick: () -> Unit) {
+private fun ProfileNavRow(
+    label: String,
+    accent: Color? = null,
+    showArrow: Boolean = true,
+    onClick: () -> Unit,
+) {
     val c = caretta
     Box(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(c.surface)
             .border(1.dp, c.line, RoundedCornerShape(13.dp)).clickable { onClick() }.padding(14.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(label, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
-            Text("›", color = c.muted, fontSize = 18.sp)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (accent != null) Box(Modifier.size(7.dp).clip(CircleShape).background(accent))
+            Text(
+                label, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold,
+                maxLines = 1, modifier = Modifier.weight(1f),
+            )
+            if (showArrow) Text("›", color = c.muted, fontSize = 18.sp)
         }
+    }
+}
+
+/** Empty "my nests" state: the invitation to log the first one, stated once and quietly. */
+@Composable
+private fun EmptyNestsCta(line: String, cta: String, onAddNest: () -> Unit) {
+    val c = caretta
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sea.copy(alpha = 0.07f))
+            .border(1.dp, c.sea.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
+            .clickable { onAddNest() }.padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(11.dp),
+    ) {
+        Text("🥚", fontSize = 22.sp)
+        Column(Modifier.weight(1f)) {
+            Text(cta, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+            Text(line, color = c.muted, fontSize = 11.5.sp, fontWeight = FontWeight.Medium)
+        }
+        Text("›", color = c.sea, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
     }
 }
 

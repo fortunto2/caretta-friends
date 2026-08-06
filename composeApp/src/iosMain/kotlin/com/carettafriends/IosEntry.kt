@@ -14,7 +14,6 @@ import com.carettafriends.ui.components.EmptyHint
 import com.carettafriends.ui.screens.AddNestScreen
 import com.carettafriends.ui.screens.BeachDetailScreen
 import com.carettafriends.ui.screens.BeachesScreen
-import com.carettafriends.ui.screens.CameraScreen
 import com.carettafriends.ui.screens.CommunityScreen
 import com.carettafriends.ui.screens.ExcavationScreen
 import com.carettafriends.ui.screens.LearnScreen
@@ -177,12 +176,17 @@ fun savePatrol(meters: Int, seconds: Int, trackCsv: String): String {
 /** Publish a recorded patrol (Swift). Only then does it sync to the cloud. */
 fun publishPatrol(id: String) = SharedRepo.repo.publishPatrol(id)
 
-/** Called from Swift after the native camera captures/picks a photo (with optional GPS). */
-fun setPendingPhoto(path: String, lat: Double, lng: Double, hasLocation: Boolean) {
+/** Called from Swift after the native camera captures/picks a photo (with optional GPS).
+ *  [sourceId] identifies the ORIGINAL image the volunteer chose (the Photos asset id) — the file
+ *  itself can't be used: the camera screen re-encodes every import with a burned-in overlay, so the
+ *  same photo would produce different bytes and slip past the duplicate check. Empty for a live
+ *  capture, which is new by definition. */
+fun setPendingPhoto(path: String, lat: Double, lng: Double, hasLocation: Boolean, sourceId: String) {
     SharedRepo.repo.pendingPhoto = PendingPhoto(
         path = path,
         lat = if (hasLocation) lat else null,
         lng = if (hasLocation) lng else null,
+        hash = sourceId.takeIf { it.isNotBlank() }?.let { "asset:$it" },
     )
 }
 
@@ -268,10 +272,6 @@ fun ExcavationVC(nestId: String, onBack: () -> Unit): UIViewController = host {
     } else {
         EmptyHint("🐢", appStrings(state.profile.language).nestNotFound)
     }
-}
-
-fun CameraVC(onBack: () -> Unit, onCaptured: () -> Unit): UIViewController = host {
-    CameraScreen(SharedRepo.repo.state.value.profile.language, onBack, onCaptured)
 }
 
 fun CommunityVC(communityId: String, onBack: () -> Unit, onOpenMember: (String) -> Unit): UIViewController = host {

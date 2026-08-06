@@ -3,6 +3,8 @@ package com.carettafriends.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,9 +38,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.MarkerType
+import com.carettafriends.domain.MemberRole
 import com.carettafriends.domain.Nest
 import com.carettafriends.domain.NestStatus
 import com.carettafriends.domain.SimpleMarker
+import com.carettafriends.domain.nearestBeach
+import com.carettafriends.ui.DialogAction
+import com.carettafriends.ui.DialogStyle
+import com.carettafriends.ui.PlatformChoiceDialog
+import com.carettafriends.ui.rememberPatrolRecorder
 import com.carettafriends.ui.map.MapMarker
 import com.carettafriends.ui.map.OsmMap
 import com.carettafriends.ui.theme.caretta
@@ -56,12 +64,23 @@ fun MapScreen(
     onOpenCommunity: (String) -> Unit = {},
     focus: com.carettafriends.domain.GeoPoint? = null,
     onFocusConsumed: () -> Unit = {},
+    /** Needed to save a finished patrol. Null where patrols are recorded outside Compose (iOS). */
+    repo: com.carettafriends.data.CarettaRepository? = null,
 ) {
     val c = caretta
     val s = com.carettafriends.content.appStrings(state.profile.language)
     var filter by remember { mutableStateOf("all") }
     var tappedBeach by remember { mutableStateOf<String?>(null) }
     var airExpanded by remember { mutableStateOf(false) }
+    // Patrol recording (Android); null on iOS, which records in its native map shell.
+    val patrol = rememberPatrolRecorder()
+    var savedPatrolId by remember { mutableStateOf<String?>(null) }
+    // Bumped by the "locate me" button; the map actual animates onto the user's own position.
+    var recenterTick by remember { mutableStateOf(0) }
+    // Patrol recording is a coordinator's tool: a signed-in member with a role, not a passer-by.
+    val canPatrol = patrol != null &&
+        state.accountEmail != null &&
+        state.profile.memberRole != MemberRole.VOLUNTEER
 
     // Timelapse — scrub/play the season day-by-day; nests appear on their found date.
     var timelapse by remember { mutableStateOf(false) }
@@ -110,6 +129,7 @@ fun MapScreen(
             onCommunityTap = { id -> onOpenCommunity(id.removePrefix("cm:")) },
             focus = focus,
             onFocusConsumed = onFocusConsumed,
+            recenterTick = recenterTick,
         )
 
         // --- Top overlays: filter chips + coverage chip ---
@@ -132,8 +152,10 @@ fun MapScreen(
                     Text(s.timelapse, color = if (timelapse) Color.White else c.deep, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            CoveragePill(state)
+            if (state.patrols.isNotEmpty() || canPatrol) {
+                Spacer(Modifier.height(10.dp))
+                CoveragePill(state)
+            }
             state.air?.let { air ->
                 Spacer(Modifier.height(8.dp))
                 AirPill(air, s) { airExpanded = !airExpanded }
@@ -144,17 +166,68 @@ fun MapScreen(
             }
         }
 
-        // --- Start patrol pill (visual on Android; the GPS recorder is on iOS for now).
-        //     Turns to a dust warning when the air layer says patrolling isn't advisable. ---
-        val patrolBlocked = state.air?.patrolAdvisable == false
-        Box(
-            Modifier.align(Alignment.BottomStart).padding(start = 14.dp, bottom = 24.dp)
-                .clip(CircleShape).background(if (patrolBlocked) c.coral else c.good)
-                .padding(horizontal = 14.dp, vertical = 9.dp),
+        // --- Right-edge tools: locate me, and (for the people who run the beach) patrol recording.
+        //     The patrol used to be a big "Start patrol" pill in the corner — the loudest control on
+        //     the map, next to the thing a visitor actually came for, and it confused people into
+        //     tapping it. It's a coordinator's tool, so it hides behind an icon and only appears
+        //     for a signed-in member with a role. ---
+        val recording = patrol?.isRecording == true
+        Column(
+            Modifier.align(Alignment.CenterEnd).padding(end = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
-                if (patrolBlocked) s.dustNotAdvised else s.startPatrol,
-                color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
+            MapToolButton("📍", c.surface) { recenterTick++ }
+            if (canPatrol) {
+                MapToolButton(if (recording) "⏹" else "🥾", if (recording) c.sea else c.surface) {
+                    if (recording) {
+                        val track = patrol.stop()
+                        // A stroll of a few steps isn't a patrol — don't clutter the record.
+                        if (track.size >= 2 && patrol.meters >= 20 && repo != null) {
+                            val beachId = nearestBeach(track.first(), state.beaches)?.first?.id
+                                ?: state.beaches.firstOrNull()?.id
+                            if (beachId != null) {
+                                savedPatrolId = repo.addPatrol(beachId, patrol.meters, track, patrol.seconds)
+                            }
+                        }
+                    } else {
+                        patrol.start()
+                    }
+                }
+                if (recording) {
+                    Box(
+                        Modifier.clip(CircleShape).background(c.sea).padding(horizontal = 9.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            "${patrol.meters} m",
+                            color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold,
+                        )
+                    }
+                }
+            }
+        }
+
+        // Dust warning keeps its place — it's safety information for everyone, not a control.
+        if (state.air?.patrolAdvisable == false) {
+            Box(
+                Modifier.align(Alignment.BottomStart).padding(start = 14.dp, bottom = 24.dp)
+                    .clip(CircleShape).background(c.coral).padding(horizontal = 14.dp, vertical = 9.dp),
+            ) {
+                Text(s.dustNotAdvised, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+            }
+        }
+
+        // Saved walks stay on the phone until the volunteer chooses to share them — routes are not
+        // published automatically (they map exactly where the nests are, and where a person walks).
+        savedPatrolId?.let { id ->
+            PlatformChoiceDialog(
+                title = s.patrolPublishTitle,
+                message = s.patrolPublishBody,
+                actions = listOf(
+                    DialogAction(s.patrolPublish, DialogStyle.PRIMARY) { repo?.publishPatrol(id) },
+                    DialogAction(s.patrolKeepPrivate, DialogStyle.CANCEL),
+                ),
+                onDismiss = { savedPatrolId = null },
             )
         }
 
@@ -338,4 +411,15 @@ private fun AirDetail(air: com.carettafriends.domain.AirStatus) {
             }
         }
     }
+}
+
+/** A round map tool button (locate, patrol). Small on purpose — the map itself is the content. */
+@Composable
+private fun MapToolButton(glyph: String, bg: Color, onClick: () -> Unit) {
+    val c = caretta
+    Box(
+        Modifier.size(44.dp).clip(CircleShape).background(bg)
+            .border(1.dp, c.line, CircleShape).clickable { onClick() },
+        contentAlignment = Alignment.Center,
+    ) { Text(glyph, fontSize = 19.sp) }
 }

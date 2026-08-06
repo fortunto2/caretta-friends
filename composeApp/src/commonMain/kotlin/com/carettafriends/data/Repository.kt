@@ -8,7 +8,10 @@ import com.carettafriends.domain.CommunityKind
 import com.carettafriends.domain.Excavation
 import com.carettafriends.domain.Fact
 import com.carettafriends.domain.GeoPoint
+import com.carettafriends.content.randomGuardianName
 import com.carettafriends.domain.classifyAir
+import com.carettafriends.domain.isPlaceholderName
+import com.carettafriends.domain.distanceMeters
 import com.carettafriends.domain.GuideArticle
 import com.carettafriends.domain.LocationSource
 import com.carettafriends.domain.MarkerType
@@ -43,14 +46,34 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
 import kotlinx.datetime.minus
 import kotlinx.datetime.todayIn
 
-/** A photo captured/picked by the native camera, waiting to be attached to a new nest. */
-data class PendingPhoto(val path: String, val lat: Double?, val lng: Double?)
+/** A photo captured/picked by the native camera, waiting to be attached to a new nest.
+ *  [hash] identifies the ORIGINAL image (see [com.carettafriends.domain.PhotoRef.hash]) so the same
+ *  photo imported twice is recognized instead of becoming a second nest. */
+data class PendingPhoto(val path: String, val lat: Double?, val lng: Double?, val hash: String? = null)
+
+/**
+ * How close two nests must be before we ask whether it's the same one.
+ *
+ * Caretta females do nest within a few metres of each other on a good stretch of sand, so this has
+ * to stay tight — 25 m would have flagged genuinely separate nests as duplicates. Kept just under
+ * a phone's GPS scatter: the exact-photo check is what catches a re-upload, and this only catches
+ * re-photographing the same nest on the spot. Either way it's a QUESTION with the distance shown,
+ * never an automatic merge.
+ */
+const val DUPLICATE_RADIUS_M = 8.0
+
+/** Why a new record looks like one that already exists. */
+enum class DuplicateReason { SAME_PHOTO, SAME_SPOT }
+
+/** An existing nest a to-be-saved one collides with (same photo, or same patch of sand). */
+data class DuplicateHit(val nest: Nest, val reason: DuplicateReason, val distanceM: Double)
 
 /** TSD prediction (qualitative V1 model, regional caveat — see design-spec / research). */
 fun predictTsd(exposure: SunExposure?): Triple<Int, Int, Int> = when (exposure) {
@@ -117,17 +140,64 @@ fun nestMapPhase(nest: Nest, today: LocalDate = today()): String = when (nest.st
 }
 
 /**
+ * The next nest code, continued from the HIGHEST number already in use.
+ *
+ * It used to be `"GZP-${nests.size + 1}"`, which counts the WHOLE local list — including nests that
+ * synced in from other volunteers, and excluding ones not pulled yet. Production has GZP-3 and
+ * GZP-16 twice because of it. Max + 1 (with a uniqueness guard) keeps codes stable and monotonic.
+ */
+internal fun nextNestCode(nests: List<Nest>, prefix: String = "GZP"): String {
+    val used = nests.mapTo(mutableSetOf()) { it.code }
+    val highest = nests.mapNotNull { it.code.substringAfterLast('-').toIntOrNull() }.maxOrNull() ?: 0
+    var n = highest + 1
+    while ("$prefix-$n" in used) n++
+    return "$prefix-$n"
+}
+
+/**
  * In-memory, offline-first repository. Single source of truth via StateFlow.
  * V1 storage is in memory + seed; SQLDelight / Supabase sync slot in behind this API (V2).
  */
 // Bumped to v2 to drop the old demo-seeded local state (pre-launch, no real data yet) → clean start.
 private const val STATE_FILE = "caretta_state_v2.json"
 
+/**
+ * Give every timeline entry a real timestamp.
+ *
+ * Entries written before 2026-08 got `createdEpochMillis = 0`: the activity feed sorts on it and
+ * filters time ranges by it, so a nest you had just logged sank below everything else and vanished
+ * entirely under Today/Week/Month. Backfill from the date the entry actually refers to (its
+ * back-date, else the nest's found date) at midday, spaced a second apart to keep their order.
+ */
+private fun repairTimestamps(nests: List<Nest>): List<Nest> = nests.map { n ->
+    if (n.updates.none { it.createdEpochMillis <= 0L }) return@map n
+    n.copy(
+        updates = n.updates.mapIndexed { i, u ->
+            if (u.createdEpochMillis > 0L) u
+            else u.copy(
+                createdEpochMillis = (u.obsDate ?: n.foundDate)
+                    .atStartOfDayIn(TimeZone.currentSystemDefault())
+                    .toEpochMilliseconds() + 12 * 3600 * 1000L + i * 1000L,
+            )
+        },
+    )
+}
+
 private fun loadOrSeed(json: Json): AppState {
     val loaded = LocalStore.readText(STATE_FILE)?.let { runCatching { json.decodeFromString<AppState>(it) }.getOrNull() }
     // Community is static reference data → always refresh from seed so field additions (description,
     // email, phone, kind…) reach existing installs without wiping the user's local nests/patrols.
     val state = (loaded ?: seedState()).copy(community = seedCommunity())
+        .let { it.copy(nests = repairTimestamps(it.nests)) }
+        // Installs made before guardian names still carry the shared placeholder — give them one
+        // now so their next find is signed by someone rather than by "Volunteer".
+        .let {
+            if (it.profile.nameSet || !isPlaceholderName(it.profile.displayName)) {
+                it
+            } else {
+                it.copy(profile = it.profile.copy(displayName = randomGuardianName(it.profile.language)))
+            }
+        }
 
     // Follow the phone's language until the volunteer picks one themselves, so switching the
     // language in iOS Settings → Caretta Friends actually changes the app on the next launch.
@@ -190,6 +260,7 @@ class CarettaRepository {
         // Anonymous sign-in on first run → stable owner_id + RLS-scoped, attributable writes.
         auth.ensureSession()
         _state.value = _state.value.copy(accountEmail = auth.currentEmail())
+        rememberMe()
         val cid = _state.value.community.id
         val owner = auth.currentUserId()
         // Purge any stale/ghost beaches left in the local cache before we push them back to the cloud.
@@ -215,8 +286,12 @@ class CarettaRepository {
         // Parents FIRST so child FKs are always satisfiable server-side (FK-safe offline sync).
         runCatching { cloud.pushCommunity(local.community) }
         local.beaches.forEach { runCatching { cloud.pushBeach(it) } }
-        // Then the aggregate roots (owned by this volunteer).
-        local.nests.forEach { runCatching { cloud.pushNest(it, cid, owner) } }
+        // Then the aggregate roots — only the ones that are OURS. The local cache also holds every
+        // nest synced down from other volunteers; re-pushing those stamped our uid on them (RLS
+        // rejects it, so it was wasted traffic on every launch rather than a data loss).
+        local.nests
+            .filter { it.foundByUserId == null || it.foundByUserId in local.myUserIds }
+            .forEach { runCatching { cloud.pushNest(it, cid, owner) } }
         local.markers.forEach { runCatching { cloud.pushMarker(it, owner) } }
         // Only PUBLISHED patrols sync — unpublished walks stay on-device (no live-location sharing).
         local.patrols.filter { it.published }.forEach { runCatching { cloud.pushPatrol(it, owner) } }
@@ -230,7 +305,7 @@ class CarettaRepository {
                 // Normalize again: the cloud may still hold ghosts we can't delete via RLS, so keep them
                 // off the map here (remote-wins merge would otherwise reintroduce them).
                 beaches = normalizeBeaches(mergeById(s.beaches, remoteBeaches) { it.id }, cid),
-                nests = mergeNests(s.nests, remoteNests),
+                nests = repairTimestamps(mergeNests(s.nests, remoteNests)),
                 markers = mergeById(s.markers, remoteMarkers) { it.id },
             )
         }
@@ -271,6 +346,21 @@ class CarettaRepository {
         return base.copy(updates = updates)
     }
 
+    /** Record the current auth uid as mine. Kept as a SET: an anonymous volunteer who later saves
+     *  their account under an email (or signs into another one) must keep the nests already logged
+     *  under the previous uid. This is what "my nests" is filtered by. */
+    private fun rememberMe() {
+        val uid = auth.currentUserId() ?: return
+        val p = _state.value.profile
+        if (p.userId == uid && uid in p.knownUserIds) return
+        _state.value = _state.value.copy(
+            profile = p.copy(userId = uid, knownUserIds = p.knownUserIds + uid),
+        )
+    }
+
+    /** The uid every record this device writes is attributed to. */
+    private fun myUserId(): String? = auth.currentUserId() ?: _state.value.profile.userId
+
     private fun syncNest(nest: Nest) {
         val cid = _state.value.community.id
         scope.launch { auth.ensureSession(); runCatching { cloud.pushNest(nest, cid, auth.currentUserId()) } }
@@ -303,7 +393,9 @@ class CarettaRepository {
     fun setDisplayName(name: String) {
         val clean = name.trim().take(40)
         if (clean.isNotBlank()) {
-            _state.value = _state.value.copy(profile = _state.value.profile.copy(displayName = clean))
+            _state.value = _state.value.copy(
+                profile = _state.value.profile.copy(displayName = clean, nameSet = true),
+            )
         }
     }
 
@@ -332,7 +424,10 @@ class CarettaRepository {
     fun linkEmail(email: String, password: String, onResult: (String?) -> Unit) {
         scope.launch {
             val r = auth.linkEmail(email.trim(), password)
-            if (r.ok) _state.value = _state.value.copy(accountEmail = email.trim())
+            if (r.ok) {
+                _state.value = _state.value.copy(accountEmail = email.trim())
+                rememberMe()   // same uid — but make sure it's on record as mine
+            }
             onResult(if (r.ok) null else (r.error ?: "Couldn't save your account"))
         }
     }
@@ -343,6 +438,7 @@ class CarettaRepository {
             val r = auth.signInEmail(email.trim(), password)
             if (r.ok) {
                 _state.value = _state.value.copy(accountEmail = email.trim())
+                rememberMe()                    // their account uid joins the ones that are mine
                 runCatching { syncOnStart() }   // re-pull their data under the new uid
             }
             onResult(if (r.ok) null else (r.error ?: "Invalid email or password"))
@@ -420,14 +516,22 @@ class CarettaRepository {
         foundDate: LocalDate? = null,
         /** Optional note/description the volunteer adds at first sighting → first comment on the nest. */
         note: String = "",
+        /** Identity of the source image, for duplicate detection (see [PendingPhoto.hash]). */
+        photoHash: String? = null,
     ): String {
         val s = _state.value
         val found = (foundDate ?: today()).coerceIn(today().minus(DatePeriod(days = MAX_BACKDATE_DAYS)), today())
         val (fLow, fHigh, inc) = predictTsd(exposure)
         val confirmed = hasPhoto && (locationSource == LocationSource.PHOTO_EXIF || locationSource == LocationSource.DEVICE_GPS)
         val id = nextId("nest")
-        val code = "GZP-${s.nests.size + 1}"
-        val photos = if (hasPhoto) listOf(PhotoRef(nextId("ph"), PhotoSource.CAMERA, localUri = photoPath)) else emptyList()
+        val code = nextNestCode(s.nests)
+        val now = nowMillis()
+        val owner = myUserId()
+        val photos = if (hasPhoto) {
+            listOf(PhotoRef(nextId("ph"), PhotoSource.CAMERA, localUri = photoPath, hash = photoHash))
+        } else {
+            emptyList()
+        }
         val nest = Nest(
             id = id,
             code = code,
@@ -452,14 +556,30 @@ class CarettaRepository {
             photos = photos,
             updates = buildList {
                 val backDate = found.takeIf { it != today() }
-                add(NestUpdate(nextId("u"), UpdateKind.FOUND, body = if (isNest) "Nest found" else "False crawl logged", dateLabel = "Today", obsDate = backDate))
+                // The "found" entry MUST carry a timestamp — the activity feed sorts and time-filters
+                // on it, and a zero here is why a just-logged nest never showed up in the profile.
+                add(
+                    NestUpdate(
+                        nextId("u"), UpdateKind.FOUND,
+                        body = if (isNest) "Nest found" else "False crawl logged",
+                        author = s.profile.displayName, authorUserId = owner,
+                        createdEpochMillis = now, dateLabel = "Today", obsDate = backDate,
+                    ),
+                )
                 if (note.isNotBlank()) {
-                    add(NestUpdate(nextId("u"), UpdateKind.COMMENT, body = note.trim(), createdEpochMillis = nowMillis(), dateLabel = "Today"))
+                    add(
+                        NestUpdate(
+                            nextId("u"), UpdateKind.COMMENT, body = note.trim(),
+                            author = s.profile.displayName, authorUserId = owner,
+                            createdEpochMillis = now + 1, dateLabel = "Today",
+                        ),
+                    )
                 }
             },
             temps = emptyList(),
             foundBy = s.profile.displayName,
-            updatedAtMillis = nowMillis(),
+            foundByUserId = owner,
+            updatedAtMillis = now,
         )
         _state.value = s.copy(nests = s.nests + nest)
         syncNest(nest)
@@ -481,6 +601,36 @@ class CarettaRepository {
             }
         }
         return id
+    }
+
+    /**
+     * Does this photo/point already belong to a nest we know about?
+     *
+     * Volunteers re-send the same photo (a second attempt, a photo forwarded from a colleague) and
+     * photograph the same nest twice on one walk. Before this check every attempt minted a fresh
+     * nest — production has three nests at the same EXIF coordinate from one afternoon.
+     *
+     * Two signals, strongest first:
+     *  - SAME_PHOTO — literally the same source image (see [PhotoRef.hash]); certain duplicate.
+     *  - SAME_SPOT  — a nest within [DUPLICATE_RADIUS_M]; almost certainly the same nest, but the
+     *                 volunteer decides (two real nests CAN be metres apart on a busy beach).
+     * Records pinned to a beach centre for lack of GPS are excluded from the distance test — they
+     * all share one coordinate, so they'd all look like duplicates of each other.
+     */
+    fun findDuplicate(point: GeoPoint, photoHash: String?, hasFix: Boolean): DuplicateHit? {
+        val nests = _state.value.nests
+        if (photoHash != null) {
+            nests.firstOrNull { n -> n.photos.any { it.hash == photoHash } }?.let {
+                return DuplicateHit(it, DuplicateReason.SAME_PHOTO, distanceMeters(point, it.point))
+            }
+        }
+        if (!hasFix) return null
+        return nests
+            .filter { it.locationSource != LocationSource.NONE }
+            .map { it to distanceMeters(point, it.point) }
+            .filter { (_, d) -> d <= DUPLICATE_RADIUS_M }
+            .minByOrNull { (_, d) -> d }
+            ?.let { (n, d) -> DuplicateHit(n, DuplicateReason.SAME_SPOT, d) }
     }
 
     fun addSimpleMarker(type: MarkerType, point: GeoPoint, note: String) {
@@ -528,9 +678,12 @@ class CarettaRepository {
         condition: ObsCondition? = null,
         obsDate: LocalDate? = null,
         photoPath: String? = null,
+        photoHash: String? = null,
     ) {
         val backDate = obsDate?.takeIf { it != today() }
-        val photo = photoPath?.let { PhotoRef(nextId("ph"), PhotoSource.GALLERY, localUri = it) }
+        val photo = photoPath?.let { PhotoRef(nextId("ph"), PhotoSource.GALLERY, localUri = it, hash = photoHash) }
+        val me = _state.value.profile.displayName
+        val owner = myUserId()
         update(nestId) { n ->
             // Observing "hatching / hatched" advances the nest's lifecycle — otherwise a nest sits on
             // INCUBATING forever and the countdown / "hatching" filter / hatch payoff never resolve.
@@ -549,6 +702,8 @@ class CarettaRepository {
                     kind = kind,
                     condition = condition,
                     body = body,
+                    author = me,
+                    authorUserId = owner,
                     createdEpochMillis = nowMillis(),
                     dateLabel = "Today",
                     obsDate = backDate,
@@ -567,19 +722,31 @@ class CarettaRepository {
     }
 
     fun setStatus(nestId: String, status: NestStatus, comment: String = "") {
+        val me = _state.value.profile.displayName
+        val owner = myUserId()
         update(nestId) { n ->
-            val upd = n.updates + NestUpdate(nextId("u"), UpdateKind.STATUS_CHANGE, newStatus = status, body = comment, dateLabel = "Today")
+            val upd = n.updates + NestUpdate(
+                nextId("u"), UpdateKind.STATUS_CHANGE, newStatus = status, body = comment,
+                author = me, authorUserId = owner, createdEpochMillis = nowMillis(), dateLabel = "Today",
+            )
             n.copy(status = status, updates = upd)
         }
     }
 
     fun setExcavation(nestId: String, exc: Excavation) {
         val before = _state.value.nest(nestId)
+        val me = _state.value.profile.displayName
+        val owner = myUserId()
         update(nestId) { n ->
             n.copy(
                 status = NestStatus.EXCAVATED,
                 excavation = exc,
-                updates = n.updates + NestUpdate(nextId("u"), UpdateKind.EXCAVATED, body = "Excavated · ${exc.hatchSuccessPct ?: 0}% hatch success", dateLabel = "Today"),
+                updates = n.updates + NestUpdate(
+                    nextId("u"), UpdateKind.EXCAVATED,
+                    body = "Excavated · ${exc.hatchSuccessPct ?: 0}% hatch success",
+                    author = me, authorUserId = owner,
+                    createdEpochMillis = nowMillis(), dateLabel = "Today",
+                ),
             )
         }
         // credit hatchlings to the volunteer's impact
@@ -695,7 +862,9 @@ private fun seedState(): AppState {
             Badge("season50", "👑", "Season 50", false),
         ),
         profile = Profile(
-            displayName = "Volunteer", avatar = "🐢", role = "Guardian",
+            // A guardian name instead of the shared literal "Volunteer": every install had the same
+            // one, so nobody could tell whose find a nest was. Replaceable in the profile.
+            displayName = randomGuardianName(systemLanguage()), avatar = "🐢", role = "Guardian",
             // Open in the phone's language — most volunteers here are Turkish-speaking and should
             // not have to hunt for the language picker. Their own pick is persisted and wins after.
             language = systemLanguage(),

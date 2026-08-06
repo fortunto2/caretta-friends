@@ -226,9 +226,15 @@ class SupabaseCloud(private val auth: AuthBackend) : CloudBackend {
         selectLive<BeachRow>("beach")
             .mapNotNull { runCatching { cloudJson.decodeFromJsonElement(Beach.serializer(), it.payload) }.getOrNull() }
 
+    /** The row's `owner_id` is the authoritative "who logged this" — it's set server-side from the
+     *  JWT and exists for every nest ever synced, including the ones recorded before the client
+     *  started stamping [Nest.foundByUserId]. Lift it onto the aggregate so "my nests" works on
+     *  historic data instead of guessing from display names. */
     override suspend fun pullNests(): List<Nest> =
-        selectLive<NestRow>("nests")
-            .mapNotNull { runCatching { cloudJson.decodeFromJsonElement(Nest.serializer(), it.payload) }.getOrNull() }
+        selectLive<NestRow>("nests").mapNotNull { row ->
+            runCatching { cloudJson.decodeFromJsonElement(Nest.serializer(), row.payload) }.getOrNull()
+                ?.let { it.copy(foundByUserId = row.ownerId ?: it.foundByUserId) }
+        }
 
     override suspend fun pullMarkers(): List<SimpleMarker> =
         selectLive<MarkerRow>("markers")

@@ -21,7 +21,6 @@ import com.carettafriends.ui.components.NavItem
 import com.carettafriends.ui.screens.AddNestScreen
 import com.carettafriends.ui.screens.BeachDetailScreen
 import com.carettafriends.ui.screens.BeachesScreen
-import com.carettafriends.ui.screens.CameraScreen
 import com.carettafriends.ui.screens.CommunityScreen
 import com.carettafriends.ui.screens.ExcavationScreen
 import com.carettafriends.ui.screens.LearnScreen
@@ -80,6 +79,7 @@ fun CarettaApp() {
                             onOpenCommunity = { nav.go(Screen.Community(it)) },
                             focus = state.mapFocus,
                             onFocusConsumed = { repo.takeMapFocus() },
+                            repo = repo,
                         )
                         is Screen.Beaches -> BeachesScreen(
                             state,
@@ -97,10 +97,11 @@ fun CarettaApp() {
                         )
                         is Screen.Stats -> StatsScreen(state) { nav.back() }
                         is Screen.AddNest -> AddNestScreen(
-                            repo, state, { nav.back() }, { nav.go(Screen.Camera) },
+                            // Android captures in-place via the system camera (rememberCameraCapture),
+                            // so there is no separate camera route to push here.
+                            repo, state, { nav.back() }, onCamera = {},
                             onNestSaved = { nav.back(); nav.go(Screen.NestDetail(it)) },
                         )
-                        is Screen.Camera -> CameraScreen(state.profile.language, { nav.back() }, { nav.back() })
                         is Screen.Community -> CommunityScreen(
                             state.communityOrPrimary(current.communityId), state,
                             onBack = { nav.back() },

@@ -1,5 +1,6 @@
 package com.carettafriends.data
 
+import okio.ByteString.Companion.toByteString
 import okio.FileSystem
 import okio.Path.Companion.toPath
 
@@ -51,3 +52,14 @@ object LocalStore {
         null
     }
 }
+
+/**
+ * Content identity of an image file — `"md5:<hex>"`, or null if it can't be read.
+ *
+ * Used to notice that the volunteer just picked the SAME photo again (which otherwise silently
+ * created a second nest). Valid only for files copied byte-for-byte from the original: the gallery
+ * pickers do that, while the iOS camera re-encodes with a burned-in overlay and passes the source
+ * asset's id instead.
+ */
+fun photoFingerprint(absPath: String): String? =
+    LocalStore.readBytesAbs(absPath)?.let { "md5:" + it.toByteString().md5().hex() }

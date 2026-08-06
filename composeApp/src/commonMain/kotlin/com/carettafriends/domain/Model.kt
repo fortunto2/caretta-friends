@@ -31,6 +31,12 @@ enum class ProtectionLevel { NONE, MARKED, CAGED }
 @Serializable
 data class GeoPoint(val lat: Double, val lng: Double)
 
+/** The stand-in names every install starts with. They identify nobody, so they must never be used
+ *  to decide who a nest belongs to (that bug put strangers' nests in everyone's profile). */
+private val PLACEHOLDER_NAMES = setOf("you", "volunteer", "anonymous", "гость", "gönüllü")
+
+fun isPlaceholderName(name: String): Boolean = name.trim().lowercase() in PLACEHOLDER_NAMES
+
 @Serializable
 data class Community(
     val id: String,
@@ -109,6 +115,11 @@ data class PhotoRef(
     val placeholder: String = "🥚", // emoji stand-in when no image
     val exifLat: Double? = null,
     val exifLng: Double? = null,
+    /** Opaque identity of the ORIGINAL image ("md5:…" on Android, "asset:…" on iOS), so re-picking
+     *  the same photo is recognized as a duplicate instead of creating a second nest. The file on
+     *  disk can't be hashed for this — iOS re-encodes every import (burned-in overlay) and Android
+     *  copies to a fresh path, so both give a different file each time. */
+    val hash: String? = null,
 )
 
 /** A simple non-nest marker (landmark / trash / violation / ...). */
@@ -139,6 +150,9 @@ data class NestUpdate(
     val newStatus: NestStatus? = null,
     val body: String = "",
     val author: String = "you",
+    /** Stable identity of the author (auth uid) — [author] is only a display name and every install
+     *  starts with the same default, so names can't tell two volunteers apart. */
+    val authorUserId: String? = null,
     val createdEpochMillis: Long = 0L,
     val dateLabel: String = "",
     /** The real date this update REFERS to (back-datable — "found 3 days ago, photo arrived today").
@@ -204,6 +218,10 @@ data class Nest(
     val excavation: Excavation? = null,
     val temps: List<TemperatureReading> = emptyList(),
     val foundBy: String = "you",
+    /** Who found it, as a STABLE id (Supabase auth uid = the row's owner_id). [foundBy] is a display
+     *  name and defaults to the same "Volunteer" on every install, so it can't identify anyone —
+     *  this is what "my nests" is filtered by. Null on rows recorded before this field existed. */
+    val foundByUserId: String? = null,
     /** Client-side change clock for last-write-wins merge (scalars LWW, timeline union). Server has its own updated_at. */
     val updatedAtMillis: Long = 0L,
 )
@@ -243,6 +261,8 @@ data class Member(
     /** One public link a member can share — Instagram, blog or website (tappable). Groundwork for
      *  richer contacts / inter-community messaging later; empty = nothing shown. */
     val link: String = "",
+    /** Auth uid, when known — lets their nests be found by owner instead of by display name. */
+    val userId: String? = null,
 )
 
 @Serializable
@@ -250,6 +270,9 @@ data class Profile(
     val displayName: String = "You",
     val avatar: String = "🐢",
     val role: String = "Volunteer",
+    /** True once the volunteer typed their own name. Until then [displayName] is the shared default
+     *  ("Volunteer"), which identifies nobody — the profile nudges them to set a real one. */
+    val nameSet: Boolean = false,
     val language: String = "en",
     /** True once the volunteer picks a language themselves. Until then the app follows the phone's
      *  language on every launch, so changing it in iOS Settings (or Android system settings) works. */
@@ -272,6 +295,12 @@ data class Profile(
     val watchedNestIds: Set<String> = emptySet(),
     /** First-run onboarding seen? false → show the 3-page intro once. */
     val onboarded: Boolean = false,
+    /** Current auth uid (anonymous or email account). The identity everything is attributed to. */
+    val userId: String? = null,
+    /** EVERY uid this device has signed in as. An anonymous volunteer who later saves their account
+     *  under an email — or signs into an existing one — must keep seeing the nests they already
+     *  logged, so ownership is a set, not one id. */
+    val knownUserIds: Set<String> = emptySet(),
 ) {
     /** Excavating a nest is delicate → only experienced volunteers, beach leaders and admins. */
     val canExcavate: Boolean
@@ -332,7 +361,17 @@ data class AppState(
             avatar = profile.avatar,
             homeBeach = profile.homeBeachId?.let { beach(it)?.name },
             link = profile.link,
+            userId = profile.userId,
         )
+
+    /** Every auth uid that is me (anonymous first run → linked email → a later sign-in). */
+    val myUserIds: Set<String>
+        get() = profile.knownUserIds + setOfNotNull(profile.userId)
+
+    /** Is this nest mine? Owner id when the record has one, display name only as a legacy fallback. */
+    fun isMine(n: Nest): Boolean =
+        if (n.foundByUserId != null) n.foundByUserId in myUserIds
+        else !isPlaceholderName(n.foundBy) && n.foundBy.equals(profile.displayName, ignoreCase = true)
 
     /** Resolve a person reference — a [Member] id, a stored name (nest.foundBy / update.author /
      *  beach.leaderName), or "you" — to a [Member]. Unknown names synthesize a bare volunteer so the
@@ -344,10 +383,18 @@ data class AppState(
         return Member(id = key, name = key, role = MemberRole.VOLUNTEER)
     }
 
-    /** Nests this member found (matched by name; "you" also matches the default "you" author). */
+    /**
+     * Nests this member found. Matched by OWNER ID, never by display name alone: every install
+     * starts as "Volunteer" and every timeline entry as "you", so name matching handed one
+     * volunteer everybody else's nests while their own (logged under a since-changed name) went
+     * missing. Names still resolve legacy rows that carry no owner id — but only real ones.
+     */
     fun nestsBy(m: Member): List<Nest> = nests.filter { n ->
-        if (m.id == "you") n.foundBy == "you" || n.foundBy.equals(profile.displayName, ignoreCase = true)
-        else n.foundBy.equals(m.name, ignoreCase = true)
+        when {
+            m.id == "you" -> isMine(n)
+            m.userId != null && n.foundByUserId != null -> n.foundByUserId == m.userId
+            else -> !isPlaceholderName(n.foundBy) && n.foundBy.equals(m.name, ignoreCase = true)
+        }
     }
 
     /** Badges a member has earned, derived from their nest activity (V1 keeps no per-member badge store). */

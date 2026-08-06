@@ -289,6 +289,22 @@ class AppStrings(private val m: Map<String, String>, val months: List<String>) {
     val moreDetails: String get() = m.getValue("moreDetails")
     val addPhotoBtn: String get() = m.getValue("addPhotoBtn")
     val noteHint: String get() = m.getValue("noteHint")
+
+    // Duplicate guard — the same photo / the same patch of sand already has a nest.
+    val dupPhotoTitle: String get() = m.getValue("dupPhotoTitle")
+    val dupPhotoBody: String get() = m.getValue("dupPhotoBody")
+    val dupSpotTitle: String get() = m.getValue("dupSpotTitle")
+    val dupSpotBody: String get() = m.getValue("dupSpotBody")
+    val dupAddTo: String get() = m.getValue("dupAddTo")
+    val dupOpen: String get() = m.getValue("dupOpen")
+    val dupSaveAnyway: String get() = m.getValue("dupSaveAnyway")
+    val noGpsWarn: String get() = m.getValue("noGpsWarn")
+
+    // Profile — "my nests" and the name nudge.
+    val myNests: String get() = m.getValue("myNests")
+    val myNestsEmpty: String get() = m.getValue("myNestsEmpty")
+    val nameNudge: String get() = m.getValue("nameNudge")
+    val settingsTitle: String get() = m.getValue("settingsTitle")
 }
 
 private fun enStrings() = AppStrings(
@@ -571,6 +587,18 @@ private fun enStrings() = AppStrings(
         "moreDetails" to "More details",
         "addPhotoBtn" to "📷 Add photo",
         "noteHint" to "Add a note (optional)",
+        "dupPhotoTitle" to "You've already added this photo",
+        "dupPhotoBody" to "This exact photo is already on a nest. Add it there as a new observation instead of creating a second nest.",
+        "dupSpotTitle" to "A nest is already marked here",
+        "dupSpotBody" to "There's a nest a few metres away. If it's the same one, add your photo to it.",
+        "dupAddTo" to "📷 Add photo to %s",
+        "dupOpen" to "Open %s",
+        "dupSaveAnyway" to "It's a different nest — save it",
+        "noGpsWarn" to "⚠️ This photo has no location — the nest will sit on the beach centre. Photograph it on site for exact coordinates.",
+        "myNests" to "My nests",
+        "myNestsEmpty" to "Photograph a nest and it appears here.",
+        "nameNudge" to "Add your name — your finds get credited to you",
+        "settingsTitle" to "Settings",
     ),
     months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
 )
@@ -855,6 +883,18 @@ private fun ruStrings() = AppStrings(
         "moreDetails" to "Подробнее",
         "addPhotoBtn" to "📷 Добавить фото",
         "noteHint" to "Заметка (необязательно)",
+        "dupPhotoTitle" to "Это фото вы уже добавляли",
+        "dupPhotoBody" to "Ровно это фото уже есть у гнезда. Добавьте его туда как новое наблюдение, вместо второго гнезда.",
+        "dupSpotTitle" to "Здесь уже отмечено гнездо",
+        "dupSpotBody" to "В нескольких метрах уже есть гнездо. Если это оно же — добавьте фото к нему.",
+        "dupAddTo" to "📷 Добавить фото к %s",
+        "dupOpen" to "Открыть %s",
+        "dupSaveAnyway" to "Это другое гнездо — сохранить",
+        "noGpsWarn" to "⚠️ В фото нет координат — гнездо встанет в центре пляжа. Снимите его на месте, чтобы координаты были точными.",
+        "myNests" to "Мои гнёзда",
+        "myNestsEmpty" to "Сфотографируйте гнездо — оно появится здесь.",
+        "nameNudge" to "Укажите имя — находки будут подписаны вами",
+        "settingsTitle" to "Настройки",
     ),
     months = listOf("янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"),
 )
@@ -1139,6 +1179,18 @@ private fun trStrings() = AppStrings(
         "moreDetails" to "Daha fazla",
         "addPhotoBtn" to "📷 Fotoğraf ekle",
         "noteHint" to "Not ekle (isteğe bağlı)",
+        "dupPhotoTitle" to "Bu fotoğrafı zaten eklediniz",
+        "dupPhotoBody" to "Tam olarak bu fotoğraf bir yuvada mevcut. İkinci bir yuva açmak yerine oraya yeni gözlem olarak ekleyin.",
+        "dupSpotTitle" to "Burada zaten bir yuva işaretli",
+        "dupSpotBody" to "Birkaç metre ötede bir yuva var. Aynı yuvaysa fotoğrafınızı ona ekleyin.",
+        "dupAddTo" to "📷 Fotoğrafı %s yuvasına ekle",
+        "dupOpen" to "%s yuvasını aç",
+        "dupSaveAnyway" to "Bu farklı bir yuva — kaydet",
+        "noGpsWarn" to "⚠️ Fotoğrafta konum yok — yuva plajın merkezine düşecek. Kesin koordinat için yerinde fotoğraflayın.",
+        "myNests" to "Yuvalarım",
+        "myNestsEmpty" to "Bir yuva fotoğraflayın, burada görünsün.",
+        "nameNudge" to "Adınızı ekleyin — bulduklarınız size yazılsın",
+        "settingsTitle" to "Ayarlar",
     ),
     months = listOf("Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"),
 )

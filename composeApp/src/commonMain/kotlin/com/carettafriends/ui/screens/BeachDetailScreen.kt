@@ -94,23 +94,37 @@ fun BeachDetailScreen(
                 )
             }
 
-            // stats
+            // stats — four tiles reading "0 0 0 0" told a volunteer nothing; show what exists.
+            val stats = buildList {
+                add("${nests.size}" to s.nestsWord)
+                if (active > 0) add("$active" to s.activeWord)
+                if (hatched > 0) add("$hatched" to s.hatchedWord)
+                if (hatchlings > 0) add("$hatchlings" to s.toSea)
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatCard("${nests.size}", s.nestsWord, Modifier.weight(1f))
-                StatCard("$active", s.activeWord, Modifier.weight(1f))
-                StatCard("$hatched", s.hatchedWord, Modifier.weight(1f))
-                StatCard("$hatchlings", s.toSea, Modifier.weight(1f))
+                stats.forEach { (value, label) -> StatCard(value, label, Modifier.weight(1f)) }
             }
 
-            // feed
+            // Nests, ordered by what needs a volunteer TODAY: hatching now, then close to hatching,
+            // then quietly incubating, and finished ones last. Sorting by "last edited" put a nest
+            // someone had just commented on above one that was actively hatching.
             SectionLabel(s.feed)
             if (nests.isEmpty()) {
                 Text(s.noNestsHereBeFirst, color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
             } else {
-                nests.forEach { nest -> FeedItem(nest, s, onOpenNest) }
+                nests.sortedWith(compareBy({ urgency(it) }, { -it.updatedAtMillis }))
+                    .forEach { nest -> NestListItem(nest, s, onOpenNest) }
             }
         }
     }
+}
+
+/** Sort key: 0 = hatching right now … 3 = finished. Mirrors the map's phase colours. */
+private fun urgency(nest: Nest): Int = when (com.carettafriends.data.nestMapPhase(nest)) {
+    "emerging" -> 0
+    "soon" -> 1
+    "incubating" -> 2
+    else -> 3
 }
 
 @Composable
@@ -128,8 +142,10 @@ private fun StatCard(value: String, label: String, modifier: Modifier = Modifier
     }
 }
 
+/** One nest in a list: photo, code, status and the latest thing that happened to it. Shared by the
+ *  beach feed and the profile's "my nests" — a nest should look the same wherever it's listed. */
 @Composable
-private fun FeedItem(nest: Nest, s: AppStrings, onOpenNest: (String) -> Unit) {
+internal fun NestListItem(nest: Nest, s: AppStrings, onOpenNest: (String) -> Unit) {
     val c = caretta
     val last = nest.updates.lastOrNull()
     Row(

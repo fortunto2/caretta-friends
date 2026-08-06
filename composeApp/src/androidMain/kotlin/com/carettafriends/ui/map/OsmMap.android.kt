@@ -84,6 +84,7 @@ actual fun OsmMap(
     onCommunityTap: (String) -> Unit,
     focus: com.carettafriends.domain.GeoPoint?,
     onFocusConsumed: () -> Unit,
+    recenterTick: Int,
 ) {
     val ctx = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -208,6 +209,18 @@ actual fun OsmMap(
         if (map != null && focus != null) {
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(focus.lat, focus.lng), 17.0))
             onFocusConsumed()
+        }
+    }
+
+    // "Locate me" — one camera move to the puck's position. Deliberately NOT a camera mode that
+    // follows the user: the volunteer is usually panning the beach while walking it, and a camera
+    // that keeps snapping back fights them.
+    LaunchedEffect(recenterTick) {
+        if (recenterTick > 0) {
+            val me = runCatching { map?.locationComponent?.lastKnownLocation }.getOrNull()
+            if (me != null) {
+                map?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(me.latitude, me.longitude), 17.0))
+            }
         }
     }
 }

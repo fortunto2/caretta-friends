@@ -38,8 +38,12 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.carettafriends.content.appStrings
 import com.carettafriends.data.CarettaRepository
+import com.carettafriends.data.DuplicateHit
+import com.carettafriends.data.DuplicateReason
 import com.carettafriends.data.MAX_BACKDATE_DAYS
 import com.carettafriends.data.today
+import com.carettafriends.domain.UpdateKind
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.daysUntil
 import kotlinx.datetime.minus
@@ -62,8 +66,12 @@ import com.carettafriends.ui.components.LocalPhoto
 import com.carettafriends.ui.components.Pill
 import com.carettafriends.ui.components.PrimaryButton
 import com.carettafriends.ui.components.SectionLabel
+import com.carettafriends.ui.DialogAction
+import com.carettafriends.ui.DialogStyle
 import com.carettafriends.ui.PickedPhoto
+import com.carettafriends.ui.PlatformChoiceDialog
 import com.carettafriends.ui.components.TopBar
+import com.carettafriends.ui.rememberCameraCapture
 import com.carettafriends.ui.rememberGalleryPicker
 import com.carettafriends.ui.theme.caretta
 
@@ -80,21 +88,29 @@ fun AddNestScreen(
 
     // Photo captured by the native camera (iOS) lands here, prefilling the form.
     val pending = remember { repo.takePendingPhoto() }
-    // Nest location comes ONLY from the photo's GPS (EXIF) — nests are created by photographing
-    // them on-site, never dropped by hand (avoids spam / bogus pins).
-    val fixPoint = remember(pending) {
-        pending?.let { if (it.lat != null && it.lng != null) GeoPoint(it.lat, it.lng) else null }
-    }
     var markerType by remember { mutableStateOf(MarkerType.NEST) }
     var isNest by remember { mutableStateOf(true) }
-    // Gallery pick attaches a REAL photo file (was a no-op flag before). Location still comes from the
-    // native camera's EXIF only — a gallery import has no reliable GPS, so it falls back to the beach.
+    // Gallery pick attaches a REAL photo file — WITH its EXIF location. Photos taken on a phone carry
+    // a GPS fix, and dropping it (as this screen used to) silently pinned imported nests to the beach
+    // centre, which is how several nests ended up stacked on one coordinate.
     var galleryPhoto by remember { mutableStateOf<PickedPhoto?>(null) }
     val galleryPick = rememberGalleryPicker { picked -> if (picked != null) galleryPhoto = picked }
+    // Android captures through the system camera right here; iOS returns null and routes to its own
+    // native camera screen via [onCamera].
+    val cameraCapture = rememberCameraCapture { shot -> if (shot != null) galleryPhoto = shot }
     val photoPath = pending?.path ?: galleryPhoto?.path
     val hasPhoto = photoPath != null
+    val photoHash = pending?.hash ?: galleryPhoto?.hash
+    // Nest location comes ONLY from the photo's GPS (EXIF) — nests are created by photographing
+    // them on-site, never dropped by hand (avoids spam / bogus pins).
+    val fixPoint = remember(pending, galleryPhoto) {
+        val lat = pending?.lat ?: galleryPhoto?.lat
+        val lng = pending?.lng ?: galleryPhoto?.lng
+        if (lat != null && lng != null) GeoPoint(lat, lng) else null
+    }
     var exposure by remember { mutableStateOf(SunExposure.PARTIAL) }
     var beachManual by remember { mutableStateOf(false) }
+    var pickingBeach by remember { mutableStateOf(false) }
     var showDetails by remember { mutableStateOf(false) }
     var protection by remember { mutableStateOf(ProtectionLevel.NONE) }
     var visibility by remember { mutableStateOf(Visibility.PUBLIC) }
@@ -104,6 +120,8 @@ fun AddNestScreen(
     var fullscreen by remember { mutableStateOf(false) }
     var noteText by remember { mutableStateOf("") }
     var foundDate by remember { mutableStateOf(com.carettafriends.data.today()) }
+    // A nest this one looks like a repeat of — set on save, resolved by the volunteer.
+    var duplicate by remember { mutableStateOf<DuplicateHit?>(null) }
     val isViolation = markerType == MarkerType.VIOLATION
     // Turtles nest on beaches → bind every nest to a beach (→ community). Default = nearest to the
     // photo location; the volunteer can override. Falls back to the first beach when there's no fix.
@@ -121,6 +139,19 @@ fun AddNestScreen(
 
     // Violations default to private (hidden from guests) — protects volunteers from retaliation.
     LaunchedEffect(markerType) { if (markerType == MarkerType.VIOLATION) visibility = Visibility.PRIVATE }
+
+    // A photo picked AFTER the screen opened brings its own location and capture date — re-home the
+    // nest on the beach it was actually taken on, and back-date it to the day it was shot.
+    LaunchedEffect(fixPoint) {
+        if (fixPoint != null && !beachManual) {
+            nearestBeach(fixPoint, state.beaches)?.first?.let { selectedBeach = it }
+        }
+    }
+    LaunchedEffect(galleryPhoto) {
+        val shot = galleryPhoto?.exifEpochMillis?.let { exifDate(it) } ?: return@LaunchedEffect
+        val oldest = today().minus(DatePeriod(days = MAX_BACKDATE_DAYS))
+        if (shot in oldest..today()) foundDate = shot
+    }
 
     Column(Modifier.fillMaxSize()) {
         TopBar(s.newMarker, onBack = onDone)
@@ -195,32 +226,57 @@ fun AddNestScreen(
                     if (fixPoint != null) Pill(s.confirmed, c.good) else Pill(s.unconfirmed, c.muted)
                 }
             }
+            // Without a fix the pin lands on the beach's centre point, not on the nest. Say so —
+            // silently doing it stacked several nests on one coordinate.
+            if (fixPoint == null && markerType == MarkerType.NEST) {
+                Text(s.noGpsWarn, color = c.coral, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+            }
 
-            // ── Beach — auto-detected from the location; manual pick only if unrecognized ──
+            // ── Beach — ONE auto-picked beach with "change" beside it. A full inline list of every
+            //    beach pushed the rest of the form off-screen and made a smart default look like a
+            //    decision the volunteer had to make; the list now lives behind "change".
             SectionLabel(s.beachWord)
             val autoDetected = fixPoint != null && nearestDist != null && nearestDist <= 1500
-            if (autoDetected && !beachManual) {
-                Box(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.surface)
-                        .border(1.dp, c.line, RoundedCornerShape(14.dp)).padding(14.dp),
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("📍", fontSize = 18.sp)
-                        Column(Modifier.weight(1f)) {
-                            Text(selectedBeach.name, color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
-                            Text("${s.detectedFrom} · ${nearestDist!!.toInt()} m", color = c.muted, fontSize = 11.sp)
-                        }
-                        Text(s.changePlain, color = c.sea, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
-                            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { beachManual = true }.padding(6.dp))
+            Box(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.surface)
+                    .border(1.dp, c.line, RoundedCornerShape(14.dp)).padding(14.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("📍", fontSize = 18.sp)
+                    Column(Modifier.weight(1f)) {
+                        Text(selectedBeach.name, color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
+                        Text(
+                            when {
+                                beachManual -> selectedBeach.city
+                                autoDetected -> "${s.detectedFrom} · ${nearestDist!!.toInt()} m"
+                                fixPoint == null -> s.noLocationYet
+                                else -> s.notRecognizedBeach
+                            },
+                            color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 2,
+                        )
                     }
+                    Text(
+                        s.changePlain, color = c.sea, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { pickingBeach = true }.padding(6.dp),
+                    )
                 }
-            } else {
-                if (fixPoint == null) {
-                    Text(s.noLocationYet, color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                } else if (nearestDist != null && nearestDist > 1500) {
-                    Text(s.notRecognizedBeach, color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
-                BeachPicker(state.beaches, selectedBeach, fixPoint) { selectedBeach = it; beachManual = true }
+            }
+            if (pickingBeach) {
+                // Nearest first — the right answer is almost always at the top of the list.
+                val ordered = fixPoint
+                    ?.let { p -> state.beaches.sortedBy { distanceMeters(p, it.center) } }
+                    ?: state.beaches
+                PlatformChoiceDialog(
+                    title = s.beachWord,
+                    actions = ordered.map { b ->
+                        val away = fixPoint?.let { " · ${distanceLabel(distanceMeters(it, b.center))}" }.orEmpty()
+                        DialogAction(
+                            title = (if (b.id == selectedBeach.id) "✓ " else "") + b.name + away,
+                            style = if (b.id == selectedBeach.id) DialogStyle.PRIMARY else DialogStyle.DEFAULT,
+                        ) { selectedBeach = b; beachManual = true }
+                    } + DialogAction(s.cancel, DialogStyle.CANCEL),
+                    onDismiss = { pickingBeach = false },
+                )
             }
 
             // ── Details (optional) ─────────────────────────────────────
@@ -295,6 +351,26 @@ fun AddNestScreen(
             isNest -> s.saveNest
             else -> s.saveFalseCrawl
         }
+        // Open the just-created nest so you can act on it right away (add updates, excavate).
+        val saveNest = {
+            onNestSaved(
+                repo.addNest(
+                    point = shownPoint,
+                    beachId = selectedBeach.id,
+                    isNest = isNest,
+                    exposure = exposure,
+                    protection = protection,
+                    clutchSizeEst = null,
+                    hasPhoto = hasPhoto,
+                    photoPath = photoPath,
+                    locationSource = if (fixPoint != null) LocationSource.PHOTO_EXIF else LocationSource.NONE,
+                    visibility = visibility,
+                    foundDate = foundDate,
+                    note = noteText,
+                    photoHash = photoHash,
+                ),
+            )
+        }
         Box(Modifier.fillMaxWidth().padding(horizontal = 15.dp).padding(top = 8.dp, bottom = 14.dp)) {
             PrimaryButton(saveLabel) {
                 if (isViolation) {
@@ -311,38 +387,55 @@ fun AddNestScreen(
                     repo.addSimpleMarker(MarkerType.TRASH, shownPoint, "")
                     onDone()
                 } else {
-                    // Open the just-created nest so you can act on it right away (add updates, excavate).
-                    val newId = repo.addNest(
-                        point = shownPoint,
-                        beachId = selectedBeach.id,
-                        isNest = isNest,
-                        exposure = exposure,
-                        protection = protection,
-                        clutchSizeEst = null,
-                        hasPhoto = hasPhoto,
-                        photoPath = photoPath,
-                        locationSource = if (fixPoint != null) LocationSource.PHOTO_EXIF else LocationSource.NONE,
-                        visibility = visibility,
-                        foundDate = foundDate,
-                        note = noteText,
-                    )
-                    onNestSaved(newId)
+                    // The same photo sent twice, or a nest already marked on this patch of sand →
+                    // ask instead of quietly minting a second record for one nest.
+                    val hit = repo.findDuplicate(shownPoint, photoHash, hasFix = fixPoint != null)
+                    if (hit == null) saveNest() else duplicate = hit
                 }
             }
         }
 
-        // Photo source chooser — one entry point, pick camera or gallery.
+        // Duplicate found — offer to fold this photo into the existing nest (the usual right answer)
+        // before allowing a second nest to be created.
+        duplicate?.let { hit ->
+            val samePhoto = hit.reason == DuplicateReason.SAME_PHOTO
+            PlatformChoiceDialog(
+                title = if (samePhoto) s.dupPhotoTitle else s.dupSpotTitle,
+                message = (if (samePhoto) s.dupPhotoBody else s.dupSpotBody) +
+                    "\n\n${hit.nest.code} · ${distanceLabel(hit.distanceM)}",
+                actions = listOf(
+                    DialogAction(s.dupAddTo.replace("%s", hit.nest.code), DialogStyle.PRIMARY) {
+                        if (photoPath != null || noteText.isNotBlank()) {
+                            repo.addUpdate(
+                                nestId = hit.nest.id,
+                                kind = UpdateKind.OBSERVATION,
+                                body = noteText.trim(),
+                                obsDate = foundDate,
+                                photoPath = photoPath,
+                                photoHash = photoHash,
+                            )
+                        }
+                        onNestSaved(hit.nest.id)
+                    },
+                    DialogAction(s.dupOpen.replace("%s", hit.nest.code)) { onNestSaved(hit.nest.id) },
+                    DialogAction(s.dupSaveAnyway) { saveNest() },
+                    DialogAction(s.cancel, DialogStyle.CANCEL),
+                ),
+                onDismiss = { duplicate = null },
+            )
+        }
+
+        // Photo source chooser — the OS's own sheet: this is a two-way choice, exactly what the
+        // platform dialog is for, and on iPhone a hand-drawn one reads as someone else's app.
         if (showPhotoMenu) {
-            AlertDialog(
-                onDismissRequest = { showPhotoMenu = false },
-                title = { Text(s.photo) },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        GhostButton(s.cameraBtn, Modifier.fillMaxWidth()) { showPhotoMenu = false; onCamera() }
-                        GhostButton(s.gallery, Modifier.fillMaxWidth()) { showPhotoMenu = false; galleryPick() }
-                    }
-                },
-                confirmButton = { TextButton(onClick = { showPhotoMenu = false }) { Text(s.cancel) } },
+            PlatformChoiceDialog(
+                title = s.photo,
+                actions = listOf(
+                    DialogAction(s.cameraBtn, DialogStyle.PRIMARY) { cameraCapture?.invoke() ?: onCamera() },
+                    DialogAction(s.gallery) { galleryPick() },
+                    DialogAction(s.cancel, DialogStyle.CANCEL),
+                ),
+                onDismiss = { showPhotoMenu = false },
             )
         }
 
@@ -360,6 +453,11 @@ fun AddNestScreen(
         }
     }
 }
+
+/** EXIF capture time → the local calendar date it was taken on. */
+private fun exifDate(millis: Long) =
+    kotlinx.datetime.Instant.fromEpochMilliseconds(millis)
+        .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date
 
 @Composable
 private fun StepBtn(label: String, onClick: () -> Unit) {

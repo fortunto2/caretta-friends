@@ -75,7 +75,10 @@ fun BeachesScreen(state: AppState, onOpenNest: (String) -> Unit, onOpenBeach: (S
                 } else {
                     state.beaches
                 }
-                val ordered = if (me != null) scoped.sortedBy { distanceMeters(me, it.center) } else scoped
+                val byDistance = if (me != null) scoped.sortedBy { distanceMeters(me, it.center) } else scoped
+                // Your own beach sits on top and is marked — on a list of a dozen look-alike cards,
+                // "which one is mine" was a hunt every time.
+                val ordered = byDistance.sortedByDescending { it.id == state.profile.homeBeachId }
                 if (ordered.isEmpty()) {
                     EmptyHint("🏖️", s.noBeachesInCity.replace("%s", cityScope.orEmpty()))
                 } else {
@@ -90,6 +93,7 @@ fun BeachesScreen(state: AppState, onOpenNest: (String) -> Unit, onOpenBeach: (S
                             hatched = nests.count { it.status == NestStatus.HATCHED || it.status == NestStatus.EXCAVATED },
                             patrolled = state.patrols.any { it.beachId == beach.id },
                             distanceAway = me?.let { distanceLabel(distanceMeters(it, beach.center)) },
+                            isHome = beach.id == state.profile.homeBeachId,
                             onOpenBeach = onOpenBeach,
                         )
                     }
@@ -179,12 +183,17 @@ private fun BeachListCard(
     hatched: Int,
     patrolled: Boolean,
     distanceAway: String?,
+    isHome: Boolean,
     onOpenBeach: (String) -> Unit,
 ) {
     val c = caretta
     val amber = Color(0xFFE0A82E)
     val accent = if (beach.protected) c.good else amber
-    CarettaCard(modifier = Modifier.clickable { onOpenBeach(beach.id) }) {
+    CarettaCard(
+        modifier = Modifier
+            .then(if (isHome) Modifier.border(1.5.dp, c.sea, RoundedCornerShape(18.dp)) else Modifier)
+            .clickable { onOpenBeach(beach.id) },
+    ) {
         Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 // thumbnail — protection-tinted (beach photo goes here once uploaded).
@@ -194,7 +203,10 @@ private fun BeachListCard(
                     contentAlignment = Alignment.Center,
                 ) { Text("🏖️", fontSize = 24.sp) }
                 Column(Modifier.weight(1f)) {
-                    Text(beach.name, color = c.deep, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text(beach.name, color = c.deep, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
+                        if (isHome) Pill("⭐ ${s.myBeach}", c.sea)
+                    }
                     Text(
                         buildString {
                             append(if (distanceAway != null) "$distanceAway ${s.awayWord}" else beach.city.ifBlank { s.beachWord })

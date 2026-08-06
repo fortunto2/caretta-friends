@@ -26,14 +26,18 @@ import ComposeApp
 
 // MARK: - Public entry point
 
-/// Full-screen native camera. Hand the result back via `onDone(imagePath, lat, lng)`.
+/// Full-screen native camera. Hand the result back via `onDone(imagePath, lat, lng, sourceId)`.
 /// `imagePath` is an absolute file path (JPEG in the app's Documents dir) with the
 /// overlay burned in AND GPS/timestamp written into EXIF. `lat`/`lng` are nil when
 /// no location was available.
+///
+/// `sourceId` is the Photos asset the image came from, or nil for a live capture. The app uses it
+/// to notice the same photo being imported twice — the file can't serve for that, since every
+/// import is re-encoded here with a fresh overlay and so has different bytes.
 struct CameraCaptureView: View {
 
     let author: String
-    let onDone: (_ imagePath: String, _ lat: Double?, _ lng: Double?) -> Void
+    let onDone: (_ imagePath: String, _ lat: Double?, _ lng: Double?, _ sourceId: String?) -> Void
     let onCancel: () -> Void
 
     @StateObject private var camera = CameraController()
@@ -68,7 +72,7 @@ struct CameraCaptureView: View {
         }
         .preferredColorScheme(.dark)
         .onAppear {
-            camera.onPhoto = { image in process(image, assetLocation: nil) }
+            camera.onPhoto = { image in process(image, assetLocation: nil, sourceId: nil) }
             camera.start()
             location.start()
             recents.load()
@@ -165,7 +169,7 @@ struct CameraCaptureView: View {
     private func pickRecent(_ asset: PHAsset) {
         recents.fullImage(for: asset) { image, assetLocation in
             guard let image else { return }
-            process(image, assetLocation: assetLocation)
+            process(image, assetLocation: assetLocation, sourceId: asset.localIdentifier)
         }
     }
 
@@ -176,13 +180,14 @@ struct CameraCaptureView: View {
                 let data = try? await item.loadTransferable(type: Data.self),
                 let image = UIImage(data: data)
             else { return }
-            // No PHAsset here -> use current device location for the burn.
-            await MainActor.run { process(image, assetLocation: nil) }
+            // No PHAsset here -> use current device location for the burn. The item still
+            // identifies the library asset, which is what the duplicate check needs.
+            await MainActor.run { process(image, assetLocation: nil, sourceId: item.itemIdentifier) }
         }
     }
 
     /// Burn overlay + write metadata off the main thread, then fire `onDone`.
-    private func process(_ image: UIImage, assetLocation: CLLocation?) {
+    private func process(_ image: UIImage, assetLocation: CLLocation?, sourceId: String?) {
         guard !isProcessing else { return }
         isProcessing = true
         let author = self.author
@@ -198,7 +203,7 @@ struct CameraCaptureView: View {
             DispatchQueue.main.async {
                 isProcessing = false
                 if let url {
-                    onDone(url.path, loc?.coordinate.latitude, loc?.coordinate.longitude)
+                    onDone(url.path, loc?.coordinate.latitude, loc?.coordinate.longitude, sourceId)
                 }
             }
         }

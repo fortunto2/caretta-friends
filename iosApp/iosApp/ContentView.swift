@@ -14,7 +14,6 @@ enum Route: Hashable {
     case nest(String)
     case excavation(String)
     case addNest
-    case camera
     case community(String)
     case beach(String)
     case stats
@@ -70,20 +69,11 @@ private func destinationView(_ route: Route, path: Binding<NavigationPath>, rout
             ComposeHost {
                 IosEntryKt.AddNestVC(
                     onDone: { path.wrappedValue.removeLast() },
-                    onCamera: { path.wrappedValue.append(Route.camera) },
+                    // Hand over to the REAL native camera (map tab owns it); it re-enters this
+                    // form with the captured photo. It used to push a mock viewfinder that could
+                    // not take a picture at all.
+                    onCamera: { router.startAddNest() },
                     onNestSaved: { id in path.wrappedValue.removeLast(); path.wrappedValue.append(Route.nest(id)) }
-                )
-            }
-        }
-    case .camera:
-        DetailScreen(fullBleed: true) {
-            ComposeHost {
-                IosEntryKt.CameraVC(
-                    onBack: { path.wrappedValue.removeLast() },
-                    onCaptured: {
-                        path.wrappedValue.removeLast()
-                        path.wrappedValue.append(Route.addNest)
-                    }
                 )
             }
         }
@@ -429,13 +419,14 @@ struct MapTab: View {
         .fullScreenCover(isPresented: $showCamera) {
             CameraCaptureView(
                 author: "You",
-                onDone: { imagePath, lat, lng in
+                onDone: { imagePath, lat, lng, sourceId in
                     showCamera = false
                     IosEntryKt.setPendingPhoto(
                         path: imagePath,
                         lat: lat ?? 0,
                         lng: lng ?? 0,
-                        hasLocation: lat != nil && lng != nil
+                        hasLocation: lat != nil && lng != nil,
+                        sourceId: sourceId ?? ""
                     )
                     if path.isEmpty { path.append(Route.addNest) }
                 },
