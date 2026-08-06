@@ -69,10 +69,9 @@ private func destinationView(_ route: Route, path: Binding<NavigationPath>, rout
             ComposeHost {
                 IosEntryKt.AddNestVC(
                     onDone: { path.wrappedValue.removeLast() },
-                    // Hand over to the REAL native camera (map tab owns it); it re-enters this
-                    // form with the captured photo. It used to push a mock viewfinder that could
-                    // not take a picture at all.
-                    onCamera: { router.startAddNest(fromForm: true) },
+                    // Present the camera OVER this form and hand the photo back into it. The form
+                    // stays exactly as the volunteer left it — note, date, beach and all.
+                    onCamera: { router.openCamera() },
                     onNestSaved: { id in path.wrappedValue.removeLast(); path.wrappedValue.append(Route.nest(id)) }
                 )
             }
@@ -420,10 +419,16 @@ struct MapTab: View {
             }
         }
         .onChange(of: router.startAddTick) { _ in
-            cameFromForm = router.startedFromForm
             // Global "+" (from any tab) → run the add-nest flow on THIS tab's stack: camera → form →
             // saved nest, all with the bottom tab bar visible. Reset to the map root for a clean start.
+            cameFromForm = false
             if !path.isEmpty { path = NavigationPath() }
+            showCamera = true
+        }
+        // The add-nest form asked for the camera: present it over whatever is on screen and leave
+        // the stack alone — the form is still there and picks the photo up from the shared state.
+        .onChange(of: router.openCameraTick) { _ in
+            cameFromForm = true
             showCamera = true
         }
         .fullScreenCover(isPresented: $showAR) {
@@ -444,16 +449,12 @@ struct MapTab: View {
                         hasLocation: lat != nil && lng != nil,
                         sourceId: sourceId ?? ""
                     )
-                    if path.isEmpty { path.append(Route.addNest) }
-                },
-                onCancel: {
-                    showCamera = false
-                    // Coming from the add-nest form, the camera reset the stack to open — landing
-                    // back on a bare map after "cancel" looks like the app threw the work away.
-                    // (The form's typed note/date are lost either way; the form itself comes back.)
-                    if cameFromForm { path.append(Route.addNest) }
+                    // Opened from a form that is still on the stack → it takes the photo itself.
+                    if !cameFromForm && path.isEmpty { path.append(Route.addNest) }
                     cameFromForm = false
-                }
+                },
+                // Cancel changes nothing: the form was never dismissed.
+                onCancel: { showCamera = false; cameFromForm = false }
             )
         }
         .alert(strings.patrolPublishTitle, isPresented: $showPublish) {
@@ -656,15 +657,11 @@ final class AppRouter: ObservableObject {
     /// Switch to the Map tab and request it to consume the pending map focus.
     func focusMap() { selection = .map; focusTick += 1 }
     /// Switch to the Map tab and start the add-a-nest flow there (camera → form → saved nest).
-    /// [fromForm] tells the map tab the camera was opened from an add-nest form, so cancelling
-    /// returns there instead of dropping the volunteer on the map.
-    private(set) var startedFromForm = false
+    func startAddNest() { selection = .map; startAddTick += 1 }
 
-    func startAddNest(fromForm: Bool = false) {
-        startedFromForm = fromForm
-        selection = .map
-        startAddTick += 1
-    }
+    /// The add-nest form wants the camera: raise it over the current screen, don't rebuild anything.
+    @Published var openCameraTick: Int = 0
+    func openCamera() { openCameraTick += 1 }
 
     init() {
         // Screenshot helper only: `SIMCTL_CHILD_CF_TAB=beaches|learn|profile` preselects a tab so

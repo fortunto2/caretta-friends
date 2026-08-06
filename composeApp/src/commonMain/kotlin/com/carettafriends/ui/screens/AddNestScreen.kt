@@ -88,8 +88,14 @@ fun AddNestScreen(
     val c = caretta
     val s = appStrings(state.profile.language)
 
-    // Photo captured by the native camera (iOS) lands here, prefilling the form.
-    val pending = remember { repo.takePendingPhoto() }
+    // Photo captured by the native camera (iOS) lands here, prefilling the form — including one
+    // taken while this form is already open, which is the ordinary case: open the form, realise you
+    // still need the picture, tap Camera. Reading it once at composition meant the screen had to be
+    // rebuilt to see it, and everything typed was lost.
+    var pending by remember { mutableStateOf(repo.takePendingPhoto()) }
+    LaunchedEffect(state.pendingPhoto) {
+        repo.takePendingPhoto()?.let { pending = it }
+    }
     var markerType by remember { mutableStateOf(MarkerType.NEST) }
     var isNest by remember { mutableStateOf(true) }
     // Gallery pick attaches a REAL photo file — WITH its EXIF location. Photos taken on a phone carry

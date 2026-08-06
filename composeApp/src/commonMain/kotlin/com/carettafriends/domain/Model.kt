@@ -31,6 +31,10 @@ enum class ProtectionLevel { NONE, MARKED, CAGED }
 @Serializable
 data class GeoPoint(val lat: Double, val lng: Double)
 
+/** A photo captured by the native camera, waiting to be attached — path, its GPS fix if the phone
+ *  had one, and the identity of the source image (for duplicate detection). */
+data class PendingPhotoRef(val path: String, val lat: Double?, val lng: Double?, val hash: String?)
+
 /** The stand-in names every install starts with. They identify nobody, so they must never be used
  *  to decide who a nest belongs to (that bug put strangers' nests in everyone's profile). */
 private val PLACEHOLDER_NAMES = setOf("you", "volunteer", "anonymous", "гость", "gönüllü")
@@ -349,6 +353,11 @@ data class AppState(
     /** One-shot "open add-update for this nest" request from the context-aware bottom "+" (B3). The
      *  nest detail on screen opens its AddUpdate dialog when this matches its id. Transient. */
     @Transient val addUpdateFor: String? = null,
+    /** A photo the native camera just handed over, waiting for the add-nest form to pick it up.
+     *  It lives in the state (not in a plain field) so a form ALREADY on screen sees it arrive —
+     *  otherwise iOS had to rebuild the screen to read it, throwing away everything typed so far.
+     *  Transient: a photo in flight must never survive a relaunch. */
+    @Transient val pendingPhoto: PendingPhotoRef? = null,
 ) {
     fun beach(id: String): Beach? = beaches.firstOrNull { it.id == id }
     fun nest(id: String): Nest? = nests.firstOrNull { it.id == id }

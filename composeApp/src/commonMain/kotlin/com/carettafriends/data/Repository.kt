@@ -23,6 +23,7 @@ import com.carettafriends.domain.NestStatus
 import com.carettafriends.domain.NestUpdate
 import com.carettafriends.domain.ObsCondition
 import com.carettafriends.domain.Patrol
+import com.carettafriends.domain.PendingPhotoRef
 import com.carettafriends.domain.PhotoRef
 import com.carettafriends.domain.PhotoSource
 import com.carettafriends.domain.Profile
@@ -448,9 +449,20 @@ class CarettaRepository {
     // (Replaces the old in-memory counter that reset to 1000 every launch → PK collisions → data loss.)
     private fun nextId(prefix: String) = newUuid()
 
-    /** Set by the native camera (iOS); consumed by the add-nest form to prefill photo + location. */
-    var pendingPhoto: PendingPhoto? = null
-    fun takePendingPhoto(): PendingPhoto? = pendingPhoto.also { pendingPhoto = null }
+    /** Set by the native camera (iOS); consumed by the add-nest form to prefill photo + location.
+     *  Goes through the state so a form already on screen reacts to it. */
+    fun setPendingPhoto(photo: PendingPhoto?) {
+        _state.value = _state.value.copy(
+            pendingPhoto = photo?.let { PendingPhotoRef(it.path, it.lat, it.lng, it.hash) },
+        )
+    }
+
+    /** Read-and-clear the photo waiting to be attached. */
+    fun takePendingPhoto(): PendingPhoto? {
+        val p = _state.value.pendingPhoto ?: return null
+        _state.value = _state.value.copy(pendingPhoto = null)
+        return PendingPhoto(p.path, p.lat, p.lng, p.hash)
+    }
 
     /** Request the map centre on [p] (e.g. from a nest's geo card). Reactive on Android (StateFlow),
      *  read as a snapshot on iOS. Transient in [AppState] — never persisted. */

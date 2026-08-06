@@ -186,11 +186,13 @@ fun publishPatrol(id: String) = SharedRepo.repo.publishPatrol(id)
  *  same photo would produce different bytes and slip past the duplicate check. Empty for a live
  *  capture, which is new by definition. */
 fun setPendingPhoto(path: String, lat: Double, lng: Double, hasLocation: Boolean, sourceId: String) {
-    SharedRepo.repo.pendingPhoto = PendingPhoto(
-        path = path,
-        lat = if (hasLocation) lat else null,
-        lng = if (hasLocation) lng else null,
-        hash = sourceId.takeIf { it.isNotBlank() }?.let { "asset:$it" },
+    SharedRepo.repo.setPendingPhoto(
+        PendingPhoto(
+            path = path,
+            lat = if (hasLocation) lat else null,
+            lng = if (hasLocation) lng else null,
+            hash = sourceId.takeIf { it.isNotBlank() }?.let { "asset:$it" },
+        ),
     )
 }
 
