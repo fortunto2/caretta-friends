@@ -438,7 +438,11 @@ private fun TimelineRow(u: NestUpdate, body: String, s: AppStrings, onOpenMember
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             // Attached photo (builds the nest's photo history over time).
             u.photo?.localUri?.let { uri ->
-                LocalPhoto(uri, Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(13.dp)))
+                LocalPhoto(
+                    uri,
+                    Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(13.dp)),
+                    hideWhenMissing = true,
+                )
             }
             if (isComment) {
                 Box(

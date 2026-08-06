@@ -173,6 +173,10 @@ fun savePatrol(meters: Int, seconds: Int, trackCsv: String): String {
     return SharedRepo.repo.addPatrol(beachId, meters, track, seconds)
 }
 
+/** May this volunteer record a patrol? Decided in the domain (AppState.canRecordPatrol) so the
+ *  SwiftUI map and the Compose map can't drift apart on who is offered the tool. */
+fun canRecordPatrol(): Boolean = SharedRepo.repo.state.value.canRecordPatrol
+
 /** Publish a recorded patrol (Swift). Only then does it sync to the cloud. */
 fun publishPatrol(id: String) = SharedRepo.repo.publishPatrol(id)
 

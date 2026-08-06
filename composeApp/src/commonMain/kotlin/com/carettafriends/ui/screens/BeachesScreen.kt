@@ -47,7 +47,11 @@ fun BeachesScreen(state: AppState, onOpenNest: (String) -> Unit, onOpenBeach: (S
     // Scope: null = "near me" (geo, auto) / all; a city string = pinned to that town.
     var cityScope by remember { mutableStateOf<String?>(null) }
     var showScopePicker by remember { mutableStateOf(false) }
-    val me = state.deviceLocation
+    // A fix hundreds of km from every beach (a volunteer at home, off-season) must not produce a
+    // "Near you" header over a list of "11372 km away" — that reads as broken data, not as distance.
+    val fix = state.deviceLocation
+    val nearestKm = fix?.let { p -> state.beaches.minOfOrNull { distanceMeters(p, it.center) } }?.div(1000)
+    val me = if (nearestKm != null && nearestKm <= 50) fix else null
     // Untagged (OSM-discovered) beaches fall under the home town so the picker stays coherent now
     // and splits naturally once beaches carry real city tags in more towns.
     val homeCity = state.beaches.firstOrNull { it.city.isNotBlank() }?.city?.trim() ?: "Gazipaşa"

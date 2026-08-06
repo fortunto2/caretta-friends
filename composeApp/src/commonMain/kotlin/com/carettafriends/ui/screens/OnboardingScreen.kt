@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -49,7 +50,10 @@ fun OnboardingScreen(state: AppState, onDone: () -> Unit) {
     val scope = rememberCoroutineScope()
     val last = pager.currentPage == pages.lastIndex
 
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(c.sea, c.deep)))) {
+    Box(
+        Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(c.sea, c.deep)))
+            .safeDrawingPadding(),
+    ) {
         // Skip (top-right)
         Text(
             s.obSkip,

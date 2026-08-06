@@ -343,21 +343,34 @@ struct MapTab: View {
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                     HStack(alignment: .bottom) {
-                        Button {
-                            if patrol.isRecording {
-                                let r = patrol.stop()
-                                savedPatrolId = IosEntryKt.savePatrol(meters: Int32(r.meters), seconds: Int32(r.seconds), trackCsv: r.trackCsv)
-                                reload()
-                                showPublish = true
-                            } else {
-                                patrol.start()
+                        // Patrol recording is a coordinator's tool. As a big green pill in the corner
+                        // it was the loudest control on the map and visitors kept tapping it, so it
+                        // is a small icon now and only for a signed-in member with a role.
+                        if IosEntryKt.canRecordPatrol() {
+                            Button {
+                                if patrol.isRecording {
+                                    let r = patrol.stop()
+                                    savedPatrolId = IosEntryKt.savePatrol(meters: Int32(r.meters), seconds: Int32(r.seconds), trackCsv: r.trackCsv)
+                                    reload()
+                                    showPublish = true
+                                } else {
+                                    patrol.start()
+                                }
+                            } label: {
+                                Image(systemName: patrol.isRecording ? "stop.fill" : "figure.walk")
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundColor(patrol.isRecording ? .white : Color.cfDeep)
+                                    .frame(width: 44, height: 44)
+                                    .background(patrol.isRecording ? Color.cfCoral : Color.white)
+                                    .clipShape(Circle())
+                                    .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
                             }
-                        } label: {
-                            let dust = (air?.patrolAdvisable == false) && !patrol.isRecording
-                            Text(patrol.isRecording ? strings.stopPatrol : (dust ? strings.dustNotAdvised : strings.startPatrol))
+                        } else if air?.patrolAdvisable == false {
+                            // Dust is safety information for everyone, not a control.
+                            Text(strings.dustNotAdvised)
                                 .font(.subheadline.weight(.bold)).foregroundColor(.white)
                                 .padding(.horizontal, 14).padding(.vertical, 10)
-                                .background((patrol.isRecording || dust) ? Color.cfCoral : Color.cfGood).clipShape(Capsule())
+                                .background(Color.cfCoral).clipShape(Capsule())
                         }
                         Spacer()
                     }
