@@ -131,6 +131,19 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 - **⏳ Nearest nest ≤10 m** — CoreLocation region monitoring / continuous distance → local notification or a
   Live Activity ("ты у гнезда"). Great field UX.
 
+### Release 1.0.3 / 1.0.2 (2026-08-07) — artifacts built, upload pending
+
+- **Android `1.0.3 (4)`** — signed AAB at `docs/store/android/caretta-friends-1.0.3.aab` (gitignored),
+  signed with the CARETTA upload key from `keystore.properties`.
+- **iOS `1.0.2 (6)`** — archive at `iosApp/build-archive/CarettaFriends.xcarchive`.
+- **Upload is manual**: this machine has no Play service-account JSON and no App Store Connect API
+  key, so neither `altool` nor a Gradle publisher can push. Either drop credentials in (ASC API key
+  `.p8` + issuer/key id; Play service account JSON) and it can be scripted, or upload by hand —
+  Play Console → Internal testing → new release → drop the AAB; Xcode → Window → Organizer →
+  Distribute App, or Transporter with the exported .ipa.
+- Contents: everything from the 2026-08-06/07 field-test fixes through photo sync on R2, the
+  foreground-service patrol and the native dialogs.
+
 ### Store & release readiness — done (2026-07-27)
 - ✅ **iOS 1.0 approved** (2026-08-01) — live at `https://apps.apple.com/app/id6794324877`; the landing
   page's App Store button points there. Play still has **no production listing** (Internal testing only),
