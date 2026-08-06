@@ -131,16 +131,23 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 - **⏳ Nearest nest ≤10 m** — CoreLocation region monitoring / continuous distance → local notification or a
   Live Activity ("ты у гнезда"). Great field UX.
 
-### Release 1.0.3 / 1.0.2 (2026-08-07) — artifacts built, upload pending
+### Release 1.0.3 / 1.0.2 — SHIPPED (2026-08-07)
 
-- **Android `1.0.3 (4)`** — signed AAB at `docs/store/android/caretta-friends-1.0.3.aab` (gitignored),
-  signed with the CARETTA upload key from `keystore.properties`.
-- **iOS `1.0.2 (6)`** — archive at `iosApp/build-archive/CarettaFriends.xcarchive`.
-- **Upload is manual**: this machine has no Play service-account JSON and no App Store Connect API
-  key, so neither `altool` nor a Gradle publisher can push. Either drop credentials in (ASC API key
-  `.p8` + issuer/key id; Play service account JSON) and it can be scripted, or upload by hand —
-  Play Console → Internal testing → new release → drop the AAB; Xcode → Window → Organizer →
-  Distribute App, or Transporter with the exported .ipa.
+- **iOS `1.0.2 (6)`** — on TestFlight (internal groups `test` + `friends`) and **submitted for App
+  Store review**, submission `f368fda6-9d84-47f3-99e6-a2508cb1d61c`. Shipped entirely from the CLI
+  with **`asc`** (credentials live in the macOS Keychain — `asc auth status`): archive → export →
+  `asc publish testflight` → `asc release stage --copy-metadata-from 1.0.1` → `asc review submit`.
+  Release notes written per locale with `asc localizations update`.
+  ⚠️ `asc publish appstore --submit` insists on `--ipa` and would re-upload an existing build; to
+  submit a build that is already up, use **`asc review submit --app … --version … --build …`**.
+- **Android `1.0.3 (4)`** — live in **Internal testing** (published 2026-08-07 00:49). AAB at
+  `docs/store/android/caretta-friends-1.0.3.aab`, signed with the CARETTA upload key. Play has no
+  CLI here: uploaded through the Play Console with Playwright (the browser profile stays logged in
+  between sessions). Play caps release notes at **500 chars per language** — longer text silently
+  disables "Next" with a "too long" alert on the field.
+- **Still no Play production listing** — promoting off Internal testing needs the store listing,
+  content rating, target audience and Data safety (which must now declare that photos are uploaded
+  to our own storage).
 - Contents: everything from the 2026-08-06/07 field-test fixes through photo sync on R2, the
   foreground-service patrol and the native dialogs.
 
