@@ -32,7 +32,7 @@ import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Beach
 import com.carettafriends.domain.Nest
 import com.carettafriends.domain.NestStatus
-import com.carettafriends.ui.components.LocalPhoto
+import com.carettafriends.ui.components.NestPhoto
 import com.carettafriends.ui.components.Pill
 import com.carettafriends.ui.components.SectionLabel
 import com.carettafriends.ui.components.StatusPill
@@ -154,8 +154,8 @@ internal fun NestListItem(nest: Nest, s: AppStrings, onOpenNest: (String) -> Uni
         horizontalArrangement = Arrangement.spacedBy(11.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        LocalPhoto(
-            nest.photos.firstOrNull()?.localUri,
+        NestPhoto(
+            nest.photos.firstOrNull(),
             Modifier.size(58.dp).clip(RoundedCornerShape(12.dp)),
             placeholder = nest.photos.firstOrNull()?.placeholder ?: "🥚",
         )

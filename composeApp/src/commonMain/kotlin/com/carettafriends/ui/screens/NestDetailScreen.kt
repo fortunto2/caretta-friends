@@ -60,6 +60,7 @@ import com.carettafriends.ui.components.CarettaCard
 import com.carettafriends.ui.components.CountdownRing
 import com.carettafriends.ui.components.GhostButton
 import com.carettafriends.ui.components.LocalPhoto
+import com.carettafriends.ui.components.NestPhoto
 import com.carettafriends.ui.components.Pill
 import com.carettafriends.ui.components.PrimaryButton
 import com.carettafriends.ui.components.SectionLabel
@@ -158,9 +159,9 @@ fun NestDetailScreen(
                 .clip(RoundedCornerShape(22.dp))
                 .background(Brush.linearGradient(listOf(c.sea, c.deep))),
         ) {
-            val photoPath = n.photos.firstOrNull()?.localUri
-            if (photoPath != null) {
-                LocalPhoto(photoPath, Modifier.fillMaxSize())
+            val cover = n.photos.firstOrNull()
+            if (cover != null) {
+                NestPhoto(cover, Modifier.fillMaxSize())
             } else {
                 Text(
                     n.photos.firstOrNull()?.placeholder ?: "🥚",
@@ -437,9 +438,9 @@ private fun TimelineRow(u: NestUpdate, body: String, s: AppStrings, onOpenMember
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             // Attached photo (builds the nest's photo history over time).
-            u.photo?.localUri?.let { uri ->
-                LocalPhoto(
-                    uri,
+            u.photo?.let { shot ->
+                NestPhoto(
+                    shot,
                     Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(13.dp)),
                     hideWhenMissing = true,
                 )

@@ -27,7 +27,8 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
     included → prod has GZP-3 and GZP-16 twice. Now `nextNestCode()` = highest in use + 1.
   - **The same photo made a new nest every time.** `findDuplicate()` catches it two ways —
     `PhotoRef.hash` (md5 of the gallery file / the iOS Photos asset id; the file itself is useless,
-    iOS re-encodes each import) and a ≤25 m proximity check — and the save dialog offers "add photo
+    iOS re-encodes each import) and a ≤8 m proximity check (Caretta do nest metres apart, so the
+    radius stays under a phone's GPS scatter) — and the save dialog offers "add photo
     to GZP-xx" (folds into the existing nest as an observation) before "it's a different nest".
 - **Capture actually works on Android** — the "camera" was a mock viewfinder whose shutter produced
   no photo (and iOS's in-form camera button opened that same mock). Android now launches the system
@@ -161,7 +162,20 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
   App Privacy, privacy URL `https://app.carettafriends.com/privacy`. (BETA_CONTRACT_MISSING = Apple-side.)
 
 ### Other pending
-- **Photo cloud sync (offline-first, V2)**: nest *metadata* already syncs to Supabase; **photo files** do not — upload to Supabase Storage (→ Cloudflare R2 later, behind `CloudBackend`). Android durability: also save captures to a public MediaStore album (iOS done).
+
+- **Onboarding asks for your beach** — a 4th page lists the nearest beaches (with their community)
+  and sets `homeBeachId`; skippable, changeable in the profile. It's the one setting that shapes
+  every list after it, and nobody ever found it in settings.
+- ✅ **Photo cloud sync — done (2026-08-06)**: files live in **Cloudflare R2**, records stay in
+  Supabase. `workers/photos` (Worker + R2 binding, `photos.carettafriends.com`) is the only door:
+  it verifies the volunteer's Supabase access token against the published JWKS (ES256 — no shared
+  secret), serves any object to a signed-in volunteer and accepts writes only under the caller's own
+  uid prefix; no DELETE at all, matching `0005_no_delete.sql`. Client: `data/PhotoStorage.kt`
+  (`R2PhotoStorage` + `PhotoFiles` resolver/disk cache), `PhotoRef.remotePath`, uploads on capture
+  and on every sync (offline-first — the record saves immediately, the file follows), `NestPhoto()`
+  fetches on demand. Verified end to end: photographed on the Android emulator → visible on the iOS
+  simulator. Supabase Storage was tried first and dropped (0007 → 0008): Supabase is the sync
+  database and identity provider, not a blob store.
 - ✅ iOS camera permission/starting messages — done: localized via `currentStrings().cameraDenied`/`cameraStarting` (EN/RU/TR).
 - ✅ **Save button visible without scroll** in AddNest — done: the Save button is now a pinned footer below the scrollable form.
 - ✅ Seed demo strings — moot: `seedState()` now seeds `nests = emptyList()`, so the English "Patrol — all OK"/"Looks good today" only linger in stale local state and are gone on a clean install.
@@ -187,6 +201,9 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 - **Native Swift strings** (map chips, tooltip, patrol dialog, camera) are separate from AppStrings — bridged via `IosEntryKt.currentStrings(): AppStrings`.
 - **Kotlin 2.3 ABI trap**: don't add libs whose iosArm64 klib is built with Kotlin 2.3 (we're on 2.2.20) — fails `compileKotlinIosArm64` only (Android tolerates it). No `supabase-kt`/markdown-renderer≥0.39 in commonMain.
 - **iPhone install**: raise the tunnel via `xcrun devicectl device info details --device FC73117A-…` first; retry install on "Connection interrupted".
+- **Photo Worker**: `cd workers/photos && wrangler deploy`. Bucket `caretta-nest-photos` (EEUR).
+  The Worker trusts nothing but the Supabase JWKS — if Supabase ever switches signing algorithm,
+  `verify()` must learn the new one (it deliberately refuses anything but ES256).
 - **Android emulator** drive: `adb shell input tap X Y` (screenshot 900px → ×1.2 → 1080). iOS simulator has no CLI tap (System Events `click at` is TCC-blocked; only `key code` works — e.g. Return to dismiss the location alert).
 - **MapLibre LocationComponent crash** (`IllegalStateException: getSourceAs when a newer style is loading`): a real GPS fix drives the stale-state timer → `refreshSource` during a style race. Fixed in `OsmMap.android.kt` via `LocationComponentOptions.enableStaleState(false)`. (Same race the reverted `RenderMode.COMPASS` hit.) MapLibre pinned to **11.13.x** (11.x = OpenGL-ES; 12/13 = Vulkan → emulator MESA crash).
 

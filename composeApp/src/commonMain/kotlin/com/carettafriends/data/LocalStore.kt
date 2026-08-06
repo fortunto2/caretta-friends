@@ -44,6 +44,23 @@ object LocalStore {
         }
     }
 
+    /** Does a file exist at this ABSOLUTE path? */
+    fun existsAbs(absPath: String): Boolean = try {
+        fs.exists(absPath.toPath())
+    } catch (e: Throwable) {
+        false
+    }
+
+    /** Write bytes to an ABSOLUTE path, creating parent directories. False if it couldn't be written. */
+    fun writeBytesAbs(absPath: String, bytes: ByteArray): Boolean = try {
+        val p = absPath.toPath()
+        p.parent?.let { fs.createDirectories(it) }
+        fs.write(p) { write(bytes) }
+        true
+    } catch (e: Throwable) {
+        false
+    }
+
     /** Read raw bytes at an ABSOLUTE path (e.g. a camera photo file). Null if missing/unreadable. */
     fun readBytesAbs(absPath: String): ByteArray? = try {
         val p = absPath.toPath()

@@ -1,0 +1,21 @@
+# Nest photos live in R2, not in Supabase Storage: Supabase is the sync database and the identity
+# provider, and filling it with several-megabyte JPEGs is the wrong shape (and the wrong bill).
+# R2 has no per-user auth of its own, so this Worker is the door: it verifies the volunteer's
+# Supabase token and only then touches the bucket.
+name = "caretta-photos"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "caretta-nest-photos"
+
+[vars]
+# Supabase signs its access tokens with ES256 and publishes the public key — the Worker needs no
+# shared secret, and rotating Supabase's key needs no redeploy here.
+SUPABASE_ISSUER = "https://blameszwjkjksgttvgqi.supabase.co/auth/v1"
+SUPABASE_JWKS_URL = "https://blameszwjkjksgttvgqi.supabase.co/auth/v1/.well-known/jwks.json"
+
+[[routes]]
+pattern = "photos.carettafriends.com"
+custom_domain = true

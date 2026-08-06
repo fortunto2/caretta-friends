@@ -115,6 +115,10 @@ data class PhotoRef(
     val placeholder: String = "🥚", // emoji stand-in when no image
     val exifLat: Double? = null,
     val exifLng: Double? = null,
+    /** Where this photo lives in cloud storage ("<uid>/<nest>/<photo>.jpg"), once uploaded. The
+     *  local path is meaningless on any other device — this is what makes a nest's photo visible to
+     *  the rest of the community. Null = still only on the phone that took it. */
+    val remotePath: String? = null,
     /** Opaque identity of the ORIGINAL image ("md5:…" on Android, "asset:…" on iOS), so re-picking
      *  the same photo is recognized as a duplicate instead of creating a second nest. The file on
      *  disk can't be hashed for this — iOS re-encodes every import (burned-in overlay) and Android

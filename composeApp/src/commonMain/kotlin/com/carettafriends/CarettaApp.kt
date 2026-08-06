@@ -161,7 +161,7 @@ fun CarettaApp() {
         }
             // First-run intro — shown once until dismissed.
             if (!state.profile.onboarded) {
-                OnboardingScreen(state) { repo.setOnboarded() }
+                OnboardingScreen(state, { repo.setOnboarded() }, onPickBeach = { repo.setHomeBeach(it) })
             }
         }
     }

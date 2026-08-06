@@ -305,6 +305,11 @@ class AppStrings(private val m: Map<String, String>, val months: List<String>) {
     val myNestsEmpty: String get() = m.getValue("myNestsEmpty")
     val nameNudge: String get() = m.getValue("nameNudge")
     val settingsTitle: String get() = m.getValue("settingsTitle")
+
+    // Onboarding — "which beach is yours".
+    val obBeachTitle: String get() = m.getValue("obBeachTitle")
+    val obBeachBody: String get() = m.getValue("obBeachBody")
+    val obSkipBeach: String get() = m.getValue("obSkipBeach")
 }
 
 private fun enStrings() = AppStrings(
@@ -599,6 +604,9 @@ private fun enStrings() = AppStrings(
         "myNestsEmpty" to "Photograph a nest and it appears here.",
         "nameNudge" to "Add your name — your finds get credited to you",
         "settingsTitle" to "Settings",
+        "obBeachTitle" to "Which beach is yours? 🏖️",
+        "obBeachBody" to "Pick the one you walk most — it decides your community and comes first in your lists. You can change it any time.",
+        "obSkipBeach" to "Not now",
     ),
     months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
 )
@@ -895,6 +903,9 @@ private fun ruStrings() = AppStrings(
         "myNestsEmpty" to "Сфотографируйте гнездо — оно появится здесь.",
         "nameNudge" to "Укажите имя — находки будут подписаны вами",
         "settingsTitle" to "Настройки",
+        "obBeachTitle" to "Какой пляж ваш? 🏖️",
+        "obBeachBody" to "Выберите тот, где бываете чаще — он определит ваше сообщество и будет первым в списках. Поменять можно в любой момент.",
+        "obSkipBeach" to "Не сейчас",
     ),
     months = listOf("янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"),
 )
@@ -1191,6 +1202,9 @@ private fun trStrings() = AppStrings(
         "myNestsEmpty" to "Bir yuva fotoğraflayın, burada görünsün.",
         "nameNudge" to "Adınızı ekleyin — bulduklarınız size yazılsın",
         "settingsTitle" to "Ayarlar",
+        "obBeachTitle" to "Hangi plaj sizin? 🏖️",
+        "obBeachBody" to "En çok yürüdüğünüzü seçin — topluluğunuzu belirler ve listelerde başa gelir. İstediğiniz zaman değiştirebilirsiniz.",
+        "obSkipBeach" to "Şimdi değil",
     ),
     months = listOf("Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"),
 )

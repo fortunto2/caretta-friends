@@ -244,7 +244,11 @@ fun isOnboarded(): Boolean = SharedRepo.repo.state.value.profile.onboarded
 
 fun OnboardingVC(onDone: () -> Unit): UIViewController = host {
     val state by SharedRepo.repo.state.collectAsState()
-    OnboardingScreen(state) { SharedRepo.repo.setOnboarded(); onDone() }
+    OnboardingScreen(
+        state,
+        { SharedRepo.repo.setOnboarded(); onDone() },
+        onPickBeach = { SharedRepo.repo.setHomeBeach(it) },
+    )
 }
 
 fun AddNestVC(onDone: () -> Unit, onCamera: () -> Unit, onNestSaved: (String) -> Unit): UIViewController = host {

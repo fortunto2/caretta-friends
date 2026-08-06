@@ -217,6 +217,7 @@ class CarettaRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val auth: AuthBackend = SupabaseAuth()
     private val cloud: CloudBackend = SupabaseCloud(auth)
+    private val photos: PhotoStorage = R2PhotoStorage(auth)
     private val beachDiscovery = BeachDiscovery()
     private val weather = WeatherService()
     private val airQuality = AirQualityService()
@@ -224,6 +225,9 @@ class CarettaRepository {
     val state: StateFlow<AppState> = _state.asStateFlow()
 
     init {
+        // Photos are drawn from list rows that have no repository in hand — hand the resolver its
+        // backend once, here.
+        PhotoFiles.attach(photos)
         // Offline-first: persist every change locally so data survives restarts and works offline.
         scope.launch { _state.drop(1).collect { persist(json, it) } }
         // Load the official protected-beach catalogue (by-country data file) → state.
@@ -312,8 +316,40 @@ class CarettaRepository {
                 markers = mergeById(s.markers, remoteMarkers) { it.id },
             )
         }
+        // Any photo of ours still only on this phone goes up now (capture works offline; the upload
+        // waits for signal). Runs after the merge so nests pulled in this cycle are included.
+        runCatching { uploadPendingPhotos() }
         // Once-a-day TSP temperature accrual for incubating nests (best-effort, after the merge).
         runCatching { refreshNestTemps() }
+    }
+
+    /**
+     * Push the photo files of our own nests that haven't reached storage yet.
+     *
+     * Offline-first: a volunteer photographs a nest with no signal, the record is saved immediately
+     * and the image follows on the next sync. Only OUR photos — storage refuses writes outside our
+     * own uid prefix anyway (0007_photo_storage.sql).
+     */
+    private suspend fun uploadPendingPhotos() {
+        val owner = myUserId() ?: return
+        val s = _state.value
+        for (nest in s.nests.filter { s.isMine(it) }) {
+            for (photo in nest.photos) {
+                if (photo.remotePath != null) continue
+                val local = photo.localUri?.takeIf { LocalStore.existsAbs(it) } ?: continue
+                val bytes = LocalStore.readBytesAbs(local) ?: continue
+                val stored = runCatching { photos.upload("$owner/${nest.id}/${photo.id}.jpg", bytes) }.getOrNull()
+                    ?: continue
+                update(nest.id) { n ->
+                    n.copy(
+                        photos = n.photos.map { if (it.id == photo.id) it.copy(remotePath = stored) else it },
+                        updates = n.updates.map { u ->
+                            if (u.photo?.id == photo.id) u.copy(photo = u.photo.copy(remotePath = stored)) else u
+                        },
+                    )
+                }
+            }
+        }
     }
 
     /** Union by id; remote wins on conflict — safe for append-only entities (beaches, markers). */
@@ -607,6 +643,7 @@ class CarettaRepository {
         )
         _state.value = s.copy(nests = s.nests + nest)
         syncNest(nest)
+        if (hasPhoto) scope.launch { runCatching { uploadPendingPhotos() } }
         // Best-effort: pull REAL weather (Open-Meteo, free) for this point and cache it on the nest.
         // Offline-safe — the nest already exists; this just enriches it when online.
         if (isNest) {
@@ -727,6 +764,7 @@ class CarettaRepository {
                 photos = if (photo != null) n.photos + photo else n.photos,
             )
         }
+        if (photo != null) scope.launch { runCatching { uploadPendingPhotos() } }
     }
 
     /** Back-date a nest's found date — admin knows from word-of-mouth it was found earlier ("3 days ago")

@@ -24,8 +24,9 @@ import com.carettafriends.data.today
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Member
 import com.carettafriends.domain.NestUpdate
+import com.carettafriends.domain.PhotoRef
 import com.carettafriends.domain.UpdateKind
-import com.carettafriends.ui.components.LocalPhoto
+import com.carettafriends.ui.components.NestPhoto
 import com.carettafriends.ui.theme.caretta
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
@@ -38,7 +39,8 @@ import kotlinx.datetime.atStartOfDayIn
  */
 data class FeedEntry(
     val key: String,
-    val photoUri: String?,
+    /** The photo itself, not a path: on another volunteer's entry the file is fetched from storage. */
+    val photo: PhotoRef?,
     val emoji: String,
     val title: String,      // nest code
     val subtitle: String,   // what happened (localized)
@@ -91,7 +93,7 @@ fun activityFeed(
         n.updates.map { u ->
             FeedEntry(
                 key = u.id,
-                photoUri = u.photo?.localUri,
+                photo = u.photo,
                 emoji = feedEmoji(u),
                 title = n.code,
                 subtitle = timelineBody(u, n, s),
@@ -141,8 +143,8 @@ private fun FeedRow(e: FeedEntry, onOpenNest: (String) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(11.dp),
     ) {
-        if (e.photoUri != null) {
-            LocalPhoto(e.photoUri, Modifier.size(52.dp).clip(RoundedCornerShape(12.dp)))
+        if (e.photo != null) {
+            NestPhoto(e.photo, Modifier.size(52.dp).clip(RoundedCornerShape(12.dp)))
         } else {
             Box(
                 Modifier.size(52.dp).clip(RoundedCornerShape(12.dp)).background(c.sand),
