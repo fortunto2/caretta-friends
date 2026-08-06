@@ -305,6 +305,11 @@ data class Profile(
     /** Excavating a nest is delicate → only experienced volunteers, beach leaders and admins. */
     val canExcavate: Boolean
         get() = experienced || memberRole == MemberRole.BEACH_LEADER || memberRole == MemberRole.ADMIN
+
+    /** Recording a patrol is coordination work, not something a passing visitor should be offered.
+     *  Sits beside [canExcavate] so "trusted enough to…" is decided in one place, not per screen. */
+    val hasRole: Boolean
+        get() = memberRole != MemberRole.VOLUNTEER
 }
 
 /** Whole app state (single source of truth for the in-memory repository). */
@@ -368,17 +373,35 @@ data class AppState(
     val myUserIds: Set<String>
         get() = profile.knownUserIds + setOfNotNull(profile.userId)
 
+    /** May this volunteer record a patrol? Signed in (their walk is attributable) and holding a
+     *  role — see [Profile.hasRole]. Stated here so screens don't each invent their own rule. */
+    val canRecordPatrol: Boolean
+        get() = accountEmail != null && profile.hasRole
+
     /** Is this nest mine? Owner id when the record has one, display name only as a legacy fallback. */
-    fun isMine(n: Nest): Boolean =
-        if (n.foundByUserId != null) n.foundByUserId in myUserIds
+    fun isMine(n: Nest): Boolean = isMine(n, myUserIds)
+
+    private fun isMine(n: Nest, mine: Set<String>): Boolean =
+        if (n.foundByUserId != null) n.foundByUserId in mine
         else !isPlaceholderName(n.foundBy) && n.foundBy.equals(profile.displayName, ignoreCase = true)
 
-    /** Resolve a person reference — a [Member] id, a stored name (nest.foundBy / update.author /
-     *  beach.leaderName), or "you" — to a [Member]. Unknown names synthesize a bare volunteer so the
-     *  profile stays reachable (still shows their nests). Never null → every person is navigable. */
+    /**
+     * Resolve a person reference to a [Member]. The key is an auth uid wherever the record has one,
+     * falling back to a [Member] id or a stored display name for rows written before uids existed.
+     *
+     * The uid must be tried FIRST. Guardian names are drawn from a small vocabulary, so two
+     * volunteers on one beach can genuinely share "Dune Keeper" — matching on the name first would
+     * open your own profile, with your nests, when you tapped theirs.
+     */
     fun resolveMember(key: String): Member {
-        if (key == "you" || key.equals(profile.displayName, ignoreCase = true)) return meAsMember
+        if (key == "you" || key in myUserIds) return meAsMember
+        members.firstOrNull { it.userId == key }?.let { return it }
         members.firstOrNull { it.id == key }?.let { return it }
+        // A uid we've only ever seen on a nest: name them from the record they signed.
+        nests.firstOrNull { it.foundByUserId == key }?.let {
+            return Member(id = key, name = it.foundBy, role = MemberRole.VOLUNTEER, userId = key)
+        }
+        if (key.equals(profile.displayName, ignoreCase = true)) return meAsMember
         members.firstOrNull { it.name.equals(key, ignoreCase = true) }?.let { return it }
         return Member(id = key, name = key, role = MemberRole.VOLUNTEER)
     }
@@ -389,17 +412,22 @@ data class AppState(
      * volunteer everybody else's nests while their own (logged under a since-changed name) went
      * missing. Names still resolve legacy rows that carry no owner id — but only real ones.
      */
-    fun nestsBy(m: Member): List<Nest> = nests.filter { n ->
-        when {
-            m.id == "you" -> isMine(n)
-            m.userId != null && n.foundByUserId != null -> n.foundByUserId == m.userId
-            else -> !isPlaceholderName(n.foundBy) && n.foundBy.equals(m.name, ignoreCase = true)
+    fun nestsBy(m: Member): List<Nest> {
+        val mine = myUserIds        // hoisted: the getter builds a Set on every read
+        return nests.filter { n ->
+            when {
+                m.id == "you" -> isMine(n, mine)
+                m.userId != null && n.foundByUserId != null -> n.foundByUserId == m.userId
+                else -> !isPlaceholderName(n.foundBy) && n.foundBy.equals(m.name, ignoreCase = true)
+            }
         }
     }
 
     /** Badges a member has earned, derived from their nest activity (V1 keeps no per-member badge store). */
-    fun earnedBadgesFor(m: Member): List<Badge> {
-        val ns = nestsBy(m)
+    fun earnedBadgesFor(m: Member): List<Badge> = earnedBadgesFrom(nestsBy(m))
+
+    /** Same, from an already-computed nest list — screens usually have one in hand. */
+    fun earnedBadgesFrom(ns: List<Nest>): List<Badge> {
         val hatchlings = ns.sumOf { it.excavation?.hatchlingsToSea ?: 0 }
         return buildList {
             if (ns.isNotEmpty()) add(Badge("first_nest", "🥚", "First nest", true))

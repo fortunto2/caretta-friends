@@ -109,6 +109,10 @@ fun predictFemaleRange(dailyAirC: List<Double>, exposure: SunExposure?): Pair<In
 
 fun today(): LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
 
+/** Epoch millis → the local calendar date it falls on (EXIF capture times, stored timestamps). */
+fun localDateOf(millis: Long): LocalDate =
+    Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.currentSystemDefault()).date
+
 /** How far back a nest/update date may be set (word-of-mouth back-dating; guards against bogus far-past dates). */
 const val MAX_BACKDATE_DAYS = 31
 
@@ -129,8 +133,7 @@ fun nestMapPhase(nest: Nest, today: LocalDate = today()): String = when (nest.st
     NestStatus.HATCHING -> "emerging"
     NestStatus.EXCAVATED -> {
         val exMillis = nest.updates.lastOrNull { it.kind == UpdateKind.EXCAVATED }?.createdEpochMillis ?: 0L
-        val exDate = if (exMillis > 0)
-            Instant.fromEpochMilliseconds(exMillis).toLocalDateTime(TimeZone.currentSystemDefault()).date else null
+        val exDate = if (exMillis > 0) localDateOf(exMillis) else null
         if (exDate != null && exDate.daysUntil(today) > 2) "removed" else "excavated"
     }
     NestStatus.HATCHED -> "excavated"
@@ -368,6 +371,33 @@ class CarettaRepository {
 
     private fun nowMillis(): Long = Clock.System.now().toEpochMilliseconds()
 
+    /**
+     * Build a timeline entry. Every entry needs an author, an owner and a creation time — those were
+     * hand-copied at each construction site, and the one place that forgot the timestamp is why a
+     * freshly logged nest fell out of the activity feed. One factory, nothing to forget.
+     */
+    private fun newUpdate(
+        kind: UpdateKind,
+        body: String = "",
+        condition: ObsCondition? = null,
+        newStatus: NestStatus? = null,
+        obsDate: LocalDate? = null,
+        photo: PhotoRef? = null,
+        at: Long = nowMillis(),
+    ): NestUpdate = NestUpdate(
+        id = nextId("u"),
+        kind = kind,
+        condition = condition,
+        newStatus = newStatus,
+        body = body,
+        author = _state.value.profile.displayName,
+        authorUserId = myUserId(),
+        createdEpochMillis = at,
+        dateLabel = "Today",
+        obsDate = obsDate,
+        photo = photo,
+    )
+
     // Client-generated UUIDs: stable offline PKs, collision-free upserts, FK-safe sync.
     // (Replaces the old in-memory counter that reset to 1000 every launch → PK collisions → data loss.)
     private fun nextId(prefix: String) = newUuid()
@@ -559,21 +589,15 @@ class CarettaRepository {
                 // The "found" entry MUST carry a timestamp — the activity feed sorts and time-filters
                 // on it, and a zero here is why a just-logged nest never showed up in the profile.
                 add(
-                    NestUpdate(
-                        nextId("u"), UpdateKind.FOUND,
+                    newUpdate(
+                        UpdateKind.FOUND,
                         body = if (isNest) "Nest found" else "False crawl logged",
-                        author = s.profile.displayName, authorUserId = owner,
-                        createdEpochMillis = now, dateLabel = "Today", obsDate = backDate,
+                        obsDate = backDate,
+                        at = now,
                     ),
                 )
                 if (note.isNotBlank()) {
-                    add(
-                        NestUpdate(
-                            nextId("u"), UpdateKind.COMMENT, body = note.trim(),
-                            author = s.profile.displayName, authorUserId = owner,
-                            createdEpochMillis = now + 1, dateLabel = "Today",
-                        ),
-                    )
+                    add(newUpdate(UpdateKind.COMMENT, body = note.trim(), at = now + 1))
                 }
             },
             temps = emptyList(),
@@ -635,7 +659,11 @@ class CarettaRepository {
 
     fun addSimpleMarker(type: MarkerType, point: GeoPoint, note: String) {
         val s = _state.value
-        val marker = SimpleMarker(nextId("m"), type, point, note)
+        // Stamped like every other record: an unstamped marker sorts to the beginning of time.
+        val marker = SimpleMarker(
+            id = nextId("m"), type = type, point = point, note = note,
+            createdBy = s.profile.displayName, createdEpochMillis = nowMillis(),
+        )
         _state.value = s.copy(markers = s.markers + marker)
         scope.launch { auth.ensureSession(); runCatching { cloud.pushMarker(marker, auth.currentUserId()) } }
     }
@@ -682,8 +710,6 @@ class CarettaRepository {
     ) {
         val backDate = obsDate?.takeIf { it != today() }
         val photo = photoPath?.let { PhotoRef(nextId("ph"), PhotoSource.GALLERY, localUri = it, hash = photoHash) }
-        val me = _state.value.profile.displayName
-        val owner = myUserId()
         update(nestId) { n ->
             // Observing "hatching / hatched" advances the nest's lifecycle — otherwise a nest sits on
             // INCUBATING forever and the countdown / "hatching" filter / hatch payoff never resolve.
@@ -697,18 +723,7 @@ class CarettaRepository {
             }
             n.copy(
                 status = advanced,
-                updates = n.updates + NestUpdate(
-                    id = nextId("u"),
-                    kind = kind,
-                    condition = condition,
-                    body = body,
-                    author = me,
-                    authorUserId = owner,
-                    createdEpochMillis = nowMillis(),
-                    dateLabel = "Today",
-                    obsDate = backDate,
-                    photo = photo,
-                ),
+                updates = n.updates + newUpdate(kind, body, condition, obsDate = backDate, photo = photo),
                 photos = if (photo != null) n.photos + photo else n.photos,
             )
         }
@@ -722,30 +737,23 @@ class CarettaRepository {
     }
 
     fun setStatus(nestId: String, status: NestStatus, comment: String = "") {
-        val me = _state.value.profile.displayName
-        val owner = myUserId()
         update(nestId) { n ->
-            val upd = n.updates + NestUpdate(
-                nextId("u"), UpdateKind.STATUS_CHANGE, newStatus = status, body = comment,
-                author = me, authorUserId = owner, createdEpochMillis = nowMillis(), dateLabel = "Today",
+            n.copy(
+                status = status,
+                updates = n.updates + newUpdate(UpdateKind.STATUS_CHANGE, comment, newStatus = status),
             )
-            n.copy(status = status, updates = upd)
         }
     }
 
     fun setExcavation(nestId: String, exc: Excavation) {
         val before = _state.value.nest(nestId)
-        val me = _state.value.profile.displayName
-        val owner = myUserId()
         update(nestId) { n ->
             n.copy(
                 status = NestStatus.EXCAVATED,
                 excavation = exc,
-                updates = n.updates + NestUpdate(
-                    nextId("u"), UpdateKind.EXCAVATED,
-                    body = "Excavated · ${exc.hatchSuccessPct ?: 0}% hatch success",
-                    author = me, authorUserId = owner,
-                    createdEpochMillis = nowMillis(), dateLabel = "Today",
+                updates = n.updates + newUpdate(
+                    UpdateKind.EXCAVATED,
+                    "Excavated · ${exc.hatchSuccessPct ?: 0}% hatch success",
                 ),
             )
         }

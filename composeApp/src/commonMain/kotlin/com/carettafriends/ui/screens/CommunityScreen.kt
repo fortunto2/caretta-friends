@@ -146,9 +146,13 @@ fun CommunityScreen(
 
             // ── Top volunteers — by nests found & hatchlings freed ──────
             SectionLabel(s.topVolunteers)
+            // Grouped by WHO, not by what they're called: two volunteers can share a guardian name,
+            // and one volunteer who renamed themselves would otherwise appear twice.
             val board = state.nests
-                .groupBy { it.foundBy }
-                .map { (name, ns) -> Ranked(name, ns.size, ns.sumOf { it.excavation?.hatchlingsToSea ?: 0 }) }
+                .groupBy { it.foundByUserId ?: it.foundBy }
+                .map { (key, ns) ->
+                    Ranked(key, ns.first().foundBy, ns.size, ns.sumOf { it.excavation?.hatchlingsToSea ?: 0 })
+                }
                 .sortedWith(compareByDescending<Ranked> { it.nests }.thenByDescending { it.hatchlings })
             if (board.isEmpty()) {
                 Text(
@@ -165,7 +169,7 @@ fun CommunityScreen(
     }
 }
 
-private data class Ranked(val name: String, val nests: Int, val hatchlings: Int)
+private data class Ranked(val key: String, val name: String, val nests: Int, val hatchlings: Int)
 
 private fun kindLabel(k: CommunityKind, s: AppStrings): String = when (k) {
     CommunityKind.COMMUNITY -> s.kindCommunity
@@ -230,7 +234,7 @@ private fun BoardRow(rank: Int, r: Ranked, onOpenMember: (String) -> Unit) {
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.surface)
             .border(1.dp, c.line, RoundedCornerShape(14.dp))
-            .clickable { onOpenMember(r.name) }.padding(horizontal = 12.dp, vertical = 10.dp),
+            .clickable { onOpenMember(r.key) }.padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {

@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -32,11 +31,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.carettafriends.content.appStrings
@@ -50,7 +47,7 @@ import com.carettafriends.ui.DialogAction
 import com.carettafriends.ui.DialogStyle
 import com.carettafriends.ui.PlatformChoiceDialog
 import com.carettafriends.ui.PlatformTextPrompt
-import com.carettafriends.ui.components.CarettaCard
+import com.carettafriends.ui.choiceAction
 import com.carettafriends.ui.components.LocalPhoto
 import com.carettafriends.ui.components.Pill
 import com.carettafriends.ui.components.SectionLabel
@@ -81,15 +78,18 @@ fun ProfileScreen(
     var feedRange by remember { mutableStateOf(FeedRange.ALL) }
     var showMenu by remember { mutableStateOf(false) }
 
-    // Everything this volunteer has recorded, resolved by owner id (see AppState.nestsBy).
-    val myNests = state.nestsBy(state.meAsMember).sortedByDescending { it.foundDate }
+    // Everything this volunteer has recorded, resolved by owner id (see AppState.nestsBy). Kept
+    // behind remember: it scans every nest, and this screen recomposes on every keystroke in a dialog.
+    val myNests = remember(state.nests, state.profile) {
+        state.nestsBy(state.meAsMember).sortedByDescending { it.foundDate }
+    }
     // "Beaches you've been to" — where this volunteer has patrolled or logged a nest.
     val visitedIds = (state.patrols.map { it.beachId } + myNests.map { it.beachId }).toSet()
     val visited = state.beaches.filter { it.id in visitedIds }
     val home = p.homeBeachId?.let { state.beach(it) }
     // Derived from real activity — the seeded badge list is all-unearned, so filtering IT always
     // produced an empty section with a "no badges yet" line under it.
-    val earnedBadges = state.earnedBadgesFor(state.meAsMember)
+    val earnedBadges = remember(myNests) { state.earnedBadgesFrom(myNests) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         // "⋮" overflow tucks away the sharing actions so the screen itself stays about the volunteer.
@@ -204,15 +204,9 @@ fun ProfileScreen(
                 PlatformChoiceDialog(
                     title = s.homeBeach,
                     actions = listOf(
-                        DialogAction(
-                            (if (p.homeBeachId == null) "✓ " else "") + s.freeVolunteer,
-                            if (p.homeBeachId == null) DialogStyle.PRIMARY else DialogStyle.DEFAULT,
-                        ) { repo.setHomeBeach(null) },
+                        choiceAction(s.freeVolunteer, p.homeBeachId == null) { repo.setHomeBeach(null) },
                     ) + state.beaches.map { b ->
-                        DialogAction(
-                            (if (p.homeBeachId == b.id) "✓ " else "") + b.name,
-                            if (p.homeBeachId == b.id) DialogStyle.PRIMARY else DialogStyle.DEFAULT,
-                        ) { repo.setHomeBeach(b.id) }
+                        choiceAction(b.name, p.homeBeachId == b.id) { repo.setHomeBeach(b.id) }
                     } + DialogAction(s.cancel, DialogStyle.CANCEL),
                     onDismiss = { pickingBeach = false },
                 )
@@ -279,11 +273,7 @@ fun ProfileScreen(
                 PlatformChoiceDialog(
                     title = s.language.trim(),
                     actions = LANGUAGES.map { (code, label) ->
-                        val current = p.language.equals(code, ignoreCase = true)
-                        DialogAction(
-                            (if (current) "✓ " else "") + label,
-                            if (current) DialogStyle.PRIMARY else DialogStyle.DEFAULT,
-                        ) { repo.setLanguage(code) }
+                        choiceAction(label, p.language.equals(code, ignoreCase = true)) { repo.setLanguage(code) }
                     } + DialogAction(s.cancel, DialogStyle.CANCEL),
                     onDismiss = { pickingLang = false },
                 )
@@ -329,10 +319,10 @@ fun ProfileScreen(
                 )
             }
             if (deletedNotice) {
-                AlertDialog(
-                    onDismissRequest = { deletedNotice = false },
-                    title = { Text(s.deleteAccountDone) },
-                    confirmButton = { TextButton(onClick = { deletedNotice = false }) { Text(s.close) } },
+                PlatformChoiceDialog(
+                    title = s.deleteAccountDone,
+                    actions = listOf(DialogAction(s.close, DialogStyle.CANCEL)),
+                    onDismiss = { deletedNotice = false },
                 )
             }
         }
@@ -341,46 +331,6 @@ fun ProfileScreen(
 
 private val LANGUAGES = listOf("en" to "🇬🇧 English", "ru" to "🇷🇺 Русский", "tr" to "🇹🇷 Türkçe")
 
-@Composable
-private fun CommunityCard(s: com.carettafriends.content.AppStrings, name: String, tagline: String, members: Int, onOpen: () -> Unit) {
-    val c = caretta
-    CarettaCard(modifier = Modifier.clickable { onOpen() }) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(
-                Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(listOf(c.good, c.deep))),
-                contentAlignment = Alignment.Center,
-            ) { Text("🐢", fontSize = 22.sp) }
-            Column(Modifier.weight(1f)) {
-                Text(name, color = c.deep, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
-                Text(
-                    tagline.ifBlank { s.yourCommunity } + if (members > 0) " · $members ${s.volunteersWord}" else "",
-                    color = c.muted,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 2,
-                )
-            }
-            Text("›", color = c.muted, fontSize = 18.sp)
-        }
-    }
-}
-
-@Composable
-private fun BeachPickRow(label: String, selected: Boolean, onClick: () -> Unit) {
-    val c = caretta
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(11.dp))
-            .background(if (selected) c.sea.copy(alpha = 0.12f) else Color.Transparent)
-            .clickable { onClick() }.padding(horizontal = 10.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(label, color = c.ink, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-        if (selected) Text("✓", color = c.sea, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
-    }
-}
-
-/** One settings/navigation row. [accent] adds a small status dot — enough to flag "your work isn't
- *  saved to an account yet" without turning the row into a coloured banner. */
 @Composable
 private fun ProfileNavRow(
     label: String,
@@ -464,43 +414,6 @@ private fun StatTile(value: String, label: String, modifier: Modifier = Modifier
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(value, color = c.deep, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
             Text(label, color = c.muted, fontSize = 9.5.sp, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-private fun AccountCta(title: String, sub: String, onClick: () -> Unit) {
-    val c = caretta
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-            .background(c.sunlit.copy(alpha = 0.18f)).border(1.dp, c.sunlit, RoundedCornerShape(14.dp))
-            .clickable { onClick() }.padding(13.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text("🔒", fontSize = 20.sp)
-        Column(Modifier.weight(1f)) {
-            Text(title, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
-            Text(sub, color = c.muted, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-        }
-        Text("›", color = c.muted, fontSize = 18.sp)
-    }
-}
-
-@Composable
-private fun SignedInRow(label: String, email: String) {
-    val c = caretta
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-            .background(c.good.copy(alpha = 0.14f)).border(1.dp, c.good.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-            .padding(13.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text("✓", color = c.good, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
-        Column(Modifier.weight(1f)) {
-            Text(label, color = c.deep, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
-            Text(email, color = c.muted, fontSize = 11.5.sp, fontWeight = FontWeight.Medium)
         }
     }
 }

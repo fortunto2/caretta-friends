@@ -47,3 +47,13 @@ expect fun PlatformTextPrompt(
     secure: Boolean = false,
     onResult: (String?) -> Unit,
 )
+
+/**
+ * One option in a "pick one of these" dialog: ticked and highlighted when it's the current value.
+ * The three pickers built on [PlatformChoiceDialog] all need exactly this.
+ */
+fun choiceAction(label: String, selected: Boolean, onSelect: () -> Unit): DialogAction = DialogAction(
+    title = if (selected) "✓ $label" else label,
+    style = if (selected) DialogStyle.PRIMARY else DialogStyle.DEFAULT,
+    onSelect = onSelect,
+)

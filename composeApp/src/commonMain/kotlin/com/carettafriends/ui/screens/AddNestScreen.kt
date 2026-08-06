@@ -41,6 +41,7 @@ import com.carettafriends.data.CarettaRepository
 import com.carettafriends.data.DuplicateHit
 import com.carettafriends.data.DuplicateReason
 import com.carettafriends.data.MAX_BACKDATE_DAYS
+import com.carettafriends.data.localDateOf
 import com.carettafriends.data.today
 import com.carettafriends.domain.UpdateKind
 import kotlinx.datetime.toLocalDateTime
@@ -70,6 +71,7 @@ import com.carettafriends.ui.DialogAction
 import com.carettafriends.ui.DialogStyle
 import com.carettafriends.ui.PickedPhoto
 import com.carettafriends.ui.PlatformChoiceDialog
+import com.carettafriends.ui.choiceAction
 import com.carettafriends.ui.components.TopBar
 import com.carettafriends.ui.rememberCameraCapture
 import com.carettafriends.ui.rememberGalleryPicker
@@ -148,7 +150,7 @@ fun AddNestScreen(
         }
     }
     LaunchedEffect(galleryPhoto) {
-        val shot = galleryPhoto?.exifEpochMillis?.let { exifDate(it) } ?: return@LaunchedEffect
+        val shot = galleryPhoto?.exifEpochMillis?.let { localDateOf(it) } ?: return@LaunchedEffect
         val oldest = today().minus(DatePeriod(days = MAX_BACKDATE_DAYS))
         if (shot in oldest..today()) foundDate = shot
     }
@@ -270,10 +272,10 @@ fun AddNestScreen(
                     title = s.beachWord,
                     actions = ordered.map { b ->
                         val away = fixPoint?.let { " · ${distanceLabel(distanceMeters(it, b.center))}" }.orEmpty()
-                        DialogAction(
-                            title = (if (b.id == selectedBeach.id) "✓ " else "") + b.name + away,
-                            style = if (b.id == selectedBeach.id) DialogStyle.PRIMARY else DialogStyle.DEFAULT,
-                        ) { selectedBeach = b; beachManual = true }
+                        choiceAction(b.name + away, b.id == selectedBeach.id) {
+                            selectedBeach = b
+                            beachManual = true
+                        }
                     } + DialogAction(s.cancel, DialogStyle.CANCEL),
                     onDismiss = { pickingBeach = false },
                 )
@@ -454,11 +456,6 @@ fun AddNestScreen(
     }
 }
 
-/** EXIF capture time → the local calendar date it was taken on. */
-private fun exifDate(millis: Long) =
-    kotlinx.datetime.Instant.fromEpochMilliseconds(millis)
-        .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date
-
 @Composable
 private fun StepBtn(label: String, onClick: () -> Unit) {
     val c = caretta
@@ -471,43 +468,6 @@ private fun StepBtn(label: String, onClick: () -> Unit) {
 
 /** Coordinate trimmed to ~4 decimals (≈11 m) for display. */
 private fun coord(v: Double): String = ((v * 10000).toLong() / 10000.0).toString()
-
-/** Selectable list of the community's beaches; shows distance from the photo location if known. */
-@Composable
-private fun BeachPicker(beaches: List<Beach>, selected: Beach, from: GeoPoint?, onSelect: (Beach) -> Unit) {
-    val c = caretta
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        beaches.forEach { b ->
-            val isSel = b.id == selected.id
-            val dist = from?.let { distanceMeters(it, b.center) }
-            Row(
-                Modifier.fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(if (isSel) c.surface else c.sand)
-                    .border(if (isSel) 1.5.dp else 1.dp, if (isSel) c.sea else c.line, RoundedCornerShape(14.dp))
-                    .clickable { onSelect(b) }
-                    .padding(horizontal = 14.dp, vertical = 11.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Text(b.leaderAvatar, fontSize = 20.sp)
-                Column(Modifier.weight(1f)) {
-                    Text(b.name, color = c.deep, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
-                    Text(
-                        b.city + (b.leaderName?.let { " · $it" } ?: ""),
-                        color = c.muted,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-                if (dist != null) {
-                    Text(distanceLabel(dist), color = if (isSel) c.sea else c.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-                if (isSel) Text("✓", color = c.sea, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
-            }
-        }
-    }
-}
 
 /** One choice inside a [Segmented] control. */
 private data class SegOption(val label: String, val selected: Boolean, val onClick: () -> Unit)

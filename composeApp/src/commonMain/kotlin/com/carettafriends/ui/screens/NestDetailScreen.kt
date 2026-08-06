@@ -47,6 +47,7 @@ import com.carettafriends.data.platformShareImage
 import com.carettafriends.data.platformSharePdf
 import com.carettafriends.data.MAX_BACKDATE_DAYS
 import com.carettafriends.data.nestDay
+import com.carettafriends.data.localDateOf
 import com.carettafriends.data.today
 import com.carettafriends.domain.Nest
 import com.carettafriends.domain.NestConfidence
@@ -257,7 +258,9 @@ fun NestDetailScreen(
                 color = c.sea,
                 fontSize = 12.5.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable { onOpenMember(n.foundBy) },
+                // The uid when the record carries one — display names collide (guardian names come
+                // from a small vocabulary), and a name match would open the WRONG volunteer.
+                modifier = Modifier.clickable { onOpenMember(n.foundByUserId ?: n.foundBy) },
             )
 
             // Where the nest is — tap to centre the in-app map on this exact spot.
@@ -383,7 +386,7 @@ private fun ConditionChip(text: String) {
 
 /** Timeline meta line — the author name is tappable (→ their profile), followed by date/condition. */
 @Composable
-private fun AuthorMeta(author: String, rest: String, onOpenMember: (String) -> Unit) {
+private fun AuthorMeta(author: String, authorKey: String, rest: String, onOpenMember: (String) -> Unit) {
     val c = caretta
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
@@ -391,7 +394,7 @@ private fun AuthorMeta(author: String, rest: String, onOpenMember: (String) -> U
             color = c.sea,
             fontSize = 10.5.sp,
             fontWeight = FontWeight.ExtraBold,
-            modifier = Modifier.clickable { onOpenMember(author) },
+            modifier = Modifier.clickable { onOpenMember(authorKey) },
         )
         Text(rest, color = c.muted, fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
     }
@@ -448,7 +451,7 @@ private fun TimelineRow(u: NestUpdate, body: String, s: AppStrings, onOpenMember
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text("“$body”", color = c.ink, fontSize = 13.sp, fontStyle = FontStyle.Italic)
-                        AuthorMeta(u.author, metaRest, onOpenMember)
+                        AuthorMeta(u.author, u.authorUserId ?: u.author, metaRest, onOpenMember)
                     }
                 }
             } else {
@@ -456,7 +459,7 @@ private fun TimelineRow(u: NestUpdate, body: String, s: AppStrings, onOpenMember
                     if (body.isNotBlank()) {
                         Text(body, color = c.ink, fontSize = 13.5.sp, fontWeight = FontWeight.Bold)
                     }
-                    AuthorMeta(u.author, metaRest, onOpenMember)
+                    AuthorMeta(u.author, u.authorUserId ?: u.author, metaRest, onOpenMember)
                 }
             }
         }
@@ -549,8 +552,7 @@ private fun AddUpdateDialog(
     val pick = rememberGalleryPicker { picked -> if (picked != null) photo = picked }
     // An old gallery photo back-dates the update via its EXIF (capped a month); a live note = today.
     val obsDate = photo?.exifEpochMillis?.let { millis ->
-        Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.currentSystemDefault()).date
-            .coerceIn(today().minus(DatePeriod(days = MAX_BACKDATE_DAYS)), today())
+        localDateOf(millis).coerceIn(today().minus(DatePeriod(days = MAX_BACKDATE_DAYS)), today())
     } ?: today()
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = RoundedCornerShape(20.dp), color = c.surface) {

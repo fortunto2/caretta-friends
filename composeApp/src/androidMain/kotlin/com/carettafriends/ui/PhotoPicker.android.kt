@@ -14,12 +14,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
 import com.carettafriends.data.photoFingerprint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
 import java.util.Calendar
@@ -27,11 +31,16 @@ import java.util.Calendar
 @Composable
 actual fun rememberGalleryPicker(onPicked: (PickedPhoto?) -> Unit): () -> Unit {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri == null) {
             onPicked(null)
         } else {
-            runCatching {
+            // Copying a multi-megabyte JPEG, re-reading it for EXIF and hashing it are three file
+            // passes; the picker's callback runs on the main thread, so they go to IO.
+            scope.launch {
+                val picked = withContext(Dispatchers.IO) {
+                    runCatching {
                 // Copy to app storage — a content:// grant is transient, a file path survives.
                 val dest = File(context.filesDir, "nest_${System.currentTimeMillis()}.jpg")
                 context.contentResolver.openInputStream(uri)!!.use { input ->
@@ -41,17 +50,18 @@ actual fun rememberGalleryPicker(onPicked: (PickedPhoto?) -> Unit): () -> Unit {
                 // MediaStore.setRequireOriginal can't reach its picker URIs — verified on API 36.
                 // So a gallery import here never has GPS (unlike iOS, where PHPicker keeps it) and
                 // the form says so out loud. On Android, capture is the path to real coordinates.
-                val meta = context.contentResolver.openInputStream(uri)?.use { readExif(it) }
-                onPicked(
-                    PickedPhoto(
-                        path = dest.absolutePath,
-                        exifEpochMillis = meta?.millis,
-                        lat = meta?.lat,
-                        lng = meta?.lng,
-                        hash = photoFingerprint(dest.absolutePath),
-                    ),
-                )
-            }.getOrElse { onPicked(null) }
+                        val meta = context.contentResolver.openInputStream(uri)?.use { readExif(it) }
+                        PickedPhoto(
+                            path = dest.absolutePath,
+                            exifEpochMillis = meta?.millis,
+                            lat = meta?.lat,
+                            lng = meta?.lng,
+                            hash = photoFingerprint(dest.absolutePath),
+                        )
+                    }.getOrNull()
+                }
+                onPicked(picked)
+            }
         }
     }
     return { launcher.launch("image/*") }
@@ -67,6 +77,7 @@ actual fun rememberGalleryPicker(onPicked: (PickedPhoto?) -> Unit): () -> Unit {
 @Composable
 actual fun rememberCameraCapture(onCaptured: (PickedPhoto?) -> Unit): (() -> Unit)? {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var target by remember { mutableStateOf<File?>(null) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         val file = target
@@ -74,20 +85,26 @@ actual fun rememberCameraCapture(onCaptured: (PickedPhoto?) -> Unit): (() -> Uni
             onCaptured(null)
             return@rememberLauncherForActivityResult
         }
-        val fix = lastKnownFix(context)
-        if (fix != null) {
-            runCatching { ExifInterface(file.absolutePath).apply { setLatLong(fix.first, fix.second); saveAttributes() } }
+        // Writing EXIF, copying into the gallery and hashing are all file work — off the main thread.
+        scope.launch {
+            val shot = withContext(Dispatchers.IO) {
+                val fix = lastKnownFix(context)
+                if (fix != null) {
+                    runCatching {
+                        ExifInterface(file.absolutePath).apply { setLatLong(fix.first, fix.second); saveAttributes() }
+                    }
+                }
+                saveToGallery(context, file)
+                PickedPhoto(
+                    path = file.absolutePath,
+                    exifEpochMillis = System.currentTimeMillis(),
+                    lat = fix?.first,
+                    lng = fix?.second,
+                    hash = photoFingerprint(file.absolutePath),
+                )
+            }
+            onCaptured(shot)
         }
-        saveToGallery(context, file)
-        onCaptured(
-            PickedPhoto(
-                path = file.absolutePath,
-                exifEpochMillis = System.currentTimeMillis(),
-                lat = fix?.first,
-                lng = fix?.second,
-                hash = photoFingerprint(file.absolutePath),
-            ),
-        )
     }
     val open = {
         val file = File(context.filesDir, "nest_${System.currentTimeMillis()}.jpg")
@@ -129,7 +146,8 @@ private fun saveToGallery(context: Context, file: File) {
             put(MediaStore.Images.Media.IS_PENDING, 1)
         }
         val resolver = context.contentResolver
-        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return
+        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+            ?: return@runCatching
         resolver.openOutputStream(uri)?.use { out -> file.inputStream().use { it.copyTo(out) } }
         resolver.update(uri, ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }, null, null)
     }

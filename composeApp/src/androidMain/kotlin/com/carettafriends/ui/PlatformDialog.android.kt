@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.carettafriends.ui.theme.caretta
@@ -38,7 +39,7 @@ actual fun PlatformChoiceDialog(
         text = {
             Column(
                 Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(2.dp2()),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 message?.let { Text(it, color = c.muted) }
                 // Material stacks at most two buttons in its row, so the choices are rows here —
@@ -84,7 +85,7 @@ actual fun PlatformTextPrompt(
         onDismissRequest = { onResult(null) },
         title = { Text(title) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp2())) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 message?.let { Text(it, color = c.muted) }
                 OutlinedTextField(
                     value = draft,
@@ -100,5 +101,3 @@ actual fun PlatformTextPrompt(
         dismissButton = { TextButton(onClick = { onResult(null) }) { Text(cancelLabel) } },
     )
 }
-
-private fun Int.dp2() = androidx.compose.ui.unit.Dp(this.toFloat())

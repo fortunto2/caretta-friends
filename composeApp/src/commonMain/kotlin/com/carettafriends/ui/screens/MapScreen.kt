@@ -3,8 +3,6 @@ package com.carettafriends.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,7 +36,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.MarkerType
-import com.carettafriends.domain.MemberRole
 import com.carettafriends.domain.Nest
 import com.carettafriends.domain.NestStatus
 import com.carettafriends.domain.SimpleMarker
@@ -78,9 +75,7 @@ fun MapScreen(
     // Bumped by the "locate me" button; the map actual animates onto the user's own position.
     var recenterTick by remember { mutableStateOf(0) }
     // Patrol recording is a coordinator's tool: a signed-in member with a role, not a passer-by.
-    val canPatrol = patrol != null &&
-        state.accountEmail != null &&
-        state.profile.memberRole != MemberRole.VOLUNTEER
+    val canPatrol = patrol != null && state.canRecordPatrol
 
     // Timelapse — scrub/play the season day-by-day; nests appear on their found date.
     var timelapse by remember { mutableStateOf(false) }
