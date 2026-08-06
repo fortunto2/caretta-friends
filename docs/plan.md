@@ -131,6 +131,26 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 - **⏳ Nearest nest ≤10 m** — CoreLocation region monitoring / continuous distance → local notification or a
   Live Activity ("ты у гнезда"). Great field UX.
 
+### Production release 1.0.4 — prepared, blocked on ONE thing (2026-08-07)
+
+Everything for the Play **production** launch is staged except a video Google requires:
+
+- ✅ **Data safety rewritten** to match what the app now does — Personal info (name, email, user ids),
+  Precise location, **Photos**, App activity (**App interactions** for the counter + other
+  user-generated content). Two answers were also simply wrong before: the app *does* let you create
+  an account (email + password), and there is no partial data deletion without deleting the account.
+- ✅ **177 countries / regions** targeted on the production track.
+- ✅ **Draft production release `5 (1.0.4)`** with release notes in EN/RU/TR.
+- ✅ **Privacy policy rewritten and live** (`app.carettafriends.com/privacy`, caretta-landing
+  `9268b2e`) — photos are uploaded and stripped of EXIF, sync happens without an account, nest
+  coordinates are visible to everyone using the app, the usage counter and its install-scoped id.
+- 🔴 **BLOCKED: `FOREGROUND_SERVICE_LOCATION` needs a demo video.** Play asks for a link to a video
+  showing the permission in use, and it asks for it under EVERY category (checked: user-initiated
+  sharing, navigation, geofencing, other). Two ways out: (a) a ~30 s unlisted YouTube clip —
+  start a patrol, show the ongoing notification counting metres, stop and save; or (b) drop the
+  patrol service from the public build (rebuild without the permission) and restore it once the
+  video exists.
+
 ### Release 1.0.3 / 1.0.2 — SHIPPED (2026-08-07)
 
 - **iOS `1.0.2 (6)`** — on TestFlight (internal groups `test` + `friends`) and **submitted for App
