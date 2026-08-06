@@ -31,6 +31,25 @@ interface Claims {
 let jwksCache: { keys: JsonWebKey[]; fetchedAt: number } | null = null;
 const JWKS_TTL_MS = 60 * 60 * 1000;
 
+/** A phone photo, generously. Beyond this something is wrong — or someone is filling the bucket. */
+const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
+
+/** What a nest photo may be. The magic bytes are checked, not the caller's Content-Type. */
+const IMAGE_SIGNATURES: { name: string; type: string; test: (b: Uint8Array) => boolean }[] = [
+	{ name: 'jpeg', type: 'image/jpeg', test: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
+	{
+		name: 'png',
+		type: 'image/png',
+		test: (b) => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47,
+	},
+	{
+		// HEIC/HEIF: "....ftyp" then a brand.
+		name: 'heic',
+		type: 'image/heic',
+		test: (b) => b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70,
+	},
+];
+
 function base64UrlToBytes(input: string): Uint8Array {
 	const padded = input.replace(/-/g, '+').replace(/_/g, '/');
 	const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4));
@@ -39,14 +58,22 @@ function base64UrlToBytes(input: string): Uint8Array {
 	return bytes;
 }
 
-async function jwks(env: Env): Promise<JsonWebKey[]> {
-	const fresh = jwksCache && Date.now() - jwksCache.fetchedAt < JWKS_TTL_MS;
+async function jwks(env: Env, force = false): Promise<JsonWebKey[]> {
+	const fresh = !force && jwksCache && Date.now() - jwksCache.fetchedAt < JWKS_TTL_MS;
 	if (fresh) return jwksCache!.keys;
 	const res = await fetch(env.SUPABASE_JWKS_URL);
 	if (!res.ok) throw new Error(`jwks ${res.status}`);
 	const body = (await res.json()) as { keys: (JsonWebKey & { kid?: string })[] };
 	jwksCache = { keys: body.keys, fetchedAt: Date.now() };
 	return body.keys;
+}
+
+/** The signing key for this token's `kid`, refetching once if the cache predates a key rotation —
+ *  otherwise a rotation silently 401s every upload and download until the hour-long cache expires. */
+async function keyFor(kid: string, env: Env): Promise<JsonWebKey | undefined> {
+	const cached = (await jwks(env)).find((k) => (k as { kid?: string }).kid === kid);
+	if (cached) return cached;
+	return (await jwks(env, true)).find((k) => (k as { kid?: string }).kid === kid);
 }
 
 /** Verify a Supabase access token and return its claims, or null if it doesn't hold up. */
@@ -59,7 +86,7 @@ async function verify(token: string, env: Env): Promise<Claims | null> {
 	// ES256 only: never let a token pick its own algorithm (that's how "alg: none" gets in).
 	if (header.alg !== 'ES256' || !header.kid) return null;
 
-	const jwk = (await jwks(env)).find((k) => (k as { kid?: string }).kid === header.kid);
+	const jwk = await keyFor(header.kid, env);
 	if (!jwk) return null;
 
 	const key = await crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
@@ -124,9 +151,23 @@ export default {
 
 		if (request.method === 'PUT') {
 			if (!key.startsWith(`${claims.sub}/`)) return new Response('Forbidden', { status: 403 });
-			const type = request.headers.get('Content-Type') ?? 'image/jpeg';
-			if (!type.startsWith('image/')) return new Response('Unsupported media type', { status: 415 });
-			await env.PHOTOS.put(key, request.body, { httpMetadata: { contentType: type } });
+
+			// The bucket has no size limit or type allowlist of its own (Supabase Storage did; R2
+			// doesn't), and anonymous sign-up is open to anyone holding the app's key — so the cap
+			// and the format check live here, or they live nowhere.
+			const declared = Number(request.headers.get('Content-Length') ?? '0');
+			if (declared > MAX_PHOTO_BYTES) return new Response('Payload too large', { status: 413 });
+
+			const body = await request.arrayBuffer();
+			if (body.byteLength === 0) return new Response('Empty body', { status: 400 });
+			if (body.byteLength > MAX_PHOTO_BYTES) return new Response('Payload too large', { status: 413 });
+
+			// Trust the bytes, not the header: a Content-Type is whatever the caller typed.
+			const head = new Uint8Array(body.slice(0, 12));
+			const format = IMAGE_SIGNATURES.find((s) => s.test(head));
+			if (!format) return new Response('Unsupported media type', { status: 415 });
+
+			await env.PHOTOS.put(key, body, { httpMetadata: { contentType: format.type } });
 			return new Response(JSON.stringify({ key }), {
 				status: 201,
 				headers: { 'Content-Type': 'application/json' },

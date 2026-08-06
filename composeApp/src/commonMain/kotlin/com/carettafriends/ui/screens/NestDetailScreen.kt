@@ -161,7 +161,7 @@ fun NestDetailScreen(
         ) {
             val cover = n.photos.firstOrNull()
             if (cover != null) {
-                NestPhoto(cover, Modifier.fillMaxSize())
+                NestPhoto(cover, Modifier.fillMaxSize(), maxPx = 2048)
             } else {
                 Text(
                     n.photos.firstOrNull()?.placeholder ?: "🥚",

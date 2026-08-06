@@ -172,7 +172,11 @@ class SupabaseAuth : AuthBackend {
     }
 
     override suspend fun deleteAccount(): AuthOutcome {
-        val s = ensureSession() ?: return AuthOutcome(false, "You're offline — try again when connected")
+        // NOT ensureSession(): that signs in a NEW anonymous user when the stored session can't be
+        // refreshed, and we would delete that throwaway account, report success, and leave the
+        // volunteer's real one — with their email — standing on the server.
+        val s = existingSession()
+            ?: return AuthOutcome(false, "Please sign in again before deleting your account")
         val resp = http.post("${SupabaseConfig.URL.trimEnd('/')}/rest/v1/rpc/delete_account") {
             header("apikey", SupabaseConfig.ANON_KEY)
             header("Authorization", "Bearer ${s.accessToken}")
@@ -189,6 +193,13 @@ class SupabaseAuth : AuthBackend {
     override fun clearSession() {
         session = null
         runCatching { LocalStore.delete(AUTH_FILE) }
+    }
+
+    /** The session we already have, refreshed if stale — never a brand-new anonymous one. */
+    private suspend fun existingSession(): AuthSession? {
+        val current = session ?: return null
+        if (current.expiresAt - nowSec() > REFRESH_SKEW_SEC) return current
+        return runCatching { refresh(current.refreshToken) }.getOrNull()
     }
 
     override suspend fun ensureSession(): AuthSession? {

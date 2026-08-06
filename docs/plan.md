@@ -182,6 +182,23 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 
 ---
 
+## 🔴 Known, NOT fixed (decide before a public release)
+
+- **Nest photos are readable by anyone who can mint an anonymous token** — i.e. anyone who extracts
+  the app's publishable key from the APK/IPA. The photo Worker enforces "signed-in volunteer", and
+  anonymous sign-up is open, so the door is exactly as wide as it already is for `nests` rows
+  (`0003_rls_auth.sql`, `select using (true)`). Same fix as the coordinate exposure below: a
+  verified-volunteer role, granted by a community admin, gating both.
+- **Android patrol recording stops when the screen locks** — the recorder is a plain
+  `LocationManager` client in the app process, and Android suspends location for a backgrounded app
+  without a foreground service. It survives navigation now (shared instance), but a pocketed phone
+  still loses the walk. Proper fix: a `ForegroundService` with `type=location` + the matching
+  manifest permission, driven from the repository rather than a screen.
+- **iOS: opening the camera from inside the add-nest form discards the typed note / date / beach.**
+  `router.startAddNest()` resets the tab's navigation stack. Cancel now returns to a fresh form
+  instead of a bare map, but the entered values are gone. Proper fix: present the camera over the
+  existing stack and feed the photo back into the live form.
+
 ## ⚠️ Gotchas (read before editing)
 
 - **AppStrings is Map-backed** (`class AppStrings(m: Map<String,String>, months: List<String>)` + 255 computed getters). A plain data class with ~255 constructor args tripped the ART verifier → **VerifyError on launch** (compiles fine, crashes on class-load). Add a field = getter + one `"key" to "value"` in all 3 `mapOf` bundles (EN/RU/TR). `months` is the one non-String field (explicit param).

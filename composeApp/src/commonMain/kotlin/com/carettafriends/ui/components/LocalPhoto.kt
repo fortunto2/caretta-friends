@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.sp
 import com.carettafriends.data.LocalStore
@@ -19,6 +20,8 @@ import com.carettafriends.data.PhotoFiles
 import com.carettafriends.data.decodeImageBytes
 import com.carettafriends.domain.PhotoRef
 import com.carettafriends.ui.theme.caretta
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Renders a photo stored on disk at an absolute [path] (e.g. from the native camera).
@@ -41,14 +44,16 @@ fun NestPhoto(
     modifier: Modifier = Modifier,
     placeholder: String = "🥚",
     hideWhenMissing: Boolean = false,
+    /** Longest side actually drawn, in pixels — a list thumbnail needs nothing like a full photo. */
+    maxPx: Int = 1024,
 ) {
-    var path by remember(photo?.id) {
-        mutableStateOf(photo?.localUri?.takeIf { LocalStore.existsAbs(it) })
-    }
+    var path by remember(photo?.id) { mutableStateOf<String?>(null) }
     LaunchedEffect(photo?.id) {
-        if (path == null && photo != null) path = PhotoFiles.localPath(photo)
+        // Checking the file and, when it's someone else's photo, fetching it are both disk/network
+        // work — never on the frame thread, this runs for every row of a scrolling feed.
+        if (photo != null) path = withContext(Dispatchers.Default) { PhotoFiles.localPath(photo) }
     }
-    LocalPhoto(path, modifier, placeholder, hideWhenMissing = hideWhenMissing && path == null)
+    LocalPhoto(path, modifier, placeholder, hideWhenMissing = hideWhenMissing && path == null, maxPx = maxPx)
 }
 
 @Composable
@@ -57,11 +62,21 @@ fun LocalPhoto(
     modifier: Modifier = Modifier,
     placeholder: String = "🥚",
     hideWhenMissing: Boolean = false,
+    maxPx: Int = 1024,
 ) {
-    val bitmap = remember(path) { path?.let { LocalStore.readBytesAbs(it) }?.let { decodeImageBytes(it) } }
+    // Read + decode off the frame thread: `remember { decode(...) }` did both DURING composition,
+    // so a beach feed decoded a dozen multi-megapixel JPEGs on the UI thread while scrolling.
+    var bitmap by remember(path, maxPx) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(path, maxPx) {
+        bitmap = path?.let {
+            withContext(Dispatchers.Default) {
+                LocalStore.readBytesAbs(it)?.let { bytes -> decodeImageBytes(bytes, maxPx) }
+            }
+        }
+    }
     when {
         bitmap != null -> Image(
-            bitmap = bitmap,
+            bitmap = bitmap!!,
             contentDescription = "Photo",
             modifier = modifier,
             contentScale = ContentScale.Crop,

@@ -20,18 +20,24 @@ import androidx.core.content.ContextCompat
 import com.carettafriends.domain.GeoPoint
 import com.carettafriends.domain.distanceMeters
 
+/** One recorder for the process. A patrol in progress must survive leaving the map — opening the
+ *  nest you just found used to destroy the whole walk, unsaved, with no message. Holds the
+ *  application context, so it outlives an Activity without leaking one. */
+private var sharedRecorder: AndroidPatrolRecorder? = null
+
 @Composable
 actual fun rememberPatrolRecorder(): PatrolRecorder? {
-    val context = LocalContext.current
-    val recorder = remember { AndroidPatrolRecorder(context) }
+    val context = LocalContext.current.applicationContext
+    val recorder = remember { sharedRecorder ?: AndroidPatrolRecorder(context).also { sharedRecorder = it } }
     // Asking at the moment the volunteer taps "start patrol" is the only place the permission makes
     // sense — the answer comes back here and starts the walk without a second tap.
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) recorder.beginUpdates()
     }
     recorder.requestPermission = { ask.launch(Manifest.permission.ACCESS_FINE_LOCATION) }
-    // A walk must not keep the GPS running after the map is gone.
-    DisposableEffect(recorder) { onDispose { recorder.dispose() } }
+    // Leaving the map stops the GPS — unless a walk is actually being recorded, which is the whole
+    // point of it running.
+    DisposableEffect(recorder) { onDispose { if (!recorder.isRecording) recorder.dispose() } }
     return recorder
 }
 
@@ -43,8 +49,10 @@ private class AndroidPatrolRecorder(private val context: Context) : PatrolRecord
 
     override var isRecording by mutableStateOf(false)
         private set
-    override var meters by mutableStateOf(0)
-        private set
+    override val meters: Int get() = walked.toInt()
+
+    /** Accumulated as a Double: truncating each 3-4 m leg to an Int lost ~10% of a long walk. */
+    private var walked by mutableStateOf(0.0)
     override var seconds by mutableStateOf(0)
         private set
     override var track by mutableStateOf<List<GeoPoint>>(emptyList())
@@ -64,7 +72,7 @@ private class AndroidPatrolRecorder(private val context: Context) : PatrolRecord
     fun beginUpdates() {
         if (isRecording || !hasPermission()) return
         track = emptyList()
-        meters = 0
+        walked = 0.0
         seconds = 0
         startedAtMs = SystemClock.elapsedRealtime()
         isRecording = true
@@ -97,7 +105,7 @@ private class AndroidPatrolRecorder(private val context: Context) : PatrolRecord
         val step = last?.let { distanceMeters(it, point) } ?: 0.0
         if (last != null && step < 3.0) return
         track = track + point
-        meters += step.toInt()
+        walked += step
         seconds = ((SystemClock.elapsedRealtime() - startedAtMs) / 1000).toInt()
     }
 

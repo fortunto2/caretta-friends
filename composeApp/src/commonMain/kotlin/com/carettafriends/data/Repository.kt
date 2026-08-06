@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -151,7 +152,12 @@ fun nestMapPhase(nest: Nest, today: LocalDate = today()): String = when (nest.st
  */
 internal fun nextNestCode(nests: List<Nest>, prefix: String = "GZP"): String {
     val used = nests.mapTo(mutableSetOf()) { it.code }
-    val highest = nests.mapNotNull { it.code.substringAfterLast('-').toIntOrNull() }.maxOrNull() ?: 0
+    // Only OUR prefix counts. The app is multi-community: once "ANT-412" syncs in, counting every
+    // code would jump Gazipaşa to GZP-413 and burn four hundred numbers.
+    val highest = nests
+        .filter { it.code.startsWith("$prefix-") }
+        .mapNotNull { it.code.substringAfterLast('-').toIntOrNull() }
+        .maxOrNull() ?: 0
     var n = highest + 1
     while ("$prefix-$n" in used) n++
     return "$prefix-$n"
@@ -195,10 +201,12 @@ private fun loadOrSeed(json: Json): AppState {
         // Installs made before guardian names still carry the shared placeholder — give them one
         // now so their next find is signed by someone rather than by "Volunteer".
         .let {
-            if (it.profile.nameSet || !isPlaceholderName(it.profile.displayName)) {
-                it
-            } else {
-                it.copy(profile = it.profile.copy(displayName = randomGuardianName(it.profile.language)))
+            when {
+                it.profile.nameSet -> it
+                // A name typed before `nameSet` existed deserializes as "not set" — it plainly IS
+                // set, so record that instead of nagging them about a name they already chose.
+                !isPlaceholderName(it.profile.displayName) -> it.copy(profile = it.profile.copy(nameSet = true))
+                else -> it.copy(profile = it.profile.copy(displayName = randomGuardianName(it.profile.language)))
             }
         }
 
@@ -330,8 +338,10 @@ class CarettaRepository {
      * and the image follows on the next sync. Only OUR photos — storage refuses writes outside our
      * own uid prefix anyway (0007_photo_storage.sql).
      */
-    private suspend fun uploadPendingPhotos() {
-        val owner = myUserId() ?: return
+    private val uploadLock = kotlinx.coroutines.sync.Mutex()
+
+    private suspend fun uploadPendingPhotos() = uploadLock.withLock {
+        val owner = myUserId() ?: return@withLock
         val s = _state.value
         for (nest in s.nests.filter { s.isMine(it) }) {
             for (photo in nest.photos) {
@@ -530,6 +540,9 @@ class CarettaRepository {
                 return@launch
             }
             LocalStore.delete(STATE_FILE)
+            // Every photo this device holds carries the GPS of a protected nesting beach in its
+            // EXIF — erasing the account has to erase those too, not just the state file.
+            LocalStore.deletePhotos()
             _state.value = seedState().copy(community = seedCommunity())
             onResult(null)
         }

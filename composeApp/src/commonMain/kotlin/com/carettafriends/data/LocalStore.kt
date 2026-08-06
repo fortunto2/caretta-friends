@@ -44,6 +44,19 @@ object LocalStore {
         }
     }
 
+    /** Erase every photo this device holds: the download cache and our own captures. Their EXIF
+     *  carries protected-nest coordinates, so "delete my account" has to take them with it. */
+    fun deletePhotos() {
+        try {
+            val dir = appDirPath().toPath()
+            val cache = dir / "photos"
+            if (fs.exists(cache)) fs.deleteRecursively(cache)
+            fs.list(dir).filter { it.name.startsWith("nest_") }.forEach { runCatching { fs.delete(it) } }
+        } catch (e: Throwable) {
+            // best-effort; ignore
+        }
+    }
+
     /** Does a file exist at this ABSOLUTE path? */
     fun existsAbs(absPath: String): Boolean = try {
         fs.exists(absPath.toPath())

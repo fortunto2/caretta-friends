@@ -100,14 +100,18 @@ fun AddNestScreen(
     // Android captures through the system camera right here; iOS returns null and routes to its own
     // native camera screen via [onCamera].
     val cameraCapture = rememberCameraCapture { shot -> if (shot != null) galleryPhoto = shot }
-    val photoPath = pending?.path ?: galleryPhoto?.path
+    // ONE attached photo — the latest choice wins. Path, identity and coordinates all come from the
+    // same picture: reading them from different sources let a camera shot be saved at an old gallery
+    // photo's coordinates, and marked "confirmed".
+    val attached = galleryPhoto ?: pending?.let { PickedPhoto(it.path, null, it.lat, it.lng, it.hash) }
+    val photoPath = attached?.path
     val hasPhoto = photoPath != null
-    val photoHash = pending?.hash ?: galleryPhoto?.hash
+    val photoHash = attached?.hash
     // Nest location comes ONLY from the photo's GPS (EXIF) — nests are created by photographing
     // them on-site, never dropped by hand (avoids spam / bogus pins).
-    val fixPoint = remember(pending, galleryPhoto) {
-        val lat = pending?.lat ?: galleryPhoto?.lat
-        val lng = pending?.lng ?: galleryPhoto?.lng
+    val fixPoint = remember(attached) {
+        val lat = attached?.lat
+        val lng = attached?.lng
         if (lat != null && lng != null) GeoPoint(lat, lng) else null
     }
     var exposure by remember { mutableStateOf(SunExposure.PARTIAL) }

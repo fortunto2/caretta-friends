@@ -72,7 +72,7 @@ private func destinationView(_ route: Route, path: Binding<NavigationPath>, rout
                     // Hand over to the REAL native camera (map tab owns it); it re-enters this
                     // form with the captured photo. It used to push a mock viewfinder that could
                     // not take a picture at all.
-                    onCamera: { router.startAddNest() },
+                    onCamera: { router.startAddNest(fromForm: true) },
                     onNestSaved: { id in path.wrappedValue.removeLast(); path.wrappedValue.append(Route.nest(id)) }
                 )
             }
@@ -149,6 +149,8 @@ struct MapTab: View {
     @EnvironmentObject private var router: AppRouter
     @State private var path = NavigationPath()
     @State private var showCamera = false
+    /// The camera was opened from the add-nest form (not from the global "+").
+    @State private var cameFromForm = false
     @State private var showAR = false
     @State private var focusCoord: CLLocationCoordinate2D? = nil
     @State private var focusApplyTick = 0
@@ -418,6 +420,7 @@ struct MapTab: View {
             }
         }
         .onChange(of: router.startAddTick) { _ in
+            cameFromForm = router.startedFromForm
             // Global "+" (from any tab) → run the add-nest flow on THIS tab's stack: camera → form →
             // saved nest, all with the bottom tab bar visible. Reset to the map root for a clean start.
             if !path.isEmpty { path = NavigationPath() }
@@ -443,7 +446,14 @@ struct MapTab: View {
                     )
                     if path.isEmpty { path.append(Route.addNest) }
                 },
-                onCancel: { showCamera = false }
+                onCancel: {
+                    showCamera = false
+                    // Coming from the add-nest form, the camera reset the stack to open — landing
+                    // back on a bare map after "cancel" looks like the app threw the work away.
+                    // (The form's typed note/date are lost either way; the form itself comes back.)
+                    if cameFromForm { path.append(Route.addNest) }
+                    cameFromForm = false
+                }
             )
         }
         .alert(strings.patrolPublishTitle, isPresented: $showPublish) {
@@ -646,7 +656,15 @@ final class AppRouter: ObservableObject {
     /// Switch to the Map tab and request it to consume the pending map focus.
     func focusMap() { selection = .map; focusTick += 1 }
     /// Switch to the Map tab and start the add-a-nest flow there (camera → form → saved nest).
-    func startAddNest() { selection = .map; startAddTick += 1 }
+    /// [fromForm] tells the map tab the camera was opened from an add-nest form, so cancelling
+    /// returns there instead of dropping the volunteer on the map.
+    private(set) var startedFromForm = false
+
+    func startAddNest(fromForm: Bool = false) {
+        startedFromForm = fromForm
+        selection = .map
+        startAddTick += 1
+    }
 
     init() {
         // Screenshot helper only: `SIMCTL_CHILD_CF_TAB=beaches|learn|profile` preselects a tab so

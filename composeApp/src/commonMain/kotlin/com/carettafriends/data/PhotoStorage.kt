@@ -87,24 +87,23 @@ object PhotoFiles {
     /** A readable local path for [photo], downloading the shared copy if this device lacks the file. */
     suspend fun localPath(photo: PhotoRef): String? {
         photo.localUri?.takeIf { LocalStore.existsAbs(it) }?.let { return it }
-        resolved[photo.id]?.let { return it }
-        val cached = cachePath(photo.id)
-        if (LocalStore.existsAbs(cached)) {
-            resolved[photo.id] = cached
-            return cached
-        }
-        val remote = photo.remotePath ?: return null
-        val backend = storage ?: return null
+        // Every read and write of the memo goes through the lock — a plain map shared between the
+        // UI thread and the download coroutines corrupts under a resize.
         return lock.withLock {
-            // Another caller may have won the race while we waited.
-            resolved[photo.id] ?: run {
-                val bytes = runCatching { backend.download(remote) }.getOrNull() ?: return@run null
-                if (LocalStore.writeBytesAbs(cached, bytes)) {
-                    resolved[photo.id] = cached
-                    cached
-                } else {
-                    null
-                }
+            resolved[photo.id]?.let { return@withLock it }
+            val cached = cachePath(photo.id)
+            if (LocalStore.existsAbs(cached)) {
+                resolved[photo.id] = cached
+                return@withLock cached
+            }
+            val remote = photo.remotePath ?: return@withLock null
+            val backend = storage ?: return@withLock null
+            val bytes = runCatching { backend.download(remote) }.getOrNull() ?: return@withLock null
+            if (LocalStore.writeBytesAbs(cached, bytes)) {
+                resolved[photo.id] = cached
+                cached
+            } else {
+                null
             }
         }
     }
