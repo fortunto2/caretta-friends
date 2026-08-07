@@ -33,10 +33,14 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
     coastline around the point, for a shore the app hasn't discovered yet.
   - Covered by `commonTest/domain/NestingGroundTest.kt` (first tests in the repo) with the real
     Gazipaşa geometry — `./gradlew :composeApp:iosSimulatorArm64Test`.
-- **Production data cleared** (`0009_clear_pre_launch_test_data.sql`): everything before 2026-08-07
-  soft-deleted (nests, one empty violation marker, two 0 m patrols), keeping GZP-21. Note the
-  tombstones do **not** reach installed apps — `mergeNests` is additive (local ∪ remote), so a device
-  that already holds those nests keeps showing them; fresh installs see the clean state.
+- **Production data cleared** (`0009`, `0010`): every pre-launch record soft-deleted — nests, an
+  empty violation marker, two 0 m patrols. GZP-21 went too: it sits in the same block of flats as
+  GZP-22/23 and the shoreline check would refuse it today, so the season starts from an empty map.
+- **Deletions now reach installed apps.** `pullDeletedIds()` fetches the tombstoned ids on sync and
+  prunes them locally. Without it an admin clearing a bogus nest cleared it only for people who
+  hadn't synced yet — the merge is a union, so everyone else kept it forever. Verified on the
+  emulator: 30 cached nests and 1 marker vanished on the next launch, while three unpublished
+  local-only patrols were correctly left alone.
 - **Field-test fixes (2026-08-06, from Alina's session — GZP-21…24 in prod)**. Four separate bugs
   made "I logged a nest and it's not in my profile" true:
   - **Timeline entries had `createdEpochMillis = 0`** (`FOUND`, `STATUS_CHANGE`, `EXCAVATED`). The

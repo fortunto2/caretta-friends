@@ -39,7 +39,11 @@ interface CloudBackend {
     suspend fun pullBeaches(): List<Beach>
     suspend fun pullNests(): List<Nest>
     suspend fun pullMarkers(): List<SimpleMarker>
+    suspend fun pullDeletedIds(table: String): Set<String>
 }
+
+@Serializable
+private data class IdRow(val id: String)
 
 private val cloudJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
@@ -132,6 +136,17 @@ class SupabaseCloud(private val auth: AuthBackend) : CloudBackend {
             setBody(listOf(row))
         }
     }
+
+    /**
+     * The ids an admin has retired, so a deletion reaches the phones that already hold the record.
+     *
+     * Volunteers can't delete anything (0005 removed the policy), which is deliberate — but it also
+     * meant an admin clearing a bogus nest only cleared it for people who hadn't synced it yet.
+     * Everyone else kept it on their map forever, because the merge is a union.
+     */
+    override suspend fun pullDeletedIds(table: String): Set<String> =
+        http.get("$base/$table?select=id&deleted_at=not.is.null") { header("Authorization", bearer()) }
+            .body<List<IdRow>>().mapTo(mutableSetOf()) { it.id }
 
     /** PostgREST select of live rows only (soft-deleted tombstones filtered server-side). */
     private suspend inline fun <reified T> selectLive(table: String): List<T> =

@@ -325,13 +325,21 @@ class CarettaRepository {
             val remoteBeaches = cloud.pullBeaches()
             val remoteNests = cloud.pullNests()
             val remoteMarkers = cloud.pullMarkers()
+            // A record an admin retired has to leave this phone too. The merge is a union, so
+            // without the tombstones a nest deleted in the cloud would live on every device that
+            // had already synced it — which is how a cleared map stayed dirty for the volunteers
+            // who actually use it.
+            val goneNests = runCatching { cloud.pullDeletedIds("nests") }.getOrDefault(emptySet())
+            val goneMarkers = runCatching { cloud.pullDeletedIds("markers") }.getOrDefault(emptySet())
+            val gonePatrols = runCatching { cloud.pullDeletedIds("patrols") }.getOrDefault(emptySet())
             val s = _state.value
             _state.value = s.copy(
                 // Normalize again: the cloud may still hold ghosts we can't delete via RLS, so keep them
                 // off the map here (remote-wins merge would otherwise reintroduce them).
                 beaches = normalizeBeaches(mergeById(s.beaches, remoteBeaches) { it.id }, cid),
-                nests = repairTimestamps(mergeNests(s.nests, remoteNests)),
-                markers = mergeById(s.markers, remoteMarkers) { it.id },
+                nests = repairTimestamps(mergeNests(s.nests, remoteNests)).filterNot { it.id in goneNests },
+                markers = mergeById(s.markers, remoteMarkers) { it.id }.filterNot { it.id in goneMarkers },
+                patrols = s.patrols.filterNot { it.id in gonePatrols },
             )
         }
         // Any photo of ours still only on this phone goes up now (capture works offline; the upload
