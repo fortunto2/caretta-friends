@@ -340,6 +340,9 @@ data class AppState(
     val protectedAreas: List<ProtectedArea> = DEFAULT_PROTECTED_AREAS,
     /** Epoch millis of the last successful OSM beach discovery (cache freshness). */
     val beachesSyncedAt: Long = 0,
+    /** OSM shoreline polylines around the community — what decides whether a photo was taken
+     *  somewhere a turtle could have nested. Cached with the beaches so the check works offline. */
+    val shoreline: List<List<GeoPoint>> = emptyList(),
     /** Last known device location (for "beaches near me" distances). Local only. */
     val deviceLocation: GeoPoint? = null,
     /** Current air quality for the community's beach area (Sensor.Community). null = no nearby sensor. */

@@ -48,6 +48,11 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
+        // The nesting-ground rule decides whether a volunteer can record a find at all — it gets a
+        // test rather than an emulator walk-through.
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)

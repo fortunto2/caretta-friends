@@ -66,6 +66,30 @@ class BeachDiscovery {
             )
         }
     }
+
+    /**
+     * The shoreline around a point, as polylines — the geometry that decides whether a photo was
+     * taken where a turtle could have nested.
+     *
+     * Beach polygons can't answer that: OSM maps only some stretches of sand, and Gazipaşa's own
+     * nesting coast has an 800 m gap between two mapped beaches. `natural=coastline`, by contrast,
+     * is continuous worldwide — it's the one line every coastal mapper maintains. A nest sits within
+     * metres of it; a photo taken at home sits hundreds of metres inland.
+     *
+     * Cached in app state like beaches: ~1000 points for a whole district, fetched once, then the
+     * check runs offline on a dark beach with no signal.
+     */
+    suspend fun coastlineNear(lat: Double, lng: Double, radiusM: Int): List<List<GeoPoint>> {
+        val query = "[out:json][timeout:25];way[\"natural\"=\"coastline\"](around:$radiusM,$lat,$lng);out geom;"
+        val body = http.post("https://overpass-api.de/api/interpreter") {
+            header("User-Agent", "CarettaFriends/1.0 (sea-turtle nest monitoring)")
+            contentType(ContentType.Text.Plain)
+            setBody(query)
+        }.bodyAsText()
+        return json.decodeFromString<OverpassResp>(body).elements
+            .map { el -> el.geometry.map { GeoPoint(it.lat, it.lon) } }
+            .filter { it.size >= 2 }
+    }
 }
 
 @Serializable

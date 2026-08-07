@@ -11,6 +11,32 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 
 ## ✅ Done (shipped this cycle)
 
+- **A nest can only be recorded where a turtle could have dug (2026-08-07).** Every record the first
+  season produced was logged from town: 20 of the 30 nests in production sat **hundreds of metres
+  inland**, and the whole GZP-21/22/23 cluster — the "real" find — is in *Pazarcı Mahallesi*, 875 m
+  from the water, among apartment blocks and the Evon Hotel. A photo carries the coordinates of
+  wherever it was taken, and nothing checked that the sea was anywhere near.
+  - The test is **distance to the shoreline**, not to a beach: OSM maps only some stretches of sand,
+    and Gazipaşa's own nesting coast has an 800 m gap between two mapped beaches, so a
+    beach-polygon rule would refuse volunteers on unmapped shore. `natural=coastline` is continuous
+    worldwide. `metersFromNestingGround()` accepts a point within `SHORE_TOLERANCE_M` (250 m) of the
+    sea, or on a mapped beach outline (`beachAt`, ray-cast + edge distance in a local flat
+    projection).
+  - The shoreline is fetched with the beaches (`BeachDiscovery.coastlineNear`, 25 km) and cached in
+    `AppState.shoreline`, so the check runs offline on a dark beach.
+  - **No geometry → no refusal.** `metersFromNestingGround` returns null when we hold neither
+    coastline nor outlines, and null means let it through: a volunteer standing over a fresh nest
+    must never be blocked because our cache is empty.
+  - Two gates in `AddNestScreen`: a red line under the coordinates the moment the photo is attached
+    (while the volunteer can still walk to the nest and re-shoot), and a blocking dialog on Save.
+    The way out is "check this spot" → `repo.discoverBeachAt()` re-queries OSM for beaches *and*
+    coastline around the point, for a shore the app hasn't discovered yet.
+  - Covered by `commonTest/domain/NestingGroundTest.kt` (first tests in the repo) with the real
+    Gazipaşa geometry — `./gradlew :composeApp:iosSimulatorArm64Test`.
+- **Production data cleared** (`0009_clear_pre_launch_test_data.sql`): everything before 2026-08-07
+  soft-deleted (nests, one empty violation marker, two 0 m patrols), keeping GZP-21. Note the
+  tombstones do **not** reach installed apps — `mergeNests` is additive (local ∪ remote), so a device
+  that already holds those nests keeps showing them; fresh installs see the clean state.
 - **Field-test fixes (2026-08-06, from Alina's session — GZP-21…24 in prod)**. Four separate bugs
   made "I logged a nest and it's not in my profile" true:
   - **Timeline entries had `createdEpochMillis = 0`** (`FOUND`, `STATUS_CHANGE`, `EXCAVATED`). The

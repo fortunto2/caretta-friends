@@ -2,6 +2,7 @@ package com.carettafriends.data
 
 import com.carettafriends.domain.AppState
 import com.carettafriends.domain.Badge
+import com.carettafriends.domain.metersFromNestingGround
 import com.carettafriends.domain.Beach
 import com.carettafriends.domain.Community
 import com.carettafriends.domain.CommunityKind
@@ -290,7 +291,7 @@ class CarettaRepository {
         // Refetch if we have no OSM beaches yet OR they lack polygons (older point-only cache).
         val haveOsm = _state.value.beaches.any { it.id.startsWith("osm-") && it.polygon.isNotEmpty() }
         val stale = nowMillis() - _state.value.beachesSyncedAt > 30L * 24 * 3600 * 1000
-        if (!haveOsm || stale) {
+        if (!haveOsm || stale || _state.value.shoreline.isEmpty()) {
             val center = _state.value.beaches.firstOrNull()?.center ?: GeoPoint(36.27, 32.30)
             val discovered = runCatching { beachDiscovery.nearby(center.lat, center.lng, 15_000, cid, _state.value.protectedAreas) }.getOrDefault(emptyList())
             if (discovered.isNotEmpty()) {
@@ -299,6 +300,11 @@ class CarettaRepository {
                     beachesSyncedAt = nowMillis(),
                 )
             }
+            // The shoreline comes down with them: it's what tells a nest on unmapped sand apart from
+            // a photo taken at home, and only OSM's coastline covers the whole coast.
+            val coast = runCatching { beachDiscovery.coastlineNear(center.lat, center.lng, 25_000) }
+                .getOrDefault(emptyList())
+            if (coast.isNotEmpty()) _state.value = _state.value.copy(shoreline = coast)
         }
         // Push local changes first (nothing made offline is lost), then pull & merge the truth.
         val local = _state.value
@@ -372,6 +378,34 @@ class CarettaRepository {
     /** Union by id; remote wins on conflict — safe for append-only entities (beaches, markers). */
     private fun <T> mergeById(local: List<T>, remote: List<T>, id: (T) -> String): List<T> =
         (local.associateBy(id) + remote.associateBy(id)).values.toList()
+
+    /**
+     * Ask OpenStreetMap for the beaches around a point and fold them into the state.
+     *
+     * The escape hatch behind "this photo isn't on a beach": start-up discovery only sweeps the
+     * community's own coast, so a volunteer who walks one bay further finds their beach unknown to
+     * the app and their nest refused. Returns the beach the point now sits on, or null if OSM knows
+     * of no sand there either — in which case the point really isn't on a beach.
+     */
+    suspend fun discoverBeachAt(point: GeoPoint): Boolean {
+        val cid = _state.value.community.id
+        val found = runCatching {
+            beachDiscovery.nearby(point.lat, point.lng, 3_000, cid, _state.value.protectedAreas)
+        }.getOrDefault(emptyList())
+        val coast = runCatching { beachDiscovery.coastlineNear(point.lat, point.lng, 5_000) }
+            .getOrDefault(emptyList())
+        // The state collector persists; no explicit save needed here.
+        _state.value = _state.value.copy(
+            beaches = if (found.isEmpty()) {
+                _state.value.beaches
+            } else {
+                normalizeBeaches(mergeById(_state.value.beaches, found) { it.id }, cid)
+            },
+            shoreline = if (coast.isEmpty()) _state.value.shoreline else _state.value.shoreline + coast,
+        )
+        val s = _state.value
+        return (metersFromNestingGround(point, s.beaches, s.shoreline) ?: 0.0) <= 0.0
+    }
 
     /** Remove stale/ghost beaches and reconcile seed beaches to their canonical coordinates.
      *  Keep a beach only if it's a current seed beach OR an OSM beach WITH a polygon outline. This

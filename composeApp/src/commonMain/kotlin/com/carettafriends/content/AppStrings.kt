@@ -299,6 +299,11 @@ class AppStrings(private val m: Map<String, String>, val months: List<String>) {
     val dupOpen: String get() = m.getValue("dupOpen")
     val dupSaveAnyway: String get() = m.getValue("dupSaveAnyway")
     val noGpsWarn: String get() = m.getValue("noGpsWarn")
+    val offBeachWarn: String get() = m.getValue("offBeachWarn")
+    val offBeachTitle: String get() = m.getValue("offBeachTitle")
+    val offBeachBody: String get() = m.getValue("offBeachBody")
+    val offBeachSearch: String get() = m.getValue("offBeachSearch")
+    val offBeachNoneFound: String get() = m.getValue("offBeachNoneFound")
 
     // Profile — "my nests" and the name nudge.
     val myNests: String get() = m.getValue("myNests")
@@ -602,6 +607,11 @@ private fun enStrings() = AppStrings(
         "dupOpen" to "Open %s",
         "dupSaveAnyway" to "It's a different nest — save it",
         "noGpsWarn" to "⚠️ This photo has no location — the nest will sit on the beach centre. Photograph it on site for exact coordinates.",
+        "offBeachWarn" to "⛔ Not on the shore — %s from the sea",
+        "offBeachTitle" to "This photo isn't on a beach",
+        "offBeachBody" to "Turtles nest on sand, at the water's edge. This photo was taken %s from the sea, so it can't be saved as a nest — record it where the nest is.\n\nIf you are on the shore and the map disagrees, check this spot.",
+        "offBeachSearch" to "Check this spot",
+        "offBeachNoneFound" to "The map has no shore here.",
         "myNests" to "My nests",
         "myNestsEmpty" to "Photograph a nest and it appears here.",
         "nameNudge" to "Add your name — your finds get credited to you",
@@ -902,6 +912,11 @@ private fun ruStrings() = AppStrings(
         "dupOpen" to "Открыть %s",
         "dupSaveAnyway" to "Это другое гнездо — сохранить",
         "noGpsWarn" to "⚠️ В фото нет координат — гнездо встанет в центре пляжа. Снимите его на месте, чтобы координаты были точными.",
+        "offBeachWarn" to "⛔ Не на берегу — %s до моря",
+        "offBeachTitle" to "Фото снято не на пляже",
+        "offBeachBody" to "Черепахи откладывают яйца на песке у воды. Это фото снято в %s от моря, поэтому сохранить его как гнездо нельзя — снимите кладку на месте.\n\nЕсли вы на берегу, а карта считает иначе, проверьте это место.",
+        "offBeachSearch" to "Проверить это место",
+        "offBeachNoneFound" to "На карте здесь нет берега.",
         "myNests" to "Мои гнёзда",
         "myNestsEmpty" to "Сфотографируйте гнездо — оно появится здесь.",
         "nameNudge" to "Укажите имя — находки будут подписаны вами",
@@ -1202,6 +1217,11 @@ private fun trStrings() = AppStrings(
         "dupOpen" to "%s yuvasını aç",
         "dupSaveAnyway" to "Bu farklı bir yuva — kaydet",
         "noGpsWarn" to "⚠️ Fotoğrafta konum yok — yuva plajın merkezine düşecek. Kesin koordinat için yerinde fotoğraflayın.",
+        "offBeachWarn" to "⛔ Kıyıda değil — denize %s",
+        "offBeachTitle" to "Bu fotoğraf plajda çekilmemiş",
+        "offBeachBody" to "Kaplumbağalar su kenarındaki kuma yuva yapar. Bu fotoğraf denizden %s uzakta çekilmiş, bu yüzden yuva olarak kaydedilemez — yuvayı yerinde fotoğraflayın.\n\nKıyıdaysanız ve harita aksini söylüyorsa, burayı kontrol edin.",
+        "offBeachSearch" to "Burayı kontrol et",
+        "offBeachNoneFound" to "Haritada burada kıyı yok.",
         "myNests" to "Yuvalarım",
         "myNestsEmpty" to "Bir yuva fotoğraflayın, burada görünsün.",
         "nameNudge" to "Adınızı ekleyin — bulduklarınız size yazılsın",

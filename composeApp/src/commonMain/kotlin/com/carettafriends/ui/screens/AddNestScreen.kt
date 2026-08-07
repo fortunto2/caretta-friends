@@ -26,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +45,7 @@ import com.carettafriends.data.MAX_BACKDATE_DAYS
 import com.carettafriends.data.localDateOf
 import com.carettafriends.data.today
 import com.carettafriends.domain.UpdateKind
+import kotlinx.coroutines.launch
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.daysUntil
@@ -58,8 +60,10 @@ import com.carettafriends.domain.ProtectionLevel
 import com.carettafriends.domain.SunExposure
 import com.carettafriends.domain.ViolationKind
 import com.carettafriends.domain.Visibility
+import com.carettafriends.domain.beachAt
 import com.carettafriends.domain.distanceLabel
 import com.carettafriends.domain.distanceMeters
+import com.carettafriends.domain.metersFromNestingGround
 import com.carettafriends.domain.nearestBeach
 import com.carettafriends.ui.components.CarettaCard
 import com.carettafriends.ui.components.GhostButton
@@ -139,12 +143,27 @@ fun AddNestScreen(
     // photo location; the volunteer can override. Falls back to the first beach when there's no fix.
     var selectedBeach by remember {
         mutableStateOf(
-            fixPoint?.let { nearestBeach(it, state.beaches)?.first }
+            // The beach the photo was actually taken ON, before the one whose centre happens to be
+            // nearest — neighbouring beaches here share a shoreline, and the longer one's centre can
+            // win over the sand the volunteer is standing on.
+            fixPoint?.let { beachAt(it, state.beaches)?.first ?: nearestBeach(it, state.beaches)?.first }
                 ?: state.beaches.firstOrNull { it.id == state.profile.homeBeachId }
                 ?: state.beaches.first(),
         )
     }
     val nearestDist = fixPoint?.let { distanceMeters(it, selectedBeach.center) }
+    // Turtles nest on sand: a photo whose GPS puts it in town, inland, or in another country (an
+    // imported screenshot, a simulator's default fix) is not a nest sighting and must not become one.
+    // Recomputed against state.beaches so a beach discovered from the dialog below clears it.
+    val offBeachM = if (markerType == MarkerType.NEST && fixPoint != null) {
+        metersFromNestingGround(fixPoint, state.beaches, state.shoreline)?.takeIf { it > 0.0 }
+    } else {
+        null
+    }
+    val scope = rememberCoroutineScope()
+    var offBeachAsk by remember { mutableStateOf(false) }
+    var searchingBeach by remember { mutableStateOf(false) }
+    var beachSearchFailed by remember { mutableStateOf(false) }
     // The point the nest/marker will be saved at (photo EXIF fix, else the chosen beach centre).
     // Hoisted to function scope so the pinned Save footer can read it too.
     val shownPoint = fixPoint ?: selectedBeach.center
@@ -156,7 +175,8 @@ fun AddNestScreen(
     // nest on the beach it was actually taken on, and back-date it to the day it was shot.
     LaunchedEffect(fixPoint) {
         if (fixPoint != null && !beachManual) {
-            nearestBeach(fixPoint, state.beaches)?.first?.let { selectedBeach = it }
+            (beachAt(fixPoint, state.beaches)?.first ?: nearestBeach(fixPoint, state.beaches)?.first)
+                ?.let { selectedBeach = it }
         }
     }
     LaunchedEffect(galleryPhoto) {
@@ -242,6 +262,14 @@ fun AddNestScreen(
             // silently doing it stacked several nests on one coordinate.
             if (fixPoint == null && markerType == MarkerType.NEST) {
                 Text(s.noGpsWarn, color = c.coral, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+            }
+            // Said here, the moment the photo is attached, rather than only at Save — the volunteer
+            // can still walk to the nest and re-shoot it while they're on the beach.
+            offBeachM?.let {
+                Text(
+                    if (searchingBeach) "${s.offBeachSearch}…" else s.offBeachWarn.replace("%s", distanceLabel(it)),
+                    color = c.coral, fontSize = 11.5.sp, fontWeight = FontWeight.Bold,
+                )
             }
 
             // ── Beach — ONE auto-picked beach with "change" beside it. A full inline list of every
@@ -398,6 +426,10 @@ fun AddNestScreen(
                 } else if (markerType == MarkerType.TRASH) {
                     repo.addSimpleMarker(MarkerType.TRASH, shownPoint, "")
                     onDone()
+                } else if (offBeachM != null) {
+                    // Second gate, at the moment of saving: the warning above can be scrolled past.
+                    beachSearchFailed = false
+                    offBeachAsk = true
                 } else {
                     // The same photo sent twice, or a nest already marked on this patch of sand →
                     // ask instead of quietly minting a second record for one nest.
@@ -434,6 +466,39 @@ fun AddNestScreen(
                     DialogAction(s.cancel, DialogStyle.CANCEL),
                 ),
                 onDismiss = { duplicate = null },
+            )
+        }
+
+        // Not on a beach — refused, with the one legitimate reason this happens offered as the way
+        // out: a real beach the app hasn't discovered yet (start-up discovery only sweeps the
+        // community's own coast, so the next bay over is unknown until someone asks for it).
+        if (offBeachAsk && fixPoint != null && offBeachM != null) {
+            PlatformChoiceDialog(
+                title = s.offBeachTitle,
+                message = s.offBeachBody.replace("%s", distanceLabel(offBeachM)) +
+                    if (beachSearchFailed) "\n\n${s.offBeachNoneFound}" else "",
+                actions = listOf(
+                    DialogAction(s.offBeachSearch, DialogStyle.PRIMARY) {
+                        searchingBeach = true
+                        beachSearchFailed = false
+                        scope.launch {
+                            val onShore = repo.discoverBeachAt(fixPoint)
+                            searchingBeach = false
+                            if (onShore) {
+                                beachAt(fixPoint, repo.state.value.beaches)?.first?.let {
+                                    selectedBeach = it
+                                    beachManual = false
+                                }
+                            } else {
+                                // Re-open with the verdict: the platform dialog closed on the tap.
+                                beachSearchFailed = true
+                                offBeachAsk = true
+                            }
+                        }
+                    },
+                    DialogAction(s.cancel, DialogStyle.CANCEL),
+                ),
+                onDismiss = { offBeachAsk = false },
             )
         }
 
