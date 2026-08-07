@@ -86,8 +86,8 @@ android {
         // Android 16. Play blocks updates from 2026-08-31 for anything below it. Edge-to-edge is
         // already enforced app-wide via enableEdgeToEdge() in MainActivity.
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.0.5"
+        versionCode = 7
+        versionName = "1.0.6"
     }
 
     packaging {
