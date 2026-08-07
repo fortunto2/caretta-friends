@@ -131,9 +131,11 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 - **⏳ Nearest nest ≤10 m** — CoreLocation region monitoring / continuous distance → local notification or a
   Live Activity ("ты у гнезда"). Great field UX.
 
-### Production release 1.0.4 — prepared, blocked on ONE thing (2026-08-07)
+### Production release 1.0.5 — staged, ONE click left (2026-08-07)
 
-Everything for the Play **production** launch is staged except a video Google requires:
+Everything for the Play **production** launch is staged; what remains is pressing
+**"Submit 4 changes for review"** in Publishing overview (Play was still running its automated
+pre-checks, ~14 min, when the browser session dropped).
 
 - ✅ **Data safety rewritten** to match what the app now does — Personal info (name, email, user ids),
   Precise location, **Photos**, App activity (**App interactions** for the counter + other
@@ -144,12 +146,15 @@ Everything for the Play **production** launch is staged except a video Google re
 - ✅ **Privacy policy rewritten and live** (`app.carettafriends.com/privacy`, caretta-landing
   `9268b2e`) — photos are uploaded and stripped of EXIF, sync happens without an account, nest
   coordinates are visible to everyone using the app, the usage counter and its install-scoped id.
-- 🔴 **BLOCKED: `FOREGROUND_SERVICE_LOCATION` needs a demo video.** Play asks for a link to a video
-  showing the permission in use, and it asks for it under EVERY category (checked: user-initiated
-  sharing, navigation, geofencing, other). Two ways out: (a) a ~30 s unlisted YouTube clip —
-  start a patrol, show the ongoing notification counting metres, stop and save; or (b) drop the
-  patrol service from the public build (rebuild without the permission) and restore it once the
-  video exists.
+- ✅ **The foreground-service blocker is gone — by removing the feature, not by faking a video.**
+  Play demands a demo video for `FOREGROUND_SERVICE_LOCATION` under every category it offers, so
+  **1.0.5** ships without the permission, the `<service>`, or any button for patrol recording
+  (`rememberPatrolRecorder` returns null; the code stays one call away from being switched back on).
+  Note the trap: the error persisted until **internal testing was also moved to 1.0.5** — the
+  declaration is required while ANY active release still carries the permission, and 1.0.3 did.
+- Internal testing is on **1.0.5** as well, with its own release notes.
+- ⚠️ The production release's internal *name* still reads "5 (1.0.4)" — cosmetic only, the artifact
+  inside is **6 (1.0.5)**; Play doesn't show release names to users.
 
 ### Release 1.0.3 / 1.0.2 — SHIPPED (2026-08-07)
 
