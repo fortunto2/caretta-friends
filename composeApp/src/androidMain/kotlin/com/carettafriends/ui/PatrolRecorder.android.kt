@@ -78,8 +78,21 @@ internal object PatrolTrack : PatrolRecorder {
     }
 }
 
+/**
+ * Patrol recording is OFF in the public build, and the map shows no button for it.
+ *
+ * Not a design decision — a store one: Play will not accept FOREGROUND_SERVICE_LOCATION without a
+ * link to a video demonstrating the permission in use, under every category it offers. The feature
+ * is a coordinator's tool, not the main flow, so it waits rather than holding the release.
+ *
+ * To restore: put the three permissions and the <service> back in AndroidManifest.xml, return
+ * [enableRecorder] below instead of null, and attach the video to the Play declaration.
+ */
 @Composable
-actual fun rememberPatrolRecorder(lang: String): PatrolRecorder? {
+actual fun rememberPatrolRecorder(lang: String): PatrolRecorder? = null
+
+@Composable
+private fun enableRecorder(lang: String): PatrolRecorder? {
     val context = LocalContext.current.applicationContext
     // Asking at the moment the volunteer taps "start patrol" is the only place the permissions make
     // sense — the answer comes back here and starts the walk without a second tap. Notifications are

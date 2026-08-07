@@ -109,7 +109,9 @@ class PatrolService : Service(), LocationListener {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(s.startPatrol)
+            // "Recording your patrol", not "Start patrol": this notice appears while the walk is
+            // already being recorded, and its job is to say that the GPS is on because of it.
+            .setContentTitle(s.patrolRecording)
             .setContentText("$meters m")
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setOngoing(true)
