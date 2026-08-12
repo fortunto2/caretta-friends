@@ -875,12 +875,9 @@ class CarettaRepository {
                 ),
             )
         }
-        // credit hatchlings to the volunteer's impact
-        val added = exc.hatchlingsToSea - (before?.excavation?.hatchlingsToSea ?: 0)
-        if (added != 0) {
-            val s = _state.value
-            _state.value = s.copy(profile = s.profile.copy(hatchlingsReached = (s.profile.hatchlingsReached + added).coerceAtLeast(0)))
-        }
+        // No running total to maintain: every screen that shows "hatchlings reached the sea" sums
+        // it from the nests themselves. A counter incremented here drifted from that sum on the
+        // first nest that arrived already excavated from another phone.
     }
 
     /** Save a recorded patrol (GPS track). Stays ON-DEVICE ONLY until [publishPatrol] — no live sharing. */

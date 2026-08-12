@@ -1,5 +1,6 @@
 package com.carettafriends.domain
 
+import kotlin.math.roundToInt
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -182,12 +183,56 @@ data class Excavation(
     val excavatedOn: LocalDate? = null,
     val team: String = "",
 ) {
+    /** Clutch size, per Miller (1999): every egg the nest held, whatever became of it. */
     val eggsTotal: Int get() = shells + unhatched + pipped
-    val hatchSuccessPct: Int?
-        get() = if (eggsTotal > 0) (100.0 * shells / eggsTotal).toInt() else null
-    val emergenceSuccessPct: Int?
-        get() = if (eggsTotal > 0) (100.0 * (shells - inNest) / eggsTotal).toInt().coerceAtLeast(0) else null
-    val hatchlingsToSea: Int get() = (shells - inNest).coerceAtLeast(0) + helpedOut
+
+    /**
+     * Hatchlings that never left the chamber — and never more than the number of eggs that hatched.
+     *
+     * A count above [shells] is a miscount at the nest, not a discovery: a hatchling in the chamber
+     * came out of one of those shells. Bounding it here keeps a slip of the finger from producing a
+     * negative emergence rate in an official record.
+     */
+    private val stuck: Int get() = inNest.coerceIn(0, shells)
+
+    /**
+     * Of the stuck ones, those dug out alive — a SUBSET of [stuck], not a separate group.
+     *
+     * Counted as its own number it inflates the nest: a record saying 94 shells and 3 rescued used
+     * to report 97 hatchlings reaching the sea, three of them from eggs that never existed. That
+     * figure feeds the volunteer's profile, the beach total and the community ranking.
+     */
+    private val rescued: Int get() = helpedOut.coerceIn(0, stuck)
+
+    /** Miller's hatching success: of every egg laid, the share that hatched. */
+    val hatchSuccessPct: Int? get() = percentOf(shells, eggsTotal)
+
+    /** Miller's emergence success: hatched AND out of the nest under its own power. */
+    val emergenceSuccessPct: Int? get() = percentOf(shells - stuck, eggsTotal)
+
+    /** Reached the sea: the ones that crawled out, plus the ones we carried out alive. */
+    val hatchlingsToSea: Int get() = shells - stuck + rescued
+
+    /** True when the counts contradict each other — the volunteer is shown which one to re-check. */
+    val inconsistent: Boolean get() = inNest > shells || helpedOut > inNest
+}
+
+/**
+ * A percentage for a record someone signs.
+ *
+ * Rounded, not truncated: a volunteer who counts 2 of 3 by hand gets 67%, and an app that answers
+ * 66% is an app they stop trusting — and over a season truncation drags every reported success rate
+ * downwards. But rounding never reaches a perfect score it hasn't earned: 199 of 200 is 99.5%, and
+ * printing "100%" would claim an egg hatched that didn't. Same at the bottom — 1 of 500 is not 0%.
+ */
+private fun percentOf(part: Int, whole: Int): Int? {
+    if (whole <= 0) return null
+    val rounded = (100.0 * part / whole).roundToInt().coerceIn(0, 100)
+    return when {
+        rounded == 100 && part < whole -> 99
+        rounded == 0 && part > 0 -> 1
+        else -> rounded
+    }
 }
 
 @Serializable
@@ -285,6 +330,10 @@ data class Profile(
     /** True once the volunteer picks a language themselves. Until then the app follows the phone's
      *  language on every launch, so changing it in iOS Settings (or Android system settings) works. */
     val languageExplicit: Boolean = false,
+    /** Kept only so saved state from older builds still parses; nothing reads it. "Hatchlings
+     *  reached the sea" is summed from the nests wherever it's shown, because a stored total goes
+     *  stale the moment a nest is excavated on another phone or retired by a coordinator. */
+    @Deprecated("Sum excavation.hatchlingsToSea over the volunteer's nests instead")
     val hatchlingsReached: Int = 0,
     val streakDays: Int = 0,
     val kmWalked: Double = 0.0,

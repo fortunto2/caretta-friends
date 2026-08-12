@@ -11,6 +11,30 @@ Everything else automatic / smart-default. Offline-first: capture works with no 
 
 ## ✅ Done (shipped this cycle)
 
+- **Excavation arithmetic (2026-08-13, from Alina's Android session).** The formulas were right —
+  Miller (1999): clutch = shells + unhatched + pipped, hatching = shells/clutch, emergence =
+  (shells − stuck)/clutch. What didn't add up was everything around them:
+  - **A nest could send more hatchlings to the sea than it had eggs that hatched.** "Helped out /
+    rescued" read as a category of its own, so a record of 94 shells and 3 rescued reported 97
+    hatchlings — three of them from eggs that never existed. `helpedOut` is now a SUBSET of
+    `inNest` (bounded in the model, capped in the stepper) and the label says so: "Of those,
+    rescued alive". The inflated figure fed the volunteer's profile, the beach total and the
+    community ranking, so it spread far past the one screen.
+  - **`inNest` above `shells` produced a negative emergence rate**, coerced to 0% next to a 100%
+    hatching rate. Both are bounded now, and the form warns which count to re-check.
+  - **Percentages truncated instead of rounding**: 2 of 3 showed 66% where the volunteer's own
+    arithmetic says 67, and every season figure skewed low. Rounded now — but never INTO a perfect
+    score: 199/200 stays 99%, because "100%" would claim an egg hatched that didn't.
+  - **The clutch total is now on screen and in the tutanak** — it's the denominator of both
+    percentages, and a record without it can't be checked by whoever receives it.
+  - **Your own profile disagreed with your member card.** The profile showed a running counter
+    incremented at each save; every other screen sums it from the nests. The counter drifted on any
+    nest excavated on another phone, retired by a coordinator, or lost to a reinstall. Everything
+    derives now; `Profile.hatchlingsReached` is deprecated and unread.
+  - `commonTest/domain/ExcavationTest.kt` — 8 cases; 4 of them failed against the old code.
+    Verified on the emulator too: 12/3/1/3, "+" on rescued stops at 3, clutch 16, hatching 75%,
+    emergence 56%, 12 to the sea.
+
 - **A nest can only be recorded where a turtle could have dug (2026-08-07).** Every record the first
   season produced was logged from town: 20 of the 30 nests in production sat **hundreds of metres
   inland**, and the whole GZP-21/22/23 cluster — the "real" find — is in *Pazarcı Mahallesi*, 875 m

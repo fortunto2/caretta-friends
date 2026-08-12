@@ -110,8 +110,25 @@ fun ExcavationScreen(nest: Nest, repo: CarettaRepository, lang: String, onBack: 
             CountRow("🥚", s.excShells, shells, onDec = { if (shells > 0) shells-- }, onInc = { shells++ }, onSet = { shells = it })
             CountRow("🟤", s.excUnhatched, unhatched, onDec = { if (unhatched > 0) unhatched-- }, onInc = { unhatched++ }, onSet = { unhatched = it })
             CountRow("🐣", s.excPipped, pipped, onDec = { if (pipped > 0) pipped-- }, onInc = { pipped++ }, onSet = { pipped = it })
+            // Found in the chamber, and — of those — the ones dug out alive. The second is a subset
+            // of the first, so it can't be raised past it: counted side by side they used to add up
+            // to more hatchlings than the nest had shells.
             CountRow("🕳️", s.excInNest, inNest, onDec = { if (inNest > 0) inNest-- }, onInc = { inNest++ }, onSet = { inNest = it })
-            CountRow("🐢", s.excHelpedOut, helpedOut, onDec = { if (helpedOut > 0) helpedOut-- }, onInc = { helpedOut++ }, onSet = { helpedOut = it })
+            CountRow(
+                "🐢", s.excHelpedOut, helpedOut,
+                onDec = { if (helpedOut > 0) helpedOut-- },
+                onInc = { if (helpedOut < inNest) helpedOut++ },
+                onSet = { helpedOut = it.coerceAtMost(inNest) },
+            )
+
+            // The number a volunteer checks against their own tally on paper.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(s.excClutchTotal, color = c.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text("${exc.eggsTotal}", color = c.deep, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
+            }
+            if (exc.inconsistent) {
+                Text(s.excCheckCounts, color = c.coral, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+            }
 
             // auto-computed success tiles
             SectionLabel(s.excSuccessLabel)
@@ -219,6 +236,9 @@ internal fun excavationReport(
         "${s.excPipped}: ${exc.pipped}",
         "${s.excInNest}: ${exc.inNest}",
         "${s.excHelpedOut}: ${exc.helpedOut}",
+        // Clutch size belongs in the record: it's the denominator of both percentages below, and a
+        // tutanak without it can't be checked by whoever receives it.
+        "${s.excClutchTotal}: ${exc.eggsTotal}",
         "",
         "${s.excHatchingSuccess}: ${exc.hatchSuccessPct ?: 0}%",
         "${s.excEmergenceSuccess}: ${exc.emergenceSuccessPct ?: 0}%",

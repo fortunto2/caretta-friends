@@ -84,6 +84,11 @@ fun ProfileScreen(
         state.nestsBy(state.meAsMember).sortedByDescending { it.foundDate }
     }
     // "Beaches you've been to" — where this volunteer has patrolled or logged a nest.
+    // Counted from the nests, never from a running total. The stored counter was incremented as
+    // excavations were saved, so it drifted from the truth the moment a nest arrived already
+    // excavated from another phone, was retired by a coordinator, or the app was reinstalled — and
+    // your own profile then disagreed with the same figure on your member card, which is derived.
+    val hatchlings = remember(myNests) { myNests.sumOf { it.excavation?.hatchlingsToSea ?: 0 } }
     val visitedIds = (state.patrols.map { it.beachId } + myNests.map { it.beachId }).toSet()
     val visited = state.beaches.filter { it.id in visitedIds }
     val home = p.homeBeachId?.let { state.beach(it) }
@@ -109,7 +114,7 @@ fun ProfileScreen(
                         text = { Text("🐢 ${s.shareImpact}") },
                         onClick = {
                             showMenu = false
-                            platformShare(s.shareText.replace("%d", p.hatchlingsReached.toString()))
+                            platformShare(s.shareText.replace("%d", hatchlings.toString()))
                         },
                     )
                 }
@@ -190,7 +195,7 @@ fun ProfileScreen(
             // then the walking counters. A row of zeros is noise, and the old full-bleed gradient
             // tile made "0" the loudest thing on the screen.
             val stats = buildList {
-                if (p.hatchlingsReached > 0) add("🐣 ${p.hatchlingsReached}" to s.hatchlingsReached)
+                if (hatchlings > 0) add("🐣 $hatchlings" to s.hatchlingsReached)
                 if (p.streakDays > 0) add("🔥 ${p.streakDays}" to s.dayStreak)
                 if (p.kmWalked >= 1) add("${p.kmWalked.toInt()} km" to s.walked)
                 if (p.patrols > 0) add("${p.patrols}" to s.patrols)

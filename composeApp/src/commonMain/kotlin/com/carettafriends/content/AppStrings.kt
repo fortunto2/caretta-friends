@@ -244,6 +244,8 @@ class AppStrings(private val m: Map<String, String>, val months: List<String>) {
     val excPipped: String get() = m.getValue("excPipped")
     val excInNest: String get() = m.getValue("excInNest")
     val excHelpedOut: String get() = m.getValue("excHelpedOut")
+    val excClutchTotal: String get() = m.getValue("excClutchTotal")
+    val excCheckCounts: String get() = m.getValue("excCheckCounts")
     val excSuccessLabel: String get() = m.getValue("excSuccessLabel")
     val excHatchingSuccess: String get() = m.getValue("excHatchingSuccess")
     val excEmergenceSuccess: String get() = m.getValue("excEmergenceSuccess")
@@ -553,7 +555,9 @@ private fun enStrings() = AppStrings(
         "excUnhatched" to "Unhatched / whole eggs",
         "excPipped" to "Pipped / in egg",
         "excInNest" to "In nest / stuck",
-        "excHelpedOut" to "Helped out / rescued",
+        "excHelpedOut" to "Of those, rescued alive",
+        "excClutchTotal" to "Eggs in the clutch",
+        "excCheckCounts" to "⚠️ Check the counts: the rescued ones are part of what you found in the nest, and those came out of the shells you counted.",
         "excSuccessLabel" to "Success",
         "excHatchingSuccess" to "Hatching success",
         "excEmergenceSuccess" to "Emergence success",
@@ -858,7 +862,9 @@ private fun ruStrings() = AppStrings(
         "excUnhatched" to "Не вылупились / целые яйца",
         "excPipped" to "Проклюнулись / в яйце",
         "excInNest" to "В гнезде / застряли",
-        "excHelpedOut" to "Помогли выбраться / спасли",
+        "excHelpedOut" to "Из них спасли живыми",
+        "excClutchTotal" to "Яиц в кладке",
+        "excCheckCounts" to "⚠️ Проверьте счёт: спасённые входят в число найденных в гнезде, а те вышли из посчитанных скорлупок.",
         "excSuccessLabel" to "Успех",
         "excHatchingSuccess" to "Успех вылупления",
         "excEmergenceSuccess" to "Успех выхода",
@@ -1163,7 +1169,9 @@ private fun trStrings() = AppStrings(
         "excUnhatched" to "Çıkmamış / bütün yumurta",
         "excPipped" to "Gagalamış / yumurtada",
         "excInNest" to "Yuvada / sıkışmış",
-        "excHelpedOut" to "Kurtarıldı / çıkarıldı",
+        "excHelpedOut" to "Bunlardan canlı kurtarılan",
+        "excClutchTotal" to "Yuvadaki yumurta",
+        "excCheckCounts" to "⚠️ Sayıları kontrol edin: kurtarılanlar yuvada bulunanların bir parçasıdır, onlar da saydığınız kabuklardan çıktı.",
         "excSuccessLabel" to "Başarı",
         "excHatchingSuccess" to "Çıkış başarısı",
         "excEmergenceSuccess" to "Yüzeye çıkış başarısı",
