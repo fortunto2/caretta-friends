@@ -22,12 +22,17 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -213,11 +218,22 @@ fun Stepper(value: Int, onDec: () -> Unit, onInc: () -> Unit, onSet: ((Int) -> U
         StepBtn("+", onInc)
     }
     if (editing && onSet != null) {
-        var txt by remember { mutableStateOf(value.toString()) }
+        // The current value opens SELECTED, so the first digit typed REPLACES it.
+        //
+        // Prefilled and unselected, the field appended instead — and silently: a volunteer with 12
+        // shells counted who tapped the number and typed "3" stored 123. Every count on this screen
+        // is typed that way, so one careless tap could put a three-digit clutch into an official
+        // record. The field also takes focus itself; needing a second tap to raise the keyboard is
+        // what made people type without looking.
+        val focus = remember { FocusRequester() }
+        var field by remember {
+            val start = value.toString()
+            mutableStateOf(TextFieldValue(start, selection = TextRange(0, start.length)))
+        }
         AlertDialog(
             onDismissRequest = { editing = false },
             confirmButton = {
-                TextButton(onClick = { onSet(txt.toIntOrNull()?.coerceAtLeast(0) ?: value); editing = false }) {
+                TextButton(onClick = { onSet(field.text.toIntOrNull()?.coerceAtLeast(0) ?: value); editing = false }) {
                     Text("✓", color = c.sea, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                 }
             },
@@ -226,11 +242,13 @@ fun Stepper(value: Int, onDec: () -> Unit, onInc: () -> Unit, onSet: ((Int) -> U
             },
             text = {
                 OutlinedTextField(
-                    value = txt,
-                    onValueChange = { new -> txt = new.filter { it.isDigit() }.take(4) },
+                    value = field,
+                    onValueChange = { new -> field = new.copy(text = new.text.filter { it.isDigit() }.take(4)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.focusRequester(focus),
                 )
+                LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
             },
         )
     }
